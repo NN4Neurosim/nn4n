@@ -4,7 +4,7 @@ import torch.nn as nn
 from recurrent_layer import RecurrentLayer
 from linear_layer import LinearLayer
 
-class EIRNN(nn.Module):
+class CTRNN(nn.Module):
     """ Recurrent network model """
     def __init__(self, **kwargs):
         """

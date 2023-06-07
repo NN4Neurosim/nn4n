@@ -1,1 +1,1 @@
-from multi_area import *
+from .multi_area import *
