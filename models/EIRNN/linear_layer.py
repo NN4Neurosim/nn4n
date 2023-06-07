@@ -42,8 +42,7 @@ class LinearLayer(nn.Module):
             assert not plasticity, "mask must be provided if plasticity is True"
         else:
             if use_dale:
-                assert plasticity, "use_dale cannot be True if plasticity is False"
-                self.dale_mask = np.where(mask > 0, 1, -1)
+                self._init_ei_neurons(mask)
             if plasticity:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
 
@@ -54,6 +53,22 @@ class LinearLayer(nn.Module):
         
         # enfore constraints
         self.enforce_constraints()
+
+
+    def _init_ei_neurons(self, mask):
+        """ initialize settings required for Dale's law """
+        ei_list = np.zeros(self.input_size) # Dale's law only applies to output edges
+        all_neg = np.all(mask <= 0, axis=0)
+        all_pos = np.all(mask >= 0, axis=1)
+        for i in range(self.hidden_size):
+            if all_neg[i]: ei_list[i] = -1
+            elif all_pos[i]: ei_list[i] = 1
+            else: assert False, "mask must be either all positive or all negative"
+        self.ei_list = ei_list
+        
+        dales_mask = np.ones((self.hidden_size, self.hidden_size))
+        dales_mask[:, self.ei_list == -1] = -1
+        self.dales_mask = dales_mask
 
 
     def generate_weight(self):

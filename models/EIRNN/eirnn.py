@@ -21,7 +21,7 @@ class EIRNN(nn.Module):
         """
         super().__init__()
         # parameters that used in all layers
-        self.use_dale = kwargs.get("use_dale", True)
+        self.use_dale = kwargs.get("use_dale", False)
         self.plasticity = kwargs.get("plasticity", False)
         self.hidden_size = kwargs.get("hidden_size", 100)
 
@@ -41,6 +41,9 @@ class EIRNN(nn.Module):
             use_dale = kwargs.get("use_dale", True),
             plasticity = kwargs.get("plasticity", False),
         )
+
+        if self.use_dale:
+            assert self.recurrent.ei_list == self.readout_layer.ei_list, "E/I list of recurrent and readout layer must be the same"
 
 
     def forward(self, x):
