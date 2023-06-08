@@ -12,9 +12,10 @@ class HiddenLayer(nn.Module):
             spec_rad,
             mask,
             use_dale,
-            plasticity,
+            new_synapse,
             self_connections,
             allow_neg,
+            ei_balance,
             ) -> None:
         """
         Hidden layer of the RNN
@@ -22,12 +23,13 @@ class HiddenLayer(nn.Module):
             @param hidden_size: number of hidden units
             @param dist: distribution of hidden weights
             @param use_bias: use bias or not
-            @param plasticity: use plasticity or not
+            @param new_synapse: use new_synapse or not
             @param spec_rad: spectral radius of hidden weights
-            @param mask: mask for hidden weights, used to enforce plasticity and/or dale's law
+            @param mask: mask for hidden weights, used to enforce new_synapse and/or dale's law
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
             @param self_connections: allow self connections or not
             @param allow_neg: allow negative weights or not, a boolean value
+            @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
         """
         super().__init__()
         # some params are for verbose printing
@@ -36,19 +38,20 @@ class HiddenLayer(nn.Module):
         self.use_bias = use_bias
         self.spec_rad = spec_rad
         self.use_dale = use_dale
-        self.plasticity = plasticity
+        self.new_synapse = new_synapse
         self.self_connections = self_connections
         self.allow_neg = allow_neg
+        self.ei_balance = ei_balance
 
         # initialize constraints
         self.dale_mask, self.sparse_mask = None, None
         if mask is None:
             assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert not self.plasticity, "mask must be provided if plasticity is True"
+            assert self.new_synapse, "mask must be provided if synapses are not plastic"
         else:
             if self.use_dale:
                 self._init_ei_neurons(mask)
-            if self.plasticity:
+            if not self.new_synapse:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
         # whether to delete self connections
         if not self.self_connections: 
@@ -57,31 +60,41 @@ class HiddenLayer(nn.Module):
                 self.sparse_mask = np.ones((self.hidden_size, self.hidden_size))
             self.sparse_mask = np.where(np.eye(self.hidden_size) == 1, 0, self.sparse_mask)
             
-
         # generate weights and bias
-        self.weight = torch.nn.Parameter(self.generate_weight())
+        self.weight = self.generate_weight()
+        
+
+        # NOTE: weight are np.ndarray before that, but now they are torch.Tensor
+        # init new_synapse, dale's law, and spectral radius
+        self.init_constraints()
+        self.enforce_spec_rad()
+
+        # parameterize the weights and bias
+        self.weight = nn.Parameter(self.weight.float())
         if self.use_bias: self.bias = torch.nn.Parameter(self.generate_bias())
         else: self.bias = torch.nn.Parameter(torch.zeros(self.hidden_size), requires_grad=False)
-        
-        # enforce plasticity, dale's law, and spectral radius
-        self.enforce_constraints()
-        if self.dist == 'normal': self.enforce_spec_rad()
+
 
 
     def _init_ei_neurons(self, mask):
         """ initialize settings required for Dale's law """
-        ei_list = np.zeros(self.hidden_size)
-        all_neg = np.all(mask <= 0, axis=0)
-        all_pos = np.all(mask >= 0, axis=0)
-        for i in range(self.hidden_size):
+        # Dale's law only applies to output edges
+        # create a ei_list to store whether a neuron's output edges are all positive or all negative
+        ei_list = np.zeros(mask.shape[1])
+        all_neg = np.all(mask <= 0, axis=0) # whether all output edges are negative
+        all_pos = np.all(mask >= 0, axis=0) # whether all output edges are positive
+
+        # check whether a neuron's output edges are all positive or all negative
+        for i in range(mask.shape[1]):
             if all_neg[i]: ei_list[i] = -1
             elif all_pos[i]: ei_list[i] = 1
-            else: assert False, "mask must be either all positive or all negative"
+            else: assert False, "a neuron's output edges must be either all positive or all negative"
         self.ei_list = ei_list
-        
-        dales_mask = np.ones((self.hidden_size, self.hidden_size))
-        dales_mask[:, self.ei_list == -1] = -1
-        self.dales_mask = dales_mask
+
+        # create a mask for Dale's law
+        dale_mask = np.ones(mask.shape)
+        dale_mask[:, self.ei_list == -1] = -1
+        self.dale_mask = dale_mask.astype(int)
 
 
     def generate_weight(self):
@@ -95,9 +108,6 @@ class HiddenLayer(nn.Module):
                 w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size))
             else:
                 w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size)) / 2 + 0.5
-
-        if self.use_dale:
-            w = self.balance_excitatory_inhibitory(w)
 
         return torch.from_numpy(w).float()
     
@@ -120,36 +130,45 @@ class HiddenLayer(nn.Module):
 
     def balance_excitatory_inhibitory(self, w):
         """ Balance excitatory and inhibitory weights """
-        n_exc = np.sum(self.dale_mask == 1)
-        n_inh = np.sum(self.dale_mask == -1)
-        n_total = self.hidden_size**2/4
+        scale_mat = np.ones((self.hidden_size, self.hidden_size))
+        if self.ei_balance == 'neuron':
+            exc_pct = np.count_nonzero(self.ei_list == 1.0) / self.hidden_size
+            scale_mat[:, self.ei_list == 1] = 1 / exc_pct
+            scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
+        elif self.ei_balance == 'synapse':
+            exc_syn = np.count_nonzero(w > 0)
+            inh_syn = np.count_nonzero(w < 0)
+            exc_pct = exc_syn / (exc_syn + inh_syn)
+            scale_mat[w > 0] = 1 / exc_pct
+            scale_mat[w < 0] = 1 / (1 - exc_pct)
+        else:
+            assert False, "ei_balance must be either 'neuron' or 'synapse'"
 
-        dale_mask = self.dale_mask.copy()
-        dale_mask[dale_mask == 1] = (n_total / n_exc)
-        dale_mask[dale_mask == -1] = -(n_total / n_inh)
-
-        return w * dale_mask
+        return w * scale_mat
 
 
     def enforce_spec_rad(self):
         """ Enforce spectral radius """
-        w = self.weight.detach().numpy()
-        scale = self.spec_rad / np.max(np.abs(np.linalg.eigvals(w)))
-        w *= scale
-        w = torch.nn.Parameter(torch.from_numpy(w))
-        self.weight.data.copy_(w)
+        scale = self.spec_rad / np.max(np.abs(np.linalg.eigvals(self.weight)))
+        self.weight *= scale
 
-        if self.use_bias:
-            b = self.bias.detach().numpy()
-            b *= scale
-            b = torch.nn.Parameter(torch.from_numpy(b))
-            self.bias.data.copy_(b)
+
+    def init_constraints(self):
+        """
+        Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
+        It will also balance excitatory and inhibitory neurons
+        """
+        if self.dale_mask is not None:
+            self.weight *= self.dale_mask
+            self.weight = self.balance_excitatory_inhibitory(self.weight)
+        if self.sparse_mask is not None:
+            self.weight *= self.sparse_mask
 
 
     def enforce_constraints(self):
         """ Enforce constraints """
         if self.sparse_mask is not None:
-            self.enforce_plasticity()
+            self.enforce_sparsity()
         if self.dale_mask is not None:
             self.enforce_dale()
 
@@ -163,7 +182,7 @@ class HiddenLayer(nn.Module):
         self.weight.data.copy_(w)
 
 
-    def enforce_plasticity(self):
+    def enforce_sparsity(self):
         """ Enforce sparsity """
         w = self.weight.detach().numpy()
         w *= self.sparse_mask
@@ -190,4 +209,4 @@ class HiddenLayer(nn.Module):
             "spectral_radius": np.max(np.abs(np.linalg.eigvals(self.weight.detach().numpy()))),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        utils.plot_connectivity_matrix(self.weight.detach().numpy(), "Hidden Layer", False)
+        utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)

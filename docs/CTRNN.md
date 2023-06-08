@@ -37,11 +37,12 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 | dt                       | 1             | `float`                    | Constant that used to discretize time      |
 | allow_neg                | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right, InputLayer, HiddenLayer, and OutputLayer, respectively.  |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
-| plasticity               | False         | `boolean`                  | Enforce plasticity or not. That is, whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
+| ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Method to balance excitatory/inhibitory connections.                                                            |
+| new_synapse              | True         | `boolean`                  | Whether or not synapses are plastic. That is, whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
 | input_size               | 1             | `int`                      | Input dimension                            |
 | input_dist               | 'uniform'     | 'uniform'/'normal'         | InputLayer Distribution                    |
 | input_bias               | False         | `Boolean`                  | Use bias or not for InputLayer             |
-| input_mask               | `None`        | `np.ndarray`               | InputLayer mask for plasticity/dale's law. Must has the same dimension as the input weight. See [constraints and masks](#constraints-and-masks).               |
+| input_mask               | `None`        | `np.ndarray`               | InputLayer mask for new_synapse/dale's law. Must has the same dimension as the input weight. See [constraints and masks](#constraints-and-masks).               |
 | recurrent_noise          | 0.05          | `float`                    | Zero-mean Gaussian recurrent noise         |
 | self_connections         | False         | `boolean`                  | Whether a neuron can connect to itself     |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'    | Activation function                        |
@@ -49,24 +50,26 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 | hidden_size              | 100           | `int`                      | Number of hidden nodes                     |
 | hidden_dist              | 'normal'      | 'uniform'/'normal'         | HiddenLayer Distribution                   |
 | hidden_bias              | False         | `boolean`                  | Use bias or not for HiddenLayer            |
-| hidden_mask              | `None`        | `np.ndarray`               | HiddenLayer mask for plasticity/dale's law. Must has the same dimension as the hidden weight. See [constraints and masks](#constraints-and-masks).              |
+| hidden_mask              | `None`        | `np.ndarray`               | HiddenLayer mask for new_synapse/dale's law. Must has the same dimension as the hidden weight. See [constraints and masks](#constraints-and-masks).              |
 | output_size              | 1             | `int`                      | Output dimension                           |
 | output_dist              | 'uniform'     | 'uniform'/'normal'         | OutputLayer Distribution                   |
 | output_bias              | False         | `boolean`                  | Use bias or not for OutputLayer            |
-| output_mask              | `None`        | `np.ndarray`               | OutputLayer mask for plasticity/dale's law. Must has the same dimension as the output weight. See [constraints and masks](#constraints-and-masks).              |
+| output_mask              | `None`        | `np.ndarray`               | OutputLayer mask for new_synapse/dale's law. Must has the same dimension as the output weight. See [constraints and masks](#constraints-and-masks).              |
 
 
 ### Constraints and masks
 Constraints are enforced before each forward pass
 #### Dale's Law:
 Masks (input, hidden, and output) cannot be `None` if `use_dale` is `True`.<br>
-Only entries signs matter for the enforcement of Dale's law. All edges from the same neuron must be all excitatory or inhibitory. This is enforced across training using the `relu()` and `-relu()` functions.
-#### Plasticity:
-Plasticity defines whether a neuron can 'grow' new connections.<br>
-Only zeros entries matter if the plasticity is enforced. All entries that correspond to a zero value in the `input_mask` will remain zero across all time.<br>
-Currently the plasticity is enforced globally. That is, if `plasticity` is set to be True, it will be enforced on all three layers. We will consider adding separate plasticity for different layers in the future.
+Only entries signs matter for the enforcement of Dale's law. All edges from the same neuron must be all excitatory or inhibitory. This is enforced across training using the `relu()` and `-relu()` functions.<br>
+When `use_dale` is set to true, it will automatically balance the excitatory/inhibitory based on number of e/i neurons. To balance excitatory/inhibitory based on excitatory/inhibitory connection numbers, set `ei_balance` to 'synapse'.
+#### new_synapse:
+`new_synapse` defines whether a neuron can 'grow' new connections.<br>
+If plasiticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `new_synapse` is set to False.<br>
+Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.<br>
+Currently the `new_synapse` is enforced globally. That is, if `new_synapse` is set to be True, it will be enforced on all three layers. We will consider adding separate `new_synapse` for different layers in the future.
 #### Self-Connections:
-Whether a neuron can connect to itself. This is enforced along with the plasticity mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
+Whether a neuron can connect to itself. This is enforced along with the `new_synapse` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
 
 
 ## Todos
@@ -74,6 +77,6 @@ Whether a neuron can connect to itself. This is enforced along with the plastici
 - [ ] Test different activation functions
 - [ ] Bias when using dale's law?
 - [ ] If the masks are not set, there need default values.
-- [ ] Potentially user can choose to enfore plasticity or not for a specific layer
-- [x] Re-write Dale's law such that it can still work when plasticity is not enforced.
+- [ ] Potentially user can choose to enfore `new_synapse` or not for a specific layer
+- [x] Re-write Dale's law such that it can still work when `new_synapse` is not enforced.
 - [ ] Can InputLayer and OutputLayer weights be negative when Dale's law enforced?

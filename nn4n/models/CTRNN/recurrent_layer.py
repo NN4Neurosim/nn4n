@@ -11,7 +11,7 @@ class RecurrentLayer(nn.Module):
             self,
             hidden_size,
             use_dale,
-            plasticity,
+            new_synapse,
             allow_neg,
             **kwargs
         ):
@@ -20,7 +20,7 @@ class RecurrentLayer(nn.Module):
         Parameters:
             @param hidden_size: number of hidden neurons
             @param use_dale: use dale's law or not
-            @param plasticity: use plasticity or not
+            @param new_synapse: use new_synapse or not
             @param allow_neg: allow negative weights or not, a list of 3 boolean values
 
         Keyword Arguments:
@@ -28,6 +28,7 @@ class RecurrentLayer(nn.Module):
             @kwarg recurrent_noise: noise for recurrent connections, default: 0.05
             @kwarg dt: time step, default: 1
             @kwarg tau: time constant, default: 1
+            @kwarg ei_balance: method to balance E/I neurons, default: "neuron"
 
             @kwarg input_size: number of input neurons, default: 1
             @kwarg input_dist: distribution of input layer weights, default: "uniform"
@@ -42,13 +43,14 @@ class RecurrentLayer(nn.Module):
         super().__init__()
 
         self.hidden_size = hidden_size
+        self.use_dale = use_dale
         self.set_activation(kwargs.get("activation", "relu"))
         self.recurrent_noise = kwargs.get("recurrent_noise", 0.05)
         self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
 
         self.input_layer = LinearLayer(
-            use_dale = False,
-            plasticity = plasticity,
+            use_dale = self.use_dale,
+            new_synapse = new_synapse,
             output_size = self.hidden_size,
             input_size = kwargs.get("input_size", 1),
             use_bias = kwargs.get("input_bias", False),
@@ -58,14 +60,15 @@ class RecurrentLayer(nn.Module):
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
-            plasticity=plasticity,
-            use_dale = use_dale,
+            new_synapse = new_synapse,
+            use_dale = self.use_dale,
             dist = kwargs.get("hidden_dist", "normal"),
             use_bias = kwargs.get("hidden_bias", False),
             spec_rad = kwargs.get("spec_rad", 1),
             mask = kwargs.get("hidden_mask", None),
             self_connections = kwargs.get("self_connections", False),
-            allow_neg = allow_neg[1]
+            allow_neg = allow_neg[1],
+            ei_balance = kwargs.get("ei_balance", "neuron")
         )
 
     

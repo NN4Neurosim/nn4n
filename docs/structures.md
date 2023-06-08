@@ -48,6 +48,7 @@ $W$ may not matter if your connectivity matrix is symetric. But if it's not, you
 |:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
 | ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons           |
 | inter_area_connections        |[True, True, True, True] | `list` (of booleans)       | Allows for what type of inter-area connections. `inter_area_connections` must be a `boolean` list of 4 elements, denoting whether 'exc-exc', 'exc-inh', 'inh-exc', and 'inh-inh' connections are allowed between areas. see [inter-area connections under EI constraints](#inter-area-connections-under-ei-constraints). |
+| inh_output                    | True                     | `boolean`                 | Whether to have inhibitory output neurons    |
 
 #### Inter-Area Connections Under EI Constraints
 Depending on the specific problem you are investigating on, it is possible that you want to eliminate inhibitory connections between areas. Or, you might not want excitatory neurons to connect to inhibitory neurons in other areas. See figure below for different cases of inter-area connections under EI constraints.

@@ -12,7 +12,7 @@ class LinearLayer(nn.Module):
             use_bias,
             mask,
             use_dale,
-            plasticity,
+            new_synapse,
             allow_neg,
         ) -> None:
         """ 
@@ -25,7 +25,7 @@ class LinearLayer(nn.Module):
             @param input_size: input size
             @param output_size: output size
             @param use_dale: whether to use Dale's law
-            @param plasticity: whether to use plasticity
+            @param new_synapse: whether to use new_synapse
             @param allow_neg: whether to allow negative weights, a boolean value
         """
         super().__init__()
@@ -35,18 +35,18 @@ class LinearLayer(nn.Module):
         self.use_bias = use_bias
         self.mask = mask
         self.use_dale = use_dale
-        self.plasticity = plasticity
+        self.new_synapse = new_synapse
         self.allow_neg = allow_neg
 
         # initialize constraints
         self.sparse_mask, self.dale_mask = None, None
         if self.mask is None:
             assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert not self.plasticity, "mask must be provided if plasticity is True"
+            assert self.new_synapse, "mask must be provided if synapses are not plastic"
         else:
             if self.use_dale:
                 self._init_ei_neurons(mask)
-            if self.plasticity:
+            if not self.new_synapse:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
 
         # generate weights
@@ -60,16 +60,24 @@ class LinearLayer(nn.Module):
 
     def _init_ei_neurons(self, mask):
         """ initialize settings required for Dale's law """
-        ei_list = np.zeros(self.input_size) # Dale's law only applies to output edges
+        # Dale's law only applies to output edges
+        # create a ei_list to store whether a neuron's output edges are all positive or all negative
+        ei_list = np.zeros(mask.shape[1])
         all_neg = np.all(mask <= 0, axis=0)
-        all_pos = np.all(mask >= 0, axis=1)
-        for i in range(self.hidden_size):
+        all_pos = np.all(mask >= 0, axis=0)
+        all_zero = np.all(mask == 0, axis=0) # readout layer may be sparse
+
+        # check if all neurons are either all negative or all positive
+        for i in range(mask.shape[1]):
             if all_neg[i]: ei_list[i] = -1
             elif all_pos[i]: ei_list[i] = 1
-            else: assert False, "mask must be either all positive or all negative"
+            else: assert False, "a neuron's output edges must be either all positive or all negative"
+
+            if all_zero[i]: ei_list[i] = 0
         self.ei_list = ei_list
         
-        dales_mask = np.ones((self.hidden_size, self.hidden_size))
+        # generate mask for Dale's law
+        dales_mask = np.ones(mask.shape)
         dales_mask[:, self.ei_list == -1] = -1
         self.dales_mask = dales_mask
 
@@ -169,6 +177,6 @@ class LinearLayer(nn.Module):
         }
         utils.print_dict("Linear Layer", param_dict)
         if self.weight.size(0) < self.weight.size(1):
-            utils.plot_connectivity_matrix(self.weight.detach().numpy(), "Weight Matrix", False)
+            utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Weight Matrix", False, not self.new_synapse)
         else:
-            utils.plot_connectivity_matrix(self.weight.detach().numpy().T, "Weight Matrix", False)
+            utils.plot_connectivity_matrix_dist(self.weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapse)

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
 from .recurrent_layer import RecurrentLayer
 from .linear_layer import LinearLayer
@@ -10,20 +11,28 @@ class CTRNN(nn.Module):
         """
         Base RNN constructor
         Keyword Arguments:
-            @kwarg use_dale: use dale's law or not, default: True
-            @kwarg plasticity: use plasticity or not, default: False
-            @kwarg hidden_size: number of hidden neurons, default: 100
-            @kwarg allow_neg: allow negative weights or not, default: [True, True, True]
+            @kwarg use_dale: use dale's law or not
+            @kwarg new_synapse: use new_synapse or not
+            @kwarg hidden_size: number of hidden neurons
+            @kwarg allow_neg: allow negative weights or not
 
-            @kwarg output_size: number of output neurons, default: 1
-            @kwarg output_dist: distribution of output layer weights, default: "uniform"
-            @kwarg output_bias: use bias for output layer or not, default: False
-            @kwarg output_mask: mask for output layer, optional, default: None
+            @kwarg output_size: number of output neurons
+            @kwarg output_dist: distribution of output layer weights
+            @kwarg output_bias: use bias for output layer or not
+            @kwarg output_mask: mask for output layer, optional
         """
         super().__init__()
+        self.kwargs_checkpoint = kwargs.copy()
+        self.initialize(**kwargs)
+
+
+    def initialize(self, **kwargs):
+        """
+        Initialize/Reinitialize the network
+        """
         # parameters that used in all layers
         self.use_dale = kwargs.pop("use_dale", False)
-        self.plasticity = kwargs.pop("plasticity", False)
+        self.new_synapse = kwargs.pop("new_synapse", True)
         self.hidden_size = kwargs.pop("hidden_size", 100)
         self.allow_neg = kwargs.pop("allow_neg", [True, True, True])
 
@@ -33,7 +42,7 @@ class CTRNN(nn.Module):
         self.recurrent = RecurrentLayer(
             hidden_size = self.hidden_size,
             use_dale = self.use_dale,
-            plasticity = self.plasticity,
+            new_synapse = self.new_synapse,
             allow_neg = self.allow_neg,
             **kwargs
         )
@@ -44,12 +53,15 @@ class CTRNN(nn.Module):
             dist = kwargs.get("output_dist", "uniform"),
             use_bias = kwargs.get("output_bias", False),
             mask = kwargs.get("output_mask", None),
-            plasticity = kwargs.get("plasticity", False),
+            new_synapse = self.new_synapse,
             allow_neg = self.allow_neg[2]
         )
 
         if self.use_dale:
-            assert self.recurrent.ei_list == self.readout_layer.ei_list, "E/I list of recurrent and readout layer must be the same"
+            hidden_ei_list = self.recurrent.hidden_layer.ei_list
+            readout_ei_list = self.readout_layer.ei_list
+            nonzero_idx = np.where(readout_ei_list != 0)[0]
+            assert np.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), "ei_list of hidden layer and readout layer must be the same when use_dale is True"
 
 
     def check_params(self):
@@ -64,21 +76,22 @@ class CTRNN(nn.Module):
         for i in self.allow_neg:
             assert type(i) == bool, "allow_neg must be a list of booleans"
         if self.use_dale and self.allow_neg != [False, False, False]:
-            print("Warning: allow_neg is ignored because use_dale is set to True")
+            print("WARNING: allow_neg is ignored because use_dale is set to True")
             self.allow_neg = [False, False, False]
 
         ## check hidden_size
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
         assert self.hidden_size > 0, "hidden_size must be a positive integer"
 
-        ## check plasticity
-        assert type(self.plasticity) == bool, "plasticity must be a boolean"
+        ## check new_synapse
+        assert type(self.new_synapse) == bool, "new_synapse must be a boolean"
 
 
     def forward(self, x):
         """
         Forwardly update network W_in -> n x W_rc -> W_out
         """
+        self.enforce_constraints()
         hidden_activity, _ = self.recurrent(x)
         output = self.readout_layer(hidden_activity.float())
         return output, hidden_activity
@@ -89,6 +102,24 @@ class CTRNN(nn.Module):
         self.readout_layer.print_layer()
 
 
-    def enforce_mask(self):
-        self.recurrent.enforce_mask()
-        self.readout_layer.enforce_mask()
+    def enforce_constraints(self):
+        self.recurrent.enforce_constraints()
+        self.readout_layer.enforce_constraints()
+
+    def save(self, path):
+        # save model and kwargs to the same file
+        assert type(path) == str, "path must be a string"
+        assert path[-4:] == ".pth", "path must end with .pth"
+        torch.save({
+            "model_state_dict": self.state_dict(),
+            "kwargs": self.kwargs_checkpoint
+        }, path)
+
+    def load(self, path):
+        # load model and kwargs from the same file
+        assert type(path) == str, "path must be a string"
+        assert path[-4:] == ".pth", "path must end with .pth"
+        checkpoint = torch.load(path)
+        self.kwargs_checkpoint = checkpoint["kwargs"]
+        self.initialize(**self.kwargs_checkpoint)
+        self.load_state_dict(checkpoint["model_state_dict"])

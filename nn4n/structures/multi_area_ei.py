@@ -11,11 +11,13 @@ class MultiAreaEI(MultiArea):
         @kwarg inter_area_connections: list of boolean, whether to have inter-area connections
             [exc_exc, exc_inh, inh_exc, inh_inh]
             default: [True, True, True, True]
+        @kwarg inh_output: whether to have inhibitory output neurons, default: True
         """
         super().__init__(**kwargs)
 
         self.exc_pct = kwargs.get("exc_pct", 0.8)
         self.inter_area_connections = kwargs.get("inter_area_connections", [True, True, True, True])
+        self.inh_output = kwargs.get("inh_output", True)
 
         self.check_parameters()
         self.generate_mask()
@@ -91,3 +93,9 @@ class MultiAreaEI(MultiArea):
                 for j in range(i+1, self.n_areas):
                     self.hidden_mask[np.ix_(self.inhibitory_neurons[i], self.inhibitory_neurons[j])] = 0
                     self.hidden_mask[np.ix_(self.inhibitory_neurons[j], self.inhibitory_neurons[i])] = 0
+
+
+        # delete connections from inhibitory neurons to output layers
+        if not self.inh_output:
+            for i in range(self.n_areas):
+                self.output_mask[:, self.inhibitory_neurons[i]] = 0
