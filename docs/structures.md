@@ -35,9 +35,9 @@ This will generate a multi-area RNN without E/I constraints. Therefore, by defau
 | area_connectivities      | `np.ndarray`               | Area-to-area connectivity matrix. If it is a list in params, it will be transformed into a numpy matrix after initialization                   |
 
 #### Forward Backward Specifications
-RNNs can be implemented in various ways, in this library, we used the
+RNNs can be implemented in various ways, in this library,
 $$s W^T + b$$
-function in the HiddenLayer forward pass, where $W$ is the connectivity matrix of the HiddenLayer and $s$ is the current HiddenLayer state.<br>
+is used in the HiddenLayer forward pass, where $W$ is the connectivity matrix of the HiddenLayer and $s$ is the current HiddenLayer state.<br>
 $W$ may not matter if your connectivity matrix is symetric. But if it's not, you might want to pay attention to the forward connections and backward connections. In the figure below, three networks (`n_areas` = 2, 3, 4) and their corresponding forward/backward connection matrix are provided. The blue regions are intra-area connectivity, the green regions are forward connections, and the red regions are backward connections.
 
 <p align="center"><img src="../img/Multi_Area.png" width="700"></p>

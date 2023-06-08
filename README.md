@@ -1,5 +1,5 @@
 # Neural Networks for Neuroscience
-Neural network has been increasingly used as a means to study both computational and theoretical neuroscience in recent years. We include some of the most commonly used the NN architectures in the research of neuroscience to ease the implementation process.
+Some of the most commonly used the NN architectures in neuroscience research are included in this project to ease the implementation process.
 
 ## Table of contents
 - [Install](#install)
@@ -29,13 +29,13 @@ pip install .
 
 ## Models
 ### CTRNN
-We implemented the standard continuour-time RNN (CTRNN). This implementation also supports adding Excitator-Inhibitory contraints proposed in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016.
+The implementation of standard continuour-time RNN (CTRNN). This implementation also supports adding Excitator-Inhibitory contraints proposed in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016.
 
 - [Docs](./docs/CTRNN.md)
 - [Examples](./examples/CTRNN.ipynb)
 
 ## Structures
-The detailed structure (e.g. whether its modular or hierarchical etc.) of any standard 3-layer RNN (as shown below) can be specified using masks. We provided easy implementations of a few RNN structures, that will generate HiddenLayer masks and its corresponding InputLayer/OutputLayer masks based on a few parameters.
+The detailed structure (e.g. whether its modular or hierarchical etc.) of any standard 3-layer RNN (as shown below) can be specified using masks in our `model` module implementation. Easy implementations of a few RNN structures is included in the `structure` module.
 
 <p align="center"><img src="./img/RNN_structure.png" width="400"></p>
 

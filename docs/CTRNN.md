@@ -6,11 +6,9 @@ This is an implementation of the standard Continuous-Time RNN. CTRNN is in the s
 
 
 ## Excitatory-Inhibitory Contrainted Continuous-Time RNN
-Our implementation of CTRNN also supports Excitatory-Inhibitory Contrainted Continuous-Time RNN (EIRNN). EIRNN is proposed by H. Francis Song, Guangyu R. Yang, and Xiao-Jing Wang in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792)
+The implementation of CTRNN also supports Excitatory-Inhibitory Contrainted Continuous-Time RNN (EIRNN). EIRNN is proposed by H. Francis Song, Guangyu R. Yang, and Xiao-Jing Wang in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792)
 
-The original [code](https://github.com/frsong/pycog) is implemented in [Theano](https://pypi.org/project/Theano/) and may be deprecated due to the unsupported Python version. Theano is no longer maintained after Jul 2020. Hence, we re-implemented the method proposed by Song et al. using PyTorch.
-
-EIRNN is implicitly included in the CTRNN class and can be enabled by setting `use_dale` to `True` and use appropriate masks.
+The original [code](https://github.com/frsong/pycog) is implemented in [Theano](https://pypi.org/project/Theano/) and may be deprecated due to the unsupported Python version. Theano is no longer maintained after Jul 2020. In this repo, the PyTorch version of EIRNN is implemented. It is implicitly included in the CTRNN class and can be enabled by setting `use_dale` to `True` and use appropriate masks.
 
 A visual illustration of the EIRNN is shown below.
 
@@ -67,7 +65,7 @@ When `use_dale` is set to true, it will automatically balance the excitatory/inh
 `new_synapse` defines whether a neuron can 'grow' new connections.<br>
 If plasiticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `new_synapse` is set to False.<br>
 Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.<br>
-Currently the `new_synapse` is enforced globally. That is, if `new_synapse` is set to be True, it will be enforced on all three layers. We will consider adding separate `new_synapse` for different layers in the future.
+Currently the `new_synapse` is enforced globally. That is, if `new_synapse` is set to be True, it will be enforced on all three layers. Separate `new_synapse` for different layers might be added in the future.
 #### Self-Connections:
 Whether a neuron can connect to itself. This is enforced along with the `new_synapse` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
 
