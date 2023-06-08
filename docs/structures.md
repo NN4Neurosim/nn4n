@@ -7,11 +7,12 @@ This module defines structures for any RNN in the standard 3-layer architectures
 Where yellow nodes are in the input layer, green nodes are in the hidden layer, and purple nodes are in the output layer.
 
 ## Table of contents
-- [Multi Area](#multiarea-examples)
-- [Multi Area EI](#multiareaei-examples)
+- [Multi Area](#multiarea)
+- [Multi Area EI](#multiareaei)
 
 ## Structures
-### `MultiArea` [Examples](../examples/MultiArea.ipynb)
+### MultiArea
+#### [Examples](../examples/MultiArea.ipynb)
 This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/output masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
 | Parameter                | Default       | Type                       | Description                                |	
@@ -43,7 +44,8 @@ $W$ may not matter if your connectivity matrix is symetric. But if it's not, you
 
 <!-- ![area_connectivities](../img/Multi_Area_Transpose.png) -->
 
-### `MultiAreaEI` [Examples](../examples/MultiArea.ipynb)
+### MultiAreaEI
+#### [Examples](../examples/MultiArea.ipynb)
 | Parameter                     | Default                 | Type                       | Description                                |
 |:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
 | ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons           |

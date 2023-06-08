@@ -1,9 +1,30 @@
-# NeuroNN
+# Neural Networks for Neuroscience
 Neural network has been increasingly used as a means to study both computational and theoretical neuroscience in recent years. We include some of the most commonly used the NN architectures in the research of neuroscience to ease the implementation process.
 
 ## Table of contents
-[CTRNN (Continuous-Time RNN)](#CTRNN)
+- [Install](#install)
+    - [Install From GitHub](#install-from-github)
+- [Models](#models)
+    - [CTRNN (Continuous-Time RNN)](#CTRNN)
+- [Structures](#structures)
+    - [Mult-Area RNN w/o EI Constraints](#singlemulti-area-rnn-wo-ei-constraints)
 
+
+## Install
+### Install from GitHub
+```
+git clone https://github.com/zhaozewang/NN4Neurosci.git
+```
+#### Install using command line
+```
+cd NN4Neurosci/
+python setup.py install
+```
+#### Install using pip
+```
+cd NN4Neurosci/
+pip install .
+```
 
 
 ## Models

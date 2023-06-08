@@ -38,7 +38,7 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 | allow_neg                | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right, InputLayer, HiddenLayer, and OutputLayer, respectively.  |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
 | ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Method to balance excitatory/inhibitory connections.                                                            |
-| new_synapse              | True         | `boolean`                  | Whether or not synapses are plastic. That is, whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
+| new_synapse              | True         | `boolean`                  | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
 | input_size               | 1             | `int`                      | Input dimension                            |
 | input_dist               | 'uniform'     | 'uniform'/'normal'         | InputLayer Distribution                    |
 | input_bias               | False         | `Boolean`                  | Use bias or not for InputLayer             |
