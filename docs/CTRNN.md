@@ -2,7 +2,7 @@
 ## Introduction
 This is an implementation of the standard Continuous-Time RNN. CTRNN is in the standard 3-layer RNN structure as depicted below:
 
-<p align="center"><img src="../../img/RNN_structure.png" width="400"></p>
+<p align="center"><img src="../img/RNN_structure.png" width="400"></p>
 
 
 ## Excitatory-Inhibitory Contrainted Continuous-Time RNN
@@ -14,7 +14,7 @@ EIRNN is implicitly included in the CTRNN class and can be enabled by setting `u
 
 A visual illustration of the EIRNN is shown below.
 
-<p align="center"><img src="../../img/EIRNN_structure.png" width="400"></p>
+<p align="center"><img src="../img/EIRNN_structure.png" width="400"></p>
 
 
 The yellow nodes denotes nodes in the input layer. The middle circle denotes the hidden layer. There are blue nodes and red nodes, representing inhibitory neurons and ecitatory neurons, respectively. The depicted network has E/I ratio of 4/1. The purple nodes are OutputLayer neurons. The network structure is as follows:
@@ -35,6 +35,7 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
 | tau                      | 1             | `float`                    | Time constant                              |
 | dt                       | 1             | `float`                    | Constant that used to discretize time      |
+| allow_neg                | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right, InputLayer, HiddenLayer, and OutputLayer, respectively.  |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
 | plasticity               | False         | `boolean`                  | Enforce plasticity or not. That is, whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
 | input_size               | 1             | `int`                      | Input dimension                            |

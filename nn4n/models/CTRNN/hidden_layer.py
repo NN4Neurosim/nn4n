@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-import utils
+import nn4n.utils as utils
 
 class HiddenLayer(nn.Module):
     def __init__(
@@ -14,6 +14,7 @@ class HiddenLayer(nn.Module):
             use_dale,
             plasticity,
             self_connections,
+            allow_neg,
             ) -> None:
         """
         Hidden layer of the RNN
@@ -25,6 +26,8 @@ class HiddenLayer(nn.Module):
             @param spec_rad: spectral radius of hidden weights
             @param mask: mask for hidden weights, used to enforce plasticity and/or dale's law
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
+            @param self_connections: allow self connections or not
+            @param allow_neg: allow negative weights or not, a boolean value
         """
         super().__init__()
         # some params are for verbose printing
@@ -35,22 +38,23 @@ class HiddenLayer(nn.Module):
         self.use_dale = use_dale
         self.plasticity = plasticity
         self.self_connections = self_connections
+        self.allow_neg = allow_neg
 
         # initialize constraints
         self.dale_mask, self.sparse_mask = None, None
         if mask is None:
-            assert not use_dale, "mask must be provided if use_dale is True"
-            assert not plasticity, "mask must be provided if plasticity is True"
+            assert not self.use_dale, "mask must be provided if use_dale is True"
+            assert not self.plasticity, "mask must be provided if plasticity is True"
         else:
-            if use_dale:
+            if self.use_dale:
                 self._init_ei_neurons(mask)
-            if plasticity:
+            if self.plasticity:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
         # whether to delete self connections
         if not self.self_connections: 
             if self.sparse_mask is None: 
                 # if mask is not provided, create a mask
-                self.sparse_mask = np.ones_like((self.hidden_size, self.hidden_size))
+                self.sparse_mask = np.ones((self.hidden_size, self.hidden_size))
             self.sparse_mask = np.where(np.eye(self.hidden_size) == 1, 0, self.sparse_mask)
             
 
@@ -85,10 +89,14 @@ class HiddenLayer(nn.Module):
         if self.dist == 'uniform':
             k = 1/self.hidden_size
             w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size, self.hidden_size))
+            if not self.allow_neg: w = np.abs(w)
         elif self.dist == 'normal':
-            w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size))
+            if self.allow_neg: 
+                w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size))
+            else:
+                w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size)) / 2 + 0.5
 
-        if self.dale:
+        if self.use_dale:
             w = self.balance_excitatory_inhibitory(w)
 
         return torch.from_numpy(w).float()
@@ -120,7 +128,7 @@ class HiddenLayer(nn.Module):
         dale_mask[dale_mask == 1] = (n_total / n_exc)
         dale_mask[dale_mask == -1] = -(n_total / n_inh)
 
-        return np.abs(w) * dale_mask
+        return w * dale_mask
 
 
     def enforce_spec_rad(self):
@@ -182,4 +190,4 @@ class HiddenLayer(nn.Module):
             "spectral_radius": np.max(np.abs(np.linalg.eigvals(self.weight.detach().numpy()))),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        utils.plot_connectivity_matrix(self.weight.detach().numpy(), "Hidden Layer")
+        utils.plot_connectivity_matrix(self.weight.detach().numpy(), "Hidden Layer", False)

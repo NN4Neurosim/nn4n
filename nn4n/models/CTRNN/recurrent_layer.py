@@ -1,10 +1,10 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from utils import *
+from nn4n.utils import *
 
-from hidden_layer import HiddenLayer
-from linear_layer import LinearLayer
+from .hidden_layer import HiddenLayer
+from .linear_layer import LinearLayer
 
 class RecurrentLayer(nn.Module):
     def __init__(
@@ -12,6 +12,7 @@ class RecurrentLayer(nn.Module):
             hidden_size,
             use_dale,
             plasticity,
+            allow_neg,
             **kwargs
         ):
         """
@@ -20,6 +21,7 @@ class RecurrentLayer(nn.Module):
             @param hidden_size: number of hidden neurons
             @param use_dale: use dale's law or not
             @param plasticity: use plasticity or not
+            @param allow_neg: allow negative weights or not, a list of 3 boolean values
 
         Keyword Arguments:
             @kwarg activation: activation function, default: "relu"
@@ -52,6 +54,7 @@ class RecurrentLayer(nn.Module):
             use_bias = kwargs.get("input_bias", False),
             dist = kwargs.get("input_dist", "uniform"),
             mask = kwargs.get("input_mask", None),
+            allow_neg = allow_neg[0]
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
@@ -62,6 +65,7 @@ class RecurrentLayer(nn.Module):
             spec_rad = kwargs.get("spec_rad", 1),
             mask = kwargs.get("hidden_mask", None),
             self_connections = kwargs.get("self_connections", False),
+            allow_neg = allow_neg[1]
         )
 
     
@@ -84,8 +88,8 @@ class RecurrentLayer(nn.Module):
         hidden_out = self.hidden_layer(self.activation(hidden)) # r(t) @ W_rec + b
         # print(hidden_out.mean(), hidden_out.max(), hidden_out.min())
         new_input = self.input_layer(input) # u(t) @ W_in
-        if self.noise > 0:
-            noise = torch.from_numpy(np.random.normal(0, self.noise, self.hidden_size))
+        if self.recurrent_noise > 0:
+            noise = torch.from_numpy(np.random.normal(0, self.recurrent_noise, self.hidden_size))
             hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input+noise)
         else:
             hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input)
@@ -116,7 +120,7 @@ class RecurrentLayer(nn.Module):
 
     def print_layer(self):
         param_dict = {
-            "recurrence_noise": self.noise,
+            "recurrent_noise": self.recurrent_noise,
             "activation": self.act,
             "alpha": self.alpha,
         }

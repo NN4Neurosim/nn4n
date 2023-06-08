@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-import utils
+import nn4n.utils as utils
 
 class LinearLayer(nn.Module):
     def __init__(
@@ -13,6 +13,7 @@ class LinearLayer(nn.Module):
             mask,
             use_dale,
             plasticity,
+            allow_neg,
         ) -> None:
         """ 
         Sparse Linear Layer
@@ -25,6 +26,7 @@ class LinearLayer(nn.Module):
             @param output_size: output size
             @param use_dale: whether to use Dale's law
             @param plasticity: whether to use plasticity
+            @param allow_neg: whether to allow negative weights, a boolean value
         """
         super().__init__()
         self.input_size = input_size
@@ -34,16 +36,17 @@ class LinearLayer(nn.Module):
         self.mask = mask
         self.use_dale = use_dale
         self.plasticity = plasticity
+        self.allow_neg = allow_neg
 
         # initialize constraints
         self.sparse_mask, self.dale_mask = None, None
         if self.mask is None:
-            assert not use_dale, "mask must be provided if use_dale is True"
-            assert not plasticity, "mask must be provided if plasticity is True"
+            assert not self.use_dale, "mask must be provided if use_dale is True"
+            assert not self.plasticity, "mask must be provided if plasticity is True"
         else:
-            if use_dale:
+            if self.use_dale:
                 self._init_ei_neurons(mask)
-            if plasticity:
+            if self.plasticity:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
 
         # generate weights
@@ -77,7 +80,7 @@ class LinearLayer(nn.Module):
             k = 1/self.input_size
             w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size, self.input_size))
             # w = np.random.uniform(-k, k, (self.output_size, self.input_size))
-            w = np.abs(w)
+            if not self.allow_neg: w = np.abs(w)
         elif self.dist == 'normal':
             w = np.random.normal(0, 1/3, (self.output_size, self.input_size))
 

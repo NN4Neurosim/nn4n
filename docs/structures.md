@@ -7,8 +7,8 @@ This module defines structures for any RNN in the standard 3-layer architectures
 Where yellow nodes are in the input layer, green nodes are in the hidden layer, and purple nodes are in the output layer.
 
 ## Table of contents
-- [Multi Area](#multiarea)
-- [Multi Area EI](#multiareaei)
+- [Multi Area](#multiarea-examples)
+- [Multi Area EI](#multiareaei-examples)
 
 ## Structures
 ### `MultiArea` [Examples](../examples/MultiArea.ipynb)
