@@ -13,7 +13,7 @@ class LinearLayer(nn.Module):
             mask,
             use_dale,
             new_synapse,
-            allow_neg,
+            allow_negative,
         ) -> None:
         """ 
         Sparse Linear Layer
@@ -26,7 +26,7 @@ class LinearLayer(nn.Module):
             @param output_size: output size
             @param use_dale: whether to use Dale's law
             @param new_synapse: whether to use new_synapse
-            @param allow_neg: whether to allow negative weights, a boolean value
+            @param allow_negative: whether to allow negative weights, a boolean value
         """
         super().__init__()
         self.input_size = input_size
@@ -36,7 +36,7 @@ class LinearLayer(nn.Module):
         self.mask = mask
         self.use_dale = use_dale
         self.new_synapse = new_synapse
-        self.allow_neg = allow_neg
+        self.allow_negative = allow_negative
 
         # initialize constraints
         self.sparse_mask, self.dale_mask = None, None
@@ -51,8 +51,7 @@ class LinearLayer(nn.Module):
 
         # generate weights
         self.weight = torch.nn.Parameter(self.generate_weight())
-        if self.use_bias: self.bias = torch.nn.Parameter(self.generate_bias())
-        else: self.bias = torch.nn.Parameter(torch.zeros(self.output_size), requires_grad=False)
+        self.bias = torch.nn.Parameter(self.generate_bias(), requires_grad=self.use_bias)
         
         # enfore constraints
         self.enforce_constraints()
@@ -87,8 +86,7 @@ class LinearLayer(nn.Module):
         if self.dist == 'uniform':
             k = 1/self.input_size
             w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size, self.input_size))
-            # w = np.random.uniform(-k, k, (self.output_size, self.input_size))
-            if not self.allow_neg: w = np.abs(w)
+            if not self.allow_negative: w = np.abs(w)
         elif self.dist == 'normal':
             w = np.random.normal(0, 1/3, (self.output_size, self.input_size))
 
@@ -97,6 +95,23 @@ class LinearLayer(nn.Module):
 
         return torch.from_numpy(w).float()
 
+
+    def generate_bias(self):
+        """ Generate random bias """
+        if self.use_bias:
+            if self.dist == 'uniform':
+                k = 1/self.input_size
+                b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size))
+            elif self.dist == 'normal':
+                b = np.random.normal(0, 1/3, (self.output_size))
+            
+            if self.sparse_mask is not None:
+                b = self.rescale_weight_bias(b)
+        else:
+            b = np.zeros(self.output_size)
+
+        return torch.from_numpy(b).float()
+    
 
     def rescale_weight_bias(self, w):
         """ Rescale weight or bias """
@@ -108,21 +123,6 @@ class LinearLayer(nn.Module):
             n_total = self.output_size * self.input_size
             scale = (n_total / n_entries)
         return w * scale
-
-
-    def generate_bias(self):
-        """ Generate random bias """
-        if self.dist == 'uniform':
-            k = 1/self.input_size
-            b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size))
-            # b = np.abs(b)
-        elif self.dist == 'normal':
-            b = np.random.normal(0, 1/3, (self.output_size))
-        
-        if self.sparse_mask is not None:
-            b = self.rescale_weight_bias(b)
-
-        return torch.from_numpy(b).float()
 
 
     def enforce_constraints(self):
@@ -152,7 +152,6 @@ class LinearLayer(nn.Module):
 
     def forward(self, x):
         """ Forward Pass """
-        self.enforce_constraints()
         result = x.float() @ self.weight.T + self.bias
         return result
     

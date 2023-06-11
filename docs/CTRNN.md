@@ -33,10 +33,10 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
 | tau                      | 1             | `float`                    | Time constant                              |
 | dt                       | 1             | `float`                    | Constant that used to discretize time      |
-| allow_neg                | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right, InputLayer, HiddenLayer, and OutputLayer, respectively.  |
+| allow_negative           | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right: InputLayer, HiddenLayer, and OutputLayer, respectively.  |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
-| ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Method to balance excitatory/inhibitory connections.                                                            |
-| new_synapse              | True         | `boolean`                  | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                             |
+| ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                    |
+| new_synapse              | True         | `boolean`                  | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                                                               |
 | input_size               | 1             | `int`                      | Input dimension                            |
 | input_dist               | 'uniform'     | 'uniform'/'normal'         | InputLayer Distribution                    |
 | input_bias               | False         | `Boolean`                  | Use bias or not for InputLayer             |
@@ -73,7 +73,7 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 ## Todos
 - [ ] Load in connectivity matrices
 - [ ] Test different activation functions
-- [ ] Bias when using dale's law?
+- [x] Bias when using dale's law?
 - [ ] If the masks are not set, there need default values.
 - [ ] Potentially user can choose to enfore `new_synapse` or not for a specific layer
 - [x] Re-write Dale's law such that it can still work when `new_synapse` is not enforced.

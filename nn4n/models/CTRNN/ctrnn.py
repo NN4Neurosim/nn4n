@@ -14,7 +14,8 @@ class CTRNN(nn.Module):
             @kwarg use_dale: use dale's law or not
             @kwarg new_synapse: use new_synapse or not
             @kwarg hidden_size: number of hidden neurons
-            @kwarg allow_neg: allow negative weights or not
+            @kwarg allow_negative: allow negative weights or not
+            @kwarg training: training or not
 
             @kwarg output_size: number of output neurons
             @kwarg output_dist: distribution of output layer weights
@@ -34,7 +35,8 @@ class CTRNN(nn.Module):
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapse = kwargs.pop("new_synapse", True)
         self.hidden_size = kwargs.pop("hidden_size", 100)
-        self.allow_neg = kwargs.pop("allow_neg", [True, True, True])
+        self.allow_negative = kwargs.pop("allow_negative", [True, True, True])
+        self.training = kwargs.get("training", True)
 
         self.check_params()
 
@@ -43,7 +45,7 @@ class CTRNN(nn.Module):
             hidden_size = self.hidden_size,
             use_dale = self.use_dale,
             new_synapse = self.new_synapse,
-            allow_neg = self.allow_neg,
+            allow_negative = self.allow_negative,
             **kwargs
         )
         self.readout_layer = LinearLayer(
@@ -54,7 +56,7 @@ class CTRNN(nn.Module):
             use_bias = kwargs.get("output_bias", False),
             mask = kwargs.get("output_mask", None),
             new_synapse = self.new_synapse,
-            allow_neg = self.allow_neg[2]
+            allow_negative = self.allow_negative[2]
         )
 
         if self.use_dale:
@@ -68,16 +70,16 @@ class CTRNN(nn.Module):
         """
         Check parameters
         """
-        ## check allow_neg
+        ## check use_dale
         assert type(self.use_dale) == bool, "use_dale must be a boolean"
 
-        ## check allow_neg
-        assert len(self.allow_neg) == 3, "allow_neg must be a list of length 3"
-        for i in self.allow_neg:
-            assert type(i) == bool, "allow_neg must be a list of booleans"
-        if self.use_dale and self.allow_neg != [False, False, False]:
-            print("WARNING: allow_neg is ignored because use_dale is set to True")
-            self.allow_neg = [False, False, False]
+        ## check allow_negative
+        assert len(self.allow_negative) == 3, "allow_negative must be a list of length 3"
+        for i in self.allow_negative:
+            assert type(i) == bool, "allow_negative must be a list of booleans"
+        if self.use_dale and self.allow_negative != [False, False, False]:
+            print("WARNING: allow_negative is ignored because use_dale is set to True")
+            self.allow_negative = [False, False, False]
 
         ## check hidden_size
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
@@ -91,7 +93,9 @@ class CTRNN(nn.Module):
         """
         Forwardly update network W_in -> n x W_rc -> W_out
         """
-        self.enforce_constraints()
+        # skip constraints if not training
+        if self.training:
+            self.enforce_constraints()
         hidden_activity, _ = self.recurrent(x)
         output = self.readout_layer(hidden_activity.float())
         return output, hidden_activity
@@ -118,7 +122,7 @@ class CTRNN(nn.Module):
     def load(self, path):
         # load model and kwargs from the same file
         assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth", "path must end with .pth"
+        assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
         checkpoint = torch.load(path)
         self.kwargs_checkpoint = checkpoint["kwargs"]
         self.initialize(**self.kwargs_checkpoint)

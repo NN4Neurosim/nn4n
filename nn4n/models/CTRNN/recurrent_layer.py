@@ -12,7 +12,7 @@ class RecurrentLayer(nn.Module):
             hidden_size,
             use_dale,
             new_synapse,
-            allow_neg,
+            allow_negative,
             **kwargs
         ):
         """
@@ -21,7 +21,7 @@ class RecurrentLayer(nn.Module):
             @param hidden_size: number of hidden neurons
             @param use_dale: use dale's law or not
             @param new_synapse: use new_synapse or not
-            @param allow_neg: allow negative weights or not, a list of 3 boolean values
+            @param allow_negative: allow negative weights or not, a list of 3 boolean values
 
         Keyword Arguments:
             @kwarg activation: activation function, default: "relu"
@@ -56,7 +56,7 @@ class RecurrentLayer(nn.Module):
             use_bias = kwargs.get("input_bias", False),
             dist = kwargs.get("input_dist", "uniform"),
             mask = kwargs.get("input_mask", None),
-            allow_neg = allow_neg[0]
+            allow_negative = allow_negative[0]
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
@@ -67,7 +67,7 @@ class RecurrentLayer(nn.Module):
             spec_rad = kwargs.get("spec_rad", 1),
             mask = kwargs.get("hidden_mask", None),
             self_connections = kwargs.get("self_connections", False),
-            allow_neg = allow_neg[1],
+            allow_negative = allow_negative[1],
             ei_balance = kwargs.get("ei_balance", "neuron")
         )
 

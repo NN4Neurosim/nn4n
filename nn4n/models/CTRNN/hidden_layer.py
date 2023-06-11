@@ -14,7 +14,7 @@ class HiddenLayer(nn.Module):
             use_dale,
             new_synapse,
             self_connections,
-            allow_neg,
+            allow_negative,
             ei_balance,
             ) -> None:
         """
@@ -28,7 +28,7 @@ class HiddenLayer(nn.Module):
             @param mask: mask for hidden weights, used to enforce new_synapse and/or dale's law
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
             @param self_connections: allow self connections or not
-            @param allow_neg: allow negative weights or not, a boolean value
+            @param allow_negative: allow negative weights or not, a boolean value
             @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
         """
         super().__init__()
@@ -40,7 +40,7 @@ class HiddenLayer(nn.Module):
         self.use_dale = use_dale
         self.new_synapse = new_synapse
         self.self_connections = self_connections
-        self.allow_neg = allow_neg
+        self.allow_negative = allow_negative
         self.ei_balance = ei_balance
 
         # initialize constraints
@@ -62,6 +62,7 @@ class HiddenLayer(nn.Module):
             
         # generate weights and bias
         self.weight = self.generate_weight()
+        self.bias = self.generate_bias()
         
 
         # NOTE: weight are np.ndarray before that, but now they are torch.Tensor
@@ -71,8 +72,7 @@ class HiddenLayer(nn.Module):
 
         # parameterize the weights and bias
         self.weight = nn.Parameter(self.weight.float())
-        if self.use_bias: self.bias = torch.nn.Parameter(self.generate_bias())
-        else: self.bias = torch.nn.Parameter(torch.zeros(self.hidden_size), requires_grad=False)
+        self.bias = torch.nn.Parameter(self.bias.float(), requires_grad=self.use_bias)
 
 
 
@@ -102,9 +102,9 @@ class HiddenLayer(nn.Module):
         if self.dist == 'uniform':
             k = 1/self.hidden_size
             w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size, self.hidden_size))
-            if not self.allow_neg: w = np.abs(w)
+            if not self.allow_negative: w = np.abs(w)
         elif self.dist == 'normal':
-            if self.allow_neg: 
+            if self.allow_negative: 
                 w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size))
             else:
                 w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size)) / 2 + 0.5
@@ -113,18 +113,20 @@ class HiddenLayer(nn.Module):
     
 
     def generate_bias(self):
-        if self.dist == 'uniform':
-            k = 1/self.hidden_size
-            b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size))
-        elif self.dist == 'normal':
-            b = np.random.normal(0, 1, (self.hidden_size))
+        if self.use_bias:
+            if self.dist == 'uniform':
+                k = 1/self.hidden_size
+                b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size))
+            elif self.dist == 'normal':
+                b = np.random.normal(0, 1/3, (self.hidden_size))
+        else:
+            b = np.zeros((self.hidden_size))
 
         return torch.from_numpy(b).float()
 
 
     def forward(self, x):
         """ Forward """
-        self.enforce_constraints()
         return x.float() @ self.weight.T + self.bias
 
 
@@ -150,6 +152,7 @@ class HiddenLayer(nn.Module):
     def enforce_spec_rad(self):
         """ Enforce spectral radius """
         scale = self.spec_rad / np.max(np.abs(np.linalg.eigvals(self.weight)))
+        if self.use_bias: self.bias *= scale
         self.weight *= scale
 
 
