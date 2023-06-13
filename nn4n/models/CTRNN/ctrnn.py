@@ -14,13 +14,10 @@ class CTRNN(nn.Module):
             @kwarg use_dale: use dale's law or not
             @kwarg new_synapse: use new_synapse or not
             @kwarg hidden_size: number of hidden neurons
+            @kwarg output_size: number of output neurons
             @kwarg allow_negative: allow negative weights or not
             @kwarg training: training or not
-
-            @kwarg output_size: number of output neurons
-            @kwarg output_dist: distribution of output layer weights
-            @kwarg output_bias: use bias for output layer or not
-            @kwarg output_mask: mask for output layer, optional
+            @kwarg layer_masks: masks for each layer, a list of 3 masks
         """
         super().__init__()
         self.kwargs_checkpoint = kwargs.copy()
@@ -37,6 +34,9 @@ class CTRNN(nn.Module):
         self.hidden_size = kwargs.pop("hidden_size", 100)
         self.allow_negative = kwargs.pop("allow_negative", True)
         self.ei_balance = kwargs.pop("ei_balance", "neuron")
+        self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
+        self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
+        self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
         self.training = kwargs.get("training", True)
 
         self.check_parameters()
@@ -48,16 +48,19 @@ class CTRNN(nn.Module):
             new_synapse = self.new_synapse,
             allow_negative = self.allow_negative,
             ei_balance = self.ei_balance,
+            layer_distributions = self.layer_distributions,
+            layer_biases = self.layer_biases,
+            layer_masks = self.layer_masks,
             **kwargs
         )
         self.readout_layer = LinearLayer(
             input_size = self.hidden_size,
             use_dale = self.use_dale,
             output_size = kwargs.get("output_size", 1),
-            dist = kwargs.get("output_dist", "uniform"),
-            use_bias = kwargs.get("output_bias", False),
-            mask = kwargs.get("output_mask", None),
-            new_synapse = self.new_synapse,
+            dist = self.layer_distributions[2],
+            use_bias = self.layer_biases[2],
+            mask = self.layer_masks[2],
+            new_synapse = self.new_synapse[2],
             allow_negative = self.allow_negative[2],
             ei_balance = self.ei_balance,
         )

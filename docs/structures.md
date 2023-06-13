@@ -1,6 +1,6 @@
 # RNN structures
 ## Introduction
-This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in other <br>
+This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in the `models` module<br>
 
 <p align="center"><img src="../img/RNN_structure.png" width="400"></p>
 

@@ -14,6 +14,9 @@ class RecurrentLayer(nn.Module):
             new_synapse,
             allow_negative,
             ei_balance,
+            layer_distributions,
+            layer_biases,
+            layer_masks,
             **kwargs
         ):
         """
@@ -24,6 +27,8 @@ class RecurrentLayer(nn.Module):
             @param new_synapse: use new_synapse or not
             @param allow_negative: allow negative weights or not, a list of 3 boolean values
             @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
+            @param layer_distributions: distribution of weights for each layer, a list of 3 strings
+            @param layer_biases: use bias or not for each layer, a list of 3 boolean values
 
         Keyword Arguments:
             @kwarg activation: activation function, default: "relu"
@@ -33,13 +38,8 @@ class RecurrentLayer(nn.Module):
             @kwarg ei_balance: method to balance E/I neurons, default: "neuron"
 
             @kwarg input_size: number of input neurons, default: 1
-            @kwarg input_dist: distribution of input layer weights, default: "uniform"
-            @kwarg input_bias: use bias for input layer or not, default: False
-            @kwarg input_mask: mask for input layer, optional, default: None
 
             @kwarg hidden_dist: distribution of hidden layer weights, default: "normal"
-            @kwarg hidden_bias: use bias for hidden layer or not, default: False
-            @kwarg hidden_mask: mask for hidden layer, optional, default: None
             @kwarg self_connections: allow self connections or not, default: False
         """
         super().__init__()
@@ -50,26 +50,29 @@ class RecurrentLayer(nn.Module):
         self.recurrent_noise = kwargs.get("recurrent_noise", 0.05)
         self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
         self.ei_balance = ei_balance
+        self.layer_distributions = layer_distributions
+        self.layer_biases = layer_biases
+        self.layer_masks = layer_masks
 
         self.input_layer = LinearLayer(
             use_dale = False,
             new_synapse = new_synapse[0],
             output_size = self.hidden_size,
             input_size = kwargs.get("input_size", 1),
-            use_bias = kwargs.get("input_bias", False),
-            dist = kwargs.get("input_dist", "uniform"),
-            mask = kwargs.get("input_mask", None),
+            use_bias = self.layer_biases[0],
+            dist = self.layer_distributions[0],
+            mask = self.layer_masks[0],
             allow_negative = allow_negative[0],
-            ei_balance = None,
+            ei_balance = self.ei_balance,
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
             new_synapse = new_synapse[1],
             use_dale = self.use_dale,
-            dist = kwargs.get("hidden_dist", "normal"),
-            use_bias = kwargs.get("hidden_bias", False),
+            dist = self.layer_distributions[1],
+            use_bias = self.layer_biases[1],
             spec_rad = kwargs.get("spec_rad", 1),
-            mask = kwargs.get("hidden_mask", None),
+            mask = self.layer_masks[1],
             self_connections = kwargs.get("self_connections", False),
             allow_negative = allow_negative[1],
             ei_balance = self.ei_balance,

@@ -37,22 +37,16 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
 | ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                    |
 | new_synapse              | True         | `boolean`/`list`             | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements                   |
-| input_size               | 1             | `int`                      | Input dimension                            |
-| input_dist               | 'uniform'     | 'uniform'/'normal'         | InputLayer Distribution                    |
-| input_bias               | False         | `Boolean`                  | Use bias or not for InputLayer             |
-| input_mask               | `None`        | `np.ndarray`               | InputLayer mask for new_synapse/dale's law. Must has the same dimension as the input weight. See [constraints and masks](#constraints-and-masks).               |
 | recurrent_noise          | 0.05          | `float`                    | Zero-mean Gaussian recurrent noise         |
 | self_connections         | False         | `boolean`                  | Whether a neuron can connect to itself     |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'    | Activation function                        |
 | spec_rad                 | 1             | `float`                    | HiddenLayer spectral radius                |
+| input_size               | 1             | `int`                      | Input dimension                            |
 | hidden_size              | 100           | `int`                      | Number of hidden nodes                     |
-| hidden_dist              | 'normal'      | 'uniform'/'normal'         | HiddenLayer Distribution                   |
-| hidden_bias              | False         | `boolean`                  | Use bias or not for HiddenLayer            |
-| hidden_mask              | `None`        | `np.ndarray`               | HiddenLayer mask for new_synapse/dale's law. Must has the same dimension as the hidden weight. See [constraints and masks](#constraints-and-masks).              |
 | output_size              | 1             | `int`                      | Output dimension                           |
-| output_dist              | 'uniform'     | 'uniform'/'normal'         | OutputLayer Distribution                   |
-| output_bias              | False         | `boolean`                  | Use bias or not for OutputLayer            |
-| output_mask              | `None`        | `np.ndarray`               | OutputLayer mask for new_synapse/dale's law. Must has the same dimension as the output weight. See [constraints and masks](#constraints-and-masks).              |
+| layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and OutputLayer, respectively.       |
+| layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and OutputLayer, respectively. |
+| layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapse/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Output weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.              |
 
 
 ### Constraints and masks
@@ -78,7 +72,7 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 - [x] Re-write Dale's law such that it can still work when `new_synapse` is not enforced.
 - [x] Can InputLayer and OutputLayer weights be negative when Dale's law enforced? checked.
 - [x] Check if bias is not change when use_bias = False
-- [ ] Merge hidden_bias, input_bias, output_bias to a single parameter
-- [ ] Merge hidden_dist, input_dist, output_dist to a single parameter
+- [x] Merge hidden_bias, input_bias, output_bias to a single parameter
+- [x] Merge hidden_dist, input_dist, output_dist to a single parameter
 - [ ] Check different exc_pct
 - [ ] Consider to design 'allow_negative' better so that it won't be so verbotic

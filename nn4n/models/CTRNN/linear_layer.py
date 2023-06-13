@@ -42,6 +42,7 @@ class LinearLayer(nn.Module):
         self.allow_negative = allow_negative
         self.ei_balance = ei_balance
 
+
         # initialize constraints
         self.sparse_mask, self.dale_mask = None, None
         if self.mask is None:
@@ -82,12 +83,14 @@ class LinearLayer(nn.Module):
         scale_mat = np.ones_like(self.weight)
         if self.ei_balance == 'neuron':
             exc_pct = np.count_nonzero(self.ei_list == 1.0) / self.hidden_size
+            if exc_pct == 0 or exc_pct == 1: return # avoid division by zero
             scale_mat[:, self.ei_list == 1] = 1 / exc_pct
             scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
         elif self.ei_balance == 'synapse':
             exc_syn = np.count_nonzero(self.weight > 0)
             inh_syn = np.count_nonzero(self.weight < 0)
             exc_pct = exc_syn / (exc_syn + inh_syn)
+            if exc_pct == 0 or exc_pct == 1: return # avoid division by zero
             scale_mat[self.weight > 0] = 1 / exc_pct
             scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
         else:
