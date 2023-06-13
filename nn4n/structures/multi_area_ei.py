@@ -65,6 +65,7 @@ class MultiAreaEI(MultiArea):
         """
         for i in range(self.n_areas):
             self.hidden_mask[:, self.inhibitory_neurons[i]] *= -1
+            self.output_mask[:, self.inhibitory_neurons[i]] *= -1
 
         # remove exc_exc connections between areas
         if not self.inter_area_connections[0]:

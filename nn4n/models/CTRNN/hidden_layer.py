@@ -50,7 +50,7 @@ class HiddenLayer(nn.Module):
             assert self.new_synapse, "mask must be provided if synapses are not plastic"
         else:
             if self.use_dale:
-                self._init_ei_neurons(mask)
+                self.init_dale_mask(mask)
             if not self.new_synapse:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
         # whether to delete self connections
@@ -75,8 +75,7 @@ class HiddenLayer(nn.Module):
         self.bias = torch.nn.Parameter(self.bias.float(), requires_grad=self.use_bias)
 
 
-
-    def _init_ei_neurons(self, mask):
+    def init_dale_mask(self, mask):
         """ initialize settings required for Dale's law """
         # Dale's law only applies to output edges
         # create a ei_list to store whether a neuron's output edges are all positive or all negative
@@ -130,23 +129,23 @@ class HiddenLayer(nn.Module):
         return x.float() @ self.weight.T + self.bias
 
 
-    def balance_excitatory_inhibitory(self, w):
+    def balance_excitatory_inhibitory(self):
         """ Balance excitatory and inhibitory weights """
-        scale_mat = np.ones((self.hidden_size, self.hidden_size))
+        scale_mat = np.ones_like(self.weight)
         if self.ei_balance == 'neuron':
             exc_pct = np.count_nonzero(self.ei_list == 1.0) / self.hidden_size
             scale_mat[:, self.ei_list == 1] = 1 / exc_pct
             scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
         elif self.ei_balance == 'synapse':
-            exc_syn = np.count_nonzero(w > 0)
-            inh_syn = np.count_nonzero(w < 0)
+            exc_syn = np.count_nonzero(self.weight > 0)
+            inh_syn = np.count_nonzero(self.weight < 0)
             exc_pct = exc_syn / (exc_syn + inh_syn)
-            scale_mat[w > 0] = 1 / exc_pct
-            scale_mat[w < 0] = 1 / (1 - exc_pct)
+            scale_mat[self.weight > 0] = 1 / exc_pct
+            scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
         else:
             assert False, "ei_balance must be either 'neuron' or 'synapse'"
 
-        return w * scale_mat
+        self.weight *= scale_mat
 
 
     def enforce_spec_rad(self):
@@ -163,7 +162,7 @@ class HiddenLayer(nn.Module):
         """
         if self.dale_mask is not None:
             self.weight *= self.dale_mask
-            self.weight = self.balance_excitatory_inhibitory(self.weight)
+            self.balance_excitatory_inhibitory()
         if self.sparse_mask is not None:
             self.weight *= self.sparse_mask
 

@@ -35,10 +35,11 @@ class CTRNN(nn.Module):
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapse = kwargs.pop("new_synapse", True)
         self.hidden_size = kwargs.pop("hidden_size", 100)
-        self.allow_negative = kwargs.pop("allow_negative", [True, True, True])
+        self.allow_negative = kwargs.pop("allow_negative", True)
+        self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.training = kwargs.get("training", True)
 
-        self.check_params()
+        self.check_parameters()
 
         # layers
         self.recurrent = RecurrentLayer(
@@ -46,6 +47,7 @@ class CTRNN(nn.Module):
             use_dale = self.use_dale,
             new_synapse = self.new_synapse,
             allow_negative = self.allow_negative,
+            ei_balance = self.ei_balance,
             **kwargs
         )
         self.readout_layer = LinearLayer(
@@ -56,7 +58,8 @@ class CTRNN(nn.Module):
             use_bias = kwargs.get("output_bias", False),
             mask = kwargs.get("output_mask", None),
             new_synapse = self.new_synapse,
-            allow_negative = self.allow_negative[2]
+            allow_negative = self.allow_negative[2],
+            ei_balance = self.ei_balance,
         )
 
         if self.use_dale:
@@ -66,20 +69,12 @@ class CTRNN(nn.Module):
             assert np.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), "ei_list of hidden layer and readout layer must be the same when use_dale is True"
 
 
-    def check_params(self):
+    def check_parameters(self):
         """
         Check parameters
         """
         ## check use_dale
         assert type(self.use_dale) == bool, "use_dale must be a boolean"
-
-        ## check allow_negative
-        assert len(self.allow_negative) == 3, "allow_negative must be a list of length 3"
-        for i in self.allow_negative:
-            assert type(i) == bool, "allow_negative must be a list of booleans"
-        if self.use_dale and self.allow_negative != [False, False, False]:
-            print("WARNING: allow_negative is ignored because use_dale is set to True")
-            self.allow_negative = [False, False, False]
 
         ## check hidden_size
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
@@ -87,6 +82,30 @@ class CTRNN(nn.Module):
 
         ## check new_synapse
         assert type(self.new_synapse) == bool, "new_synapse must be a boolean"
+
+        ## check allow_negative
+        if type(self.allow_negative) == bool:
+            self.allow_negative = [self.allow_negative] * 3
+        elif type(self.allow_negative) == list:
+            assert len(self.allow_negative) == 3, "allow_negative must be a list of length 3"
+            for i in self.allow_negative:
+                assert type(i) == bool, "allow_negative must be a list of booleans"
+        else:
+            raise ValueError("allow_negative must be a boolean or a list of booleans")
+        if self.use_dale and self.allow_negative != [False, False, False]:
+            print("WARNING: allow_negative is ignored because use_dale is set to True")
+            self.allow_negative = [False, False, False]
+
+        ## check new_synapse
+        if type(self.new_synapse) == bool:
+            self.new_synapse = [self.new_synapse] * 3
+        elif type(self.new_synapse) == list:
+            assert len(self.new_synapse) == 3, "new_synapse must be a list of length 3"
+            for i in self.new_synapse:
+                assert type(i) == bool, "new_synapse must be a list of booleans"
+        else:
+            raise ValueError("new_synapse must be a boolean or a list of booleans")
+
 
 
     def forward(self, x):

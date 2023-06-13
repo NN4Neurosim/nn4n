@@ -33,10 +33,10 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
 | tau                      | 1             | `float`                    | Time constant                              |
 | dt                       | 1             | `float`                    | Constant that used to discretize time      |
-| allow_negative           | [True, True, True] | `list`                | Allow negative values or not in each layer. From left to right: InputLayer, HiddenLayer, and OutputLayer, respectively.  |
+| allow_negative           | True          | `boolean`/`list`      | Allow negative values or not in each layer.  If its a list, must have precisely three elements                   |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
 | ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                    |
-| new_synapse              | True         | `boolean`                  | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks).                                                               |
+| new_synapse              | True         | `boolean`/`list`             | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements                   |
 | input_size               | 1             | `int`                      | Input dimension                            |
 | input_dist               | 'uniform'     | 'uniform'/'normal'         | InputLayer Distribution                    |
 | input_bias               | False         | `Boolean`                  | Use bias or not for InputLayer             |
@@ -64,8 +64,7 @@ When `use_dale` is set to true, it will automatically balance the excitatory/inh
 #### new_synapse:
 `new_synapse` defines whether a neuron can 'grow' new connections.<br>
 If plasiticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `new_synapse` is set to False.<br>
-Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.<br>
-Currently the `new_synapse` is enforced globally. That is, if `new_synapse` is set to be True, it will be enforced on all three layers. Separate `new_synapse` for different layers might be added in the future.
+Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.
 #### Self-Connections:
 Whether a neuron can connect to itself. This is enforced along with the `new_synapse` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
 
@@ -75,6 +74,11 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 - [ ] Test different activation functions
 - [x] Bias when using dale's law?
 - [ ] If the masks are not set, there need default values.
-- [ ] Potentially user can choose to enfore `new_synapse` or not for a specific layer
+- [x] Potentially user can choose to enfore `new_synapse` or not for a specific layer
 - [x] Re-write Dale's law such that it can still work when `new_synapse` is not enforced.
-- [ ] Can InputLayer and OutputLayer weights be negative when Dale's law enforced?
+- [x] Can InputLayer and OutputLayer weights be negative when Dale's law enforced? checked.
+- [x] Check if bias is not change when use_bias = False
+- [ ] Merge hidden_bias, input_bias, output_bias to a single parameter
+- [ ] Merge hidden_dist, input_dist, output_dist to a single parameter
+- [ ] Check different exc_pct
+- [ ] Consider to design 'allow_negative' better so that it won't be so verbotic

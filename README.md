@@ -42,12 +42,13 @@ The detailed structure (e.g. whether its modular or hierarchical etc.) of any st
 ### Single/Multi-Area RNN w/o EI Constraints
 The HiddenLayer of a RNN could be a whole module or could be splitted into few modules. The implementation of both Single-Area RNN and Multi-Area RNN can be easily achieved using the [MultiArea](./nn4n/structures/multi_area.py) class. An Multi-Area RNN that supports E/I constraints is also included in [MultiAreaEI](./nn4n/structures/multi_area_ei.py) class.
 
-- [Docs](./docs/structures.md/)
+- [Docs](./docs/structures.md)
 - [Examples](./examples/MultiArea.ipynb)
 
 
 ## Criterion
-Under development
+### Song-Yang Loss function
+Loss function proposed in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016.
 
 ## Trainer
 Under development

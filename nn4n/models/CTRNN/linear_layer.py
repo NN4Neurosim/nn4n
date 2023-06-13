@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 import nn4n.utils as utils
+import matplotlib.pyplot as plt
 
 class LinearLayer(nn.Module):
     def __init__(
@@ -14,6 +15,7 @@ class LinearLayer(nn.Module):
             use_dale,
             new_synapse,
             allow_negative,
+            ei_balance,
         ) -> None:
         """ 
         Sparse Linear Layer
@@ -27,6 +29,7 @@ class LinearLayer(nn.Module):
             @param use_dale: whether to use Dale's law
             @param new_synapse: whether to use new_synapse
             @param allow_negative: whether to allow negative weights, a boolean value
+            @param ei_balance: method to balance E/I neurons, default: "neuron"
         """
         super().__init__()
         self.input_size = input_size
@@ -37,6 +40,7 @@ class LinearLayer(nn.Module):
         self.use_dale = use_dale
         self.new_synapse = new_synapse
         self.allow_negative = allow_negative
+        self.ei_balance = ei_balance
 
         # initialize constraints
         self.sparse_mask, self.dale_mask = None, None
@@ -45,19 +49,54 @@ class LinearLayer(nn.Module):
             assert self.new_synapse, "mask must be provided if synapses are not plastic"
         else:
             if self.use_dale:
-                self._init_ei_neurons(mask)
+                self.init_dale_mask(mask)
             if not self.new_synapse:
                 self.sparse_mask = np.where(mask == 0, 0, 1)
 
         # generate weights
-        self.weight = torch.nn.Parameter(self.generate_weight())
-        self.bias = torch.nn.Parameter(self.generate_bias(), requires_grad=self.use_bias)
+        self.weight = self.generate_weight()
+        self.bias = self.generate_bias()
         
         # enfore constraints
-        self.enforce_constraints()
+        self.init_constraints()
+
+        # convert weight and bias to torch tensor
+        self.weight = nn.Parameter(torch.from_numpy(self.weight).float())
+        self.bias = nn.Parameter(torch.from_numpy(self.bias).float(), requires_grad=self.use_bias)
 
 
-    def _init_ei_neurons(self, mask):
+    def init_constraints(self):
+        """
+        Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
+        It will also balance excitatory and inhibitory neurons
+        """
+        if self.dale_mask is not None:
+            self.weight *= self.dale_mask
+            self.balance_excitatory_inhibitory()
+        if self.sparse_mask is not None:
+            self.weight *= self.sparse_mask
+
+
+    def balance_excitatory_inhibitory(self):
+        """ Balance excitatory and inhibitory weights """
+        scale_mat = np.ones_like(self.weight)
+        if self.ei_balance == 'neuron':
+            exc_pct = np.count_nonzero(self.ei_list == 1.0) / self.hidden_size
+            scale_mat[:, self.ei_list == 1] = 1 / exc_pct
+            scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
+        elif self.ei_balance == 'synapse':
+            exc_syn = np.count_nonzero(self.weight > 0)
+            inh_syn = np.count_nonzero(self.weight < 0)
+            exc_pct = exc_syn / (exc_syn + inh_syn)
+            scale_mat[self.weight > 0] = 1 / exc_pct
+            scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
+        else:
+            assert False, "ei_balance must be either 'neuron' or 'synapse'"
+
+        self.weight *= scale_mat
+
+
+    def init_dale_mask(self, mask):
         """ initialize settings required for Dale's law """
         # Dale's law only applies to output edges
         # create a ei_list to store whether a neuron's output edges are all positive or all negative
@@ -76,9 +115,9 @@ class LinearLayer(nn.Module):
         self.ei_list = ei_list
         
         # generate mask for Dale's law
-        dales_mask = np.ones(mask.shape)
-        dales_mask[:, self.ei_list == -1] = -1
-        self.dales_mask = dales_mask
+        dale_mask = np.ones(mask.shape)
+        dale_mask[:, self.ei_list == -1] = -1
+        self.dale_mask = dale_mask
 
 
     def generate_weight(self):
@@ -93,7 +132,7 @@ class LinearLayer(nn.Module):
         if self.sparse_mask is not None:
             w = self.rescale_weight_bias(w)
 
-        return torch.from_numpy(w).float()
+        return w
 
 
     def generate_bias(self):
@@ -110,7 +149,7 @@ class LinearLayer(nn.Module):
         else:
             b = np.zeros(self.output_size)
 
-        return torch.from_numpy(b).float()
+        return b
     
 
     def rescale_weight_bias(self, w):

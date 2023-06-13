@@ -13,6 +13,7 @@ class RecurrentLayer(nn.Module):
             use_dale,
             new_synapse,
             allow_negative,
+            ei_balance,
             **kwargs
         ):
         """
@@ -22,6 +23,7 @@ class RecurrentLayer(nn.Module):
             @param use_dale: use dale's law or not
             @param new_synapse: use new_synapse or not
             @param allow_negative: allow negative weights or not, a list of 3 boolean values
+            @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
 
         Keyword Arguments:
             @kwarg activation: activation function, default: "relu"
@@ -47,20 +49,22 @@ class RecurrentLayer(nn.Module):
         self.set_activation(kwargs.get("activation", "relu"))
         self.recurrent_noise = kwargs.get("recurrent_noise", 0.05)
         self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
+        self.ei_balance = ei_balance
 
         self.input_layer = LinearLayer(
-            use_dale = self.use_dale,
-            new_synapse = new_synapse,
+            use_dale = False,
+            new_synapse = new_synapse[0],
             output_size = self.hidden_size,
             input_size = kwargs.get("input_size", 1),
             use_bias = kwargs.get("input_bias", False),
             dist = kwargs.get("input_dist", "uniform"),
             mask = kwargs.get("input_mask", None),
-            allow_negative = allow_negative[0]
+            allow_negative = allow_negative[0],
+            ei_balance = None,
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
-            new_synapse = new_synapse,
+            new_synapse = new_synapse[1],
             use_dale = self.use_dale,
             dist = kwargs.get("hidden_dist", "normal"),
             use_bias = kwargs.get("hidden_bias", False),
@@ -68,7 +72,7 @@ class RecurrentLayer(nn.Module):
             mask = kwargs.get("hidden_mask", None),
             self_connections = kwargs.get("self_connections", False),
             allow_negative = allow_negative[1],
-            ei_balance = kwargs.get("ei_balance", "neuron")
+            ei_balance = self.ei_balance,
         )
 
     
