@@ -1,6 +1,6 @@
-# RNN structures
+# RNN structure(s)
 ## Introduction
-This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in the `models` module<br>
+This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in the `model` module<br>
 
 <p align="center"><img src="../img/RNN_structure.png" width="400"></p>
 
@@ -10,7 +10,7 @@ Where yellow nodes are in the input layer, green nodes are in the hidden layer, 
 - [Multi Area](#multiarea)
 - [Multi Area EI](#multiareaei)
 
-## Structures
+## Structure
 ### MultiArea
 #### [Examples](../examples/MultiArea.ipynb)
 This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/output masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.

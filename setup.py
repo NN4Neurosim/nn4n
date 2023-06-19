@@ -1,4 +1,4 @@
-# package setup.py
+# created By: Zhaoze Wang
 from setuptools import setup, find_packages
 
 setup(
