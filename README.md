@@ -50,9 +50,6 @@ The HiddenLayer of a RNN could be a whole module or could be splitted into few m
 ### Song-Yang Loss function
 Loss function proposed in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016.
 
-## Trainer
-Under development
-
 
 ## Others
 For similar projects: 

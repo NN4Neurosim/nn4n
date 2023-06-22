@@ -95,7 +95,6 @@ class MultiAreaEI(MultiArea):
                     self.hidden_mask[np.ix_(self.inhibitory_neurons[i], self.inhibitory_neurons[j])] = 0
                     self.hidden_mask[np.ix_(self.inhibitory_neurons[j], self.inhibitory_neurons[i])] = 0
 
-
         # delete connections from inhibitory neurons to output layers
         if not self.inh_output:
             for i in range(self.n_areas):
