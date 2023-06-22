@@ -41,9 +41,9 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 | self_connections         | False         | `boolean`                  | Whether a neuron can connect to itself     |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'    | Activation function                        |
 | spec_rad                 | 1             | `float`                    | HiddenLayer spectral radius                |
-| input_size               | 1             | `int`                      | Input dimension                            |
 | hidden_size              | 100           | `int`                      | Number of hidden nodes                     |
-| output_size              | 1             | `int`                      | Output dimension                           |
+| input_dim                | 1             | `int`                      | Input dimension                            |
+| output_dim               | 1             | `int`                      | Output dimension                           |
 | layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and OutputLayer, respectively.       |
 | layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and OutputLayer, respectively. |
 | layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapse/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Output weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.              |

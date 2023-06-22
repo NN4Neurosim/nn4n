@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 class LinearLayer(nn.Module):
     def __init__(
             self,
-            input_size,
-            output_size,
+            input_dim,
+            output_dim,
             dist,
             use_bias,
             mask,
@@ -24,16 +24,16 @@ class LinearLayer(nn.Module):
             @param use_bias: whether to use bias
             @param mask: mask for sparse connectivity
             @param dist: distribution of weights
-            @param input_size: input size
-            @param output_size: output size
+            @param input_dim: input dimension
+            @param output_dim: output dimension
             @param use_dale: whether to use Dale's law
             @param new_synapse: whether to use new_synapse
             @param allow_negative: whether to allow negative weights, a boolean value
             @param ei_balance: method to balance E/I neurons, default: "neuron"
         """
         super().__init__()
-        self.input_size = input_size
-        self.output_size = output_size
+        self.input_dim = input_dim
+        self.output_dim = output_dim
         self.dist = dist
         self.use_bias = use_bias
         self.mask = mask
@@ -66,6 +66,8 @@ class LinearLayer(nn.Module):
         self.bias = nn.Parameter(torch.from_numpy(self.bias).float(), requires_grad=self.use_bias)
 
 
+    # INITIALIZATION
+    # ======================================================================================
     def init_constraints(self):
         """
         Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
@@ -126,11 +128,11 @@ class LinearLayer(nn.Module):
     def generate_weight(self):
         """ Generate random weight """
         if self.dist == 'uniform':
-            k = 1/self.input_size
-            w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size, self.input_size))
+            k = 1/self.input_dim
+            w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_dim, self.input_dim))
             if not self.allow_negative: w = np.abs(w)
         elif self.dist == 'normal':
-            w = np.random.normal(0, 1/3, (self.output_size, self.input_size))
+            w = np.random.normal(0, 1/3, (self.output_dim, self.input_dim))
 
         if self.sparse_mask is not None:
             w = self.rescale_weight_bias(w)
@@ -142,15 +144,15 @@ class LinearLayer(nn.Module):
         """ Generate random bias """
         if self.use_bias:
             if self.dist == 'uniform':
-                k = 1/self.input_size
-                b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_size))
+                k = 1/self.input_dim
+                b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.output_dim))
             elif self.dist == 'normal':
-                b = np.random.normal(0, 1/3, (self.output_size))
+                b = np.random.normal(0, 1/3, (self.output_dim))
             
             if self.sparse_mask is not None:
                 b = self.rescale_weight_bias(b)
         else:
-            b = np.zeros(self.output_size)
+            b = np.zeros(self.output_dim)
 
         return b
     
@@ -158,15 +160,18 @@ class LinearLayer(nn.Module):
     def rescale_weight_bias(self, w):
         """ Rescale weight or bias """
         # check if input size is fully connected except for all zeros
-        no_need_to_scale = np.any([self.sparse_mask.sum(axis=1) == self.input_size, self.sparse_mask.sum(axis=1) == 0])
+        no_need_to_scale = np.any([self.sparse_mask.sum(axis=1) == self.input_dim, self.sparse_mask.sum(axis=1) == 0])
         if no_need_to_scale: scale = 1
         else:
             n_entries = self.sparse_mask.sum()
-            n_total = self.output_size * self.input_size
+            n_total = self.output_dim * self.input_dim
             scale = (n_total / n_entries)
         return w * scale
+    # ======================================================================================
 
 
+    # FORWARD
+    # ======================================================================================
     def enforce_constraints(self):
         """ Enforce mask """
         if self.sparse_mask is not None:
@@ -196,17 +201,15 @@ class LinearLayer(nn.Module):
         """ Forward Pass """
         result = x.float() @ self.weight.T + self.bias
         return result
+    # ======================================================================================
     
 
-    def get_weight(self):
-        """ Get weight """
-        return self.weight.detach().numpy()
-    
-
+    # HELPER FUNCTIONS
+    # ======================================================================================
     def print_layer(self):
         param_dict = {
-            "in_size": self.input_size,
-            "out_size": self.output_size,
+            "in_size": self.input_dim,
+            "out_size": self.output_dim,
             "dist": self.dist,
             "bias": self.use_bias,
             "shape": self.weight.shape,
@@ -221,3 +224,9 @@ class LinearLayer(nn.Module):
             utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Weight Matrix", False, not self.new_synapse)
         else:
             utils.plot_connectivity_matrix_dist(self.weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapse)
+    
+
+    # def get_weight(self):
+    #     """ Get weight """
+    #     return self.weight.detach().numpy()
+    # ======================================================================================

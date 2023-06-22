@@ -8,16 +8,16 @@ class MultiArea():
         @kwarg n_areas: number of areas, list or int, default: 2
         @area_connectivities: connectivity between areas, list or np.ndarray, default: [0.1, 0.1]
         @hidden_size: number of hidden neurons in total, must be defined
-        @input_size: number of input neurons, default: 1
-        @output_size: number of output neurons, default: 1
+        @input_dim: input dimension, default: 1
+        @output_dim: output dimension, default: 1
         """
         self.n_areas = kwargs.get("n_areas", 2)
         self.area_connectivities = kwargs.get("area_connectivities", [0.1, 0.1])
         self.input_areas = np.array(kwargs.get("input_areas", None))
         self.output_areas = np.array(kwargs.get("output_areas", None))
         self.hidden_size = kwargs.get("hidden_size", None)
-        self.input_size = kwargs.get("input_size", 1)
-        self.output_size = kwargs.get("output_size", 1)
+        self.input_dim = kwargs.get("input_dim", 1)
+        self.output_dim = kwargs.get("output_dim", 1)
 
         # run if it is not a child class
         if self.__class__.__name__ == "MultiArea":
@@ -112,10 +112,10 @@ class MultiArea():
         """
         Generate the mask for the input layer
         """
-        input_mask = np.zeros((self.hidden_size, self.input_size))
+        input_mask = np.zeros((self.hidden_size, self.input_dim))
         for i in self.input_areas:
             area_i_size = len(self.node_assigment[i])
-            input_mask[np.ix_(self.node_assigment[i], np.arange(self.input_size))] = self.generate_sparse_matrix(area_i_size, self.input_size, 1)
+            input_mask[np.ix_(self.node_assigment[i], np.arange(self.input_dim))] = self.generate_sparse_matrix(area_i_size, self.input_dim, 1)
         self.input_mask = input_mask
 
 
@@ -123,10 +123,10 @@ class MultiArea():
         """
         Generate the mask for the output layer
         """
-        output_mask = np.zeros((self.output_size, self.hidden_size))
+        output_mask = np.zeros((self.output_dim, self.hidden_size))
         for i in self.output_areas:
             area_i_size = len(self.node_assigment[i])
-            output_mask[np.ix_(np.arange(self.output_size), self.node_assigment[i])] = self.generate_sparse_matrix(self.output_size, area_i_size, 1)
+            output_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self.generate_sparse_matrix(self.output_dim, area_i_size, 1)
         self.output_mask = output_mask
 
 

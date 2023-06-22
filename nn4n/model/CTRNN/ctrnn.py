@@ -14,9 +14,8 @@ class CTRNN(nn.Module):
             @kwarg use_dale: use dale's law or not
             @kwarg new_synapse: use new_synapse or not
             @kwarg hidden_size: number of hidden neurons
-            @kwarg output_size: number of output neurons
+            @kwarg output_dim: output dimension
             @kwarg allow_negative: allow negative weights or not
-            @kwarg training: training or not
             @kwarg layer_masks: masks for each layer, a list of 3 masks
         """
         super().__init__()
@@ -24,20 +23,23 @@ class CTRNN(nn.Module):
         self.initialize(**kwargs)
 
 
+    # INITIALIZATION
+    # ======================================================================================
     def initialize(self, **kwargs):
         """
         Initialize/Reinitialize the network
         """
         # parameters that used in all layers
-        self.use_dale = kwargs.pop("use_dale", False)
-        self.new_synapse = kwargs.pop("new_synapse", True)
+        # structure
         self.hidden_size = kwargs.pop("hidden_size", 100)
-        self.allow_negative = kwargs.pop("allow_negative", True)
-        self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
+        # constraints
+        self.use_dale = kwargs.pop("use_dale", False)
+        self.new_synapse = kwargs.pop("new_synapse", True)
+        self.allow_negative = kwargs.pop("allow_negative", True)
+        self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
-        self.training = kwargs.get("training", True)
 
         self.check_parameters()
 
@@ -54,9 +56,9 @@ class CTRNN(nn.Module):
             **kwargs
         )
         self.readout_layer = LinearLayer(
-            input_size = self.hidden_size,
+            input_dim = self.hidden_size,
             use_dale = self.use_dale,
-            output_size = kwargs.get("output_size", 1),
+            output_dim = kwargs.get("output_dim", 1),
             dist = self.layer_distributions[2],
             use_bias = self.layer_biases[2],
             mask = self.layer_masks[2],
@@ -108,7 +110,19 @@ class CTRNN(nn.Module):
                 assert type(i) == bool, "new_synapse must be a list of booleans"
         else:
             raise ValueError("new_synapse must be a boolean or a list of booleans")
+    # ======================================================================================
 
+
+    # FORWARD
+    # ======================================================================================
+    @tranining.setter
+    def train(self):
+        self.training = True
+
+
+    @tranining.setter
+    def eval(self):
+        self.training = False
 
 
     def forward(self, x):
@@ -123,15 +137,13 @@ class CTRNN(nn.Module):
         return output, hidden_activity
 
 
-    def print_layers(self):
-        self.recurrent.print_layer()
-        self.readout_layer.print_layer()
-
-
     def enforce_constraints(self):
         self.recurrent.enforce_constraints()
         self.readout_layer.enforce_constraints()
 
+
+    # HELPER FUNCTIONS
+    # ======================================================================================
     def save(self, path):
         # save model and kwargs to the same file
         assert type(path) == str, "path must be a string"
@@ -141,6 +153,7 @@ class CTRNN(nn.Module):
             "kwargs": self.kwargs_checkpoint
         }, path)
 
+
     def load(self, path):
         # load model and kwargs from the same file
         assert type(path) == str, "path must be a string"
@@ -149,3 +162,9 @@ class CTRNN(nn.Module):
         self.kwargs_checkpoint = checkpoint["kwargs"]
         self.initialize(**self.kwargs_checkpoint)
         self.load_state_dict(checkpoint["model_state_dict"])
+
+
+    def print_layers(self):
+        self.recurrent.print_layer()
+        self.readout_layer.print_layer()
+    # ======================================================================================

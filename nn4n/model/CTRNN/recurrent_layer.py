@@ -37,7 +37,7 @@ class RecurrentLayer(nn.Module):
             @kwarg tau: time constant, default: 1
             @kwarg ei_balance: method to balance E/I neurons, default: "neuron"
 
-            @kwarg input_size: number of input neurons, default: 1
+            @kwarg input_dim: input dimension, default: 1
 
             @kwarg hidden_dist: distribution of hidden layer weights, default: "normal"
             @kwarg self_connections: allow self connections or not, default: False
@@ -57,8 +57,8 @@ class RecurrentLayer(nn.Module):
         self.input_layer = LinearLayer(
             use_dale = False,
             new_synapse = new_synapse[0],
-            output_size = self.hidden_size,
-            input_size = kwargs.get("input_size", 1),
+            output_dim = self.hidden_size,
+            input_dim = kwargs.get("input_dim", 1),
             use_bias = self.layer_biases[0],
             dist = self.layer_distributions[0],
             mask = self.layer_masks[0],
@@ -79,6 +79,8 @@ class RecurrentLayer(nn.Module):
         )
 
     
+    # INITIALIZATION
+    # ==================================================================================================
     def set_activation(self, act):
         self.act = act
         if self.act == "relu":
@@ -87,8 +89,11 @@ class RecurrentLayer(nn.Module):
             self.activation = torch.tanh
         elif self.act == "sigmoid":
             self.activation = torch.sigmoid
-    
+    # ==================================================================================================
 
+
+    # FORWARD
+    # ==================================================================================================
     def recurrence(self, input, hidden):
         """
         Hidden layer updates 
@@ -106,17 +111,21 @@ class RecurrentLayer(nn.Module):
 
         return hidden_new
 
+    def enforce_constraints(self):
+        self.input_layer.enforce_constraints()
+        self.hidden_layer.enforce_constraints()
+
 
     def forward(self, input, hidden=None):
         """
         Propogate input through the network.
-        @param input: shape=(seq_len, batch, input_size), network input
+        @param input: shape=(seq_len, batch, input_dim), network input
         @return output: shape=(seq_len, batch, hidden_size), stack of hidden layer status
         @return hidden: shape=(batch, hidden_size), hidden layer final status
         """
         # initialize hidden
-        # if hidden is None:
-        hidden = torch.zeros(self.hidden_size)
+        if hidden is None:
+            hidden = torch.zeros(self.hidden_size)
 
         # update hidden and append to output
         output = []
@@ -126,8 +135,11 @@ class RecurrentLayer(nn.Module):
         output = torch.stack(output, dim=0)
         
         return output, hidden
-    
+    # ==================================================================================================
 
+
+    # HELPER FUNCTIONS
+    # ==================================================================================================
     def print_layer(self):
         param_dict = {
             "recurrent_noise": self.recurrent_noise,
@@ -137,8 +149,4 @@ class RecurrentLayer(nn.Module):
         self.input_layer.print_layer()
         print_dict("Recurrence", param_dict)
         self.hidden_layer.print_layer()
-
-
-    def enforce_constraints(self):
-        self.input_layer.enforce_constraints()
-        self.hidden_layer.enforce_constraints()
+    # ==================================================================================================

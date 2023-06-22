@@ -21,17 +21,17 @@ This will generate a multi-area RNN without E/I constraints. Therefore, by defau
 | area_connectivities      | [0.1, 0.1]    | `list` or `np.ndarray`   | Area-to-area connection connectivity. Entries must between `[0,1]`<br>- When `area_connectivities` is a list, all forward/backward connections will have the same sparsity.<br>- If its a list of two elements, the first element is the forward connectivity, and the second is the backward connectivity. The within-area connectivity will be 1.<br>- If its a list of three elements, the last element will be the within-area connectivity.<br>- If `area_connectivities` is an `np.ndarray`, it must be of shape (`n_areas`, `n_areas`). See [forward/backward specifications](#forward-backward-specifications)|
 | input_areas              | `None`        | `list` or `None`          | Areas that receive input. None if input to all areas. InputLayer is either densely connect to an area or doesn't connect to it at all.    |
 | output_areas             | `None`        | `list` or `None`          | Areas that readout from. None if readout from all areas. OutputLayer is either densely connect to an area or doesn't connect to it at all.    |
-| input_size               | 1             | `int`                      | Input dimension. It is used to compute the size of input layer, must be set. |
 | hidden_size              | None          | `int`                      | HiddenLayer size. Must be set.              |
-| output_size              | 1             | `int`                      | Output dimension. It is used to compute the size of input layer, must be set. |
+| input_dim                | 1             | `int`                      | Input dimension. It is used to compute the size of input layer, must be set.  |
+| output_dim               | 1             | `int`                      | Output dimension. It is used to compute the size of input layer, must be set. |
 
 | Attributes               | Type                       | Description                                |	
 |:-------------------------|:--------------------------:|:-------------------------------------------|
 | n_areas                  | `int`                      | Number of areas                            |
 | node_assigment           | `list`                     | Nodes area assignment                      |
-| input_size               | `int`                      | Input dimension                            |
 | hidden_size              | `int`                      | Number of nodes in the HiddenLayer         |
-| output_size              | `int`                      | Output dimension                           |
+| input_dim                | `int`                      | Input dimension                            |
+| output_dim               | `int`                      | Output dimension                           |
 | area_connectivities      | `np.ndarray`               | Area-to-area connectivity matrix. If it is a list in params, it will be transformed into a numpy matrix after initialization                   |
 
 #### Forward Backward Specifications
