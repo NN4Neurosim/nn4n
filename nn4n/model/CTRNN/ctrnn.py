@@ -17,6 +17,10 @@ class CTRNN(nn.Module):
             @kwarg output_dim: output dimension
             @kwarg allow_negative: allow negative weights or not
             @kwarg layer_masks: masks for each layer, a list of 3 masks
+            @kwarg layer_distributions: distribution of weights for each layer, a list of 3 strings
+            @kwarg layer_biases: use bias or not for each layer, a list of 3 boolean values
+            @kwarg ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
+            @kwarg keep_state: keep the state of the network or not
         """
         super().__init__()
         self.kwargs_checkpoint = kwargs.copy()
@@ -40,6 +44,7 @@ class CTRNN(nn.Module):
         self.allow_negative = kwargs.pop("allow_negative", True)
         self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
+        self.keep_state = kwargs.pop("keep_state", False)
 
         self.check_parameters()
 
@@ -115,12 +120,10 @@ class CTRNN(nn.Module):
 
     # FORWARD
     # ======================================================================================
-    @tranining.setter
     def train(self):
         self.training = True
 
 
-    @tranining.setter
     def eval(self):
         self.training = False
 
@@ -130,11 +133,12 @@ class CTRNN(nn.Module):
         Forwardly update network W_in -> n x W_rc -> W_out
         """
         # skip constraints if not training
-        if self.training:
-            self.enforce_constraints()
-        hidden_activity, _ = self.recurrent(x)
-        output = self.readout_layer(hidden_activity.float())
-        return output, hidden_activity
+        # if self.training:
+        #     self.enforce_constraints()
+        hidden_states = self.recurrent(x)
+        output = self.readout_layer(hidden_states.float())
+        if not self.keep_state: self.recurrent.reset_state() # whether to reset state after each forward pass
+        return output, hidden_states
 
 
     def enforce_constraints(self):
@@ -144,6 +148,15 @@ class CTRNN(nn.Module):
 
     # HELPER FUNCTIONS
     # ======================================================================================
+    def to(self, device):
+        """
+        Move the network to device
+        """
+        super().to(device)
+        self.recurrent.to(device)
+        self.readout_layer.to(device)
+
+
     def save(self, path):
         # save model and kwargs to the same file
         assert type(path) == str, "path must be a string"

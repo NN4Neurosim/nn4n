@@ -29,23 +29,38 @@ At the begining of each trial, the hidden states are set to zero. The recurrent 
 For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pcbi.1004792).
 
 ## Parameters
+### Structure and I/O dimensions
+These parameters primarily determine the structure of the network. It is recommended to check these parameters before initializing the network.
+| Parameter                | Default       | Type                                | Description                                |	
+|:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
+| input_dim                | 1             | `int`                               | Input dimension                            |
+| output_dim               | 1             | `int`                               | Output dimension                           |
+| hidden_size              | 100           | `int`                               | Number of hidden nodes                     |
+| spec_rad                 | 0.95          | `float`                             | HiddenLayer spectral radius                |
+| self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself     |
+| activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                        |
+| layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and OutputLayer, respectively.       |
+| layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and OutputLayer, respectively. |
+
+
+### Training parameters
+These parameters primarily determine the training process of the network. The `tau` and `dt` parameters are used to discretize the continuous-time dynamics. It is **highly recommended** to check these parameters before training. They have a significant impact on the training result.
+| Parameter                | Default       | Type                                | Description                                |	
+|:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
+| tau                      | 1             | `float`                             | Time constant                              |
+| dt                       | 1             | `float`                             | Constant that used to discretize time      |
+| recurrent_noise          | 0.05          | `float`                             | Whether to add zero-mean Gaussian recurrent noise during training. This is often employed to simulate the effect of biological perceptual noise. |
+| keep_state               | False         | `boolean`                           | Whether to keep using the hidden state from previous trial |
+
+
+### Constraints
+These parameters primarily determine the constraints of the network. By default, the network is initialized using the most lenient constraints, i.e., no constraints being enforced.
 | Parameter                | Default       | Type                       | Description                                |	
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
-| tau                      | 1             | `float`                    | Time constant                              |
-| dt                       | 1             | `float`                    | Constant that used to discretize time      |
 | allow_negative           | True          | `boolean`/`list`      | Allow negative values or not in each layer.  If its a list, must have precisely three elements                   |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
 | ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                    |
 | new_synapse              | True         | `boolean`/`list`             | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements                   |
-| recurrent_noise          | 0.05          | `float`                    | Zero-mean Gaussian recurrent noise         |
-| self_connections         | False         | `boolean`                  | Whether a neuron can connect to itself     |
-| activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'    | Activation function                        |
-| spec_rad                 | 1             | `float`                    | HiddenLayer spectral radius                |
-| hidden_size              | 100           | `int`                      | Number of hidden nodes                     |
-| input_dim                | 1             | `int`                      | Input dimension                            |
-| output_dim               | 1             | `int`                      | Output dimension                           |
-| layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and OutputLayer, respectively.       |
-| layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and OutputLayer, respectively. |
 | layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapse/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Output weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.              |
 
 

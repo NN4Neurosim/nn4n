@@ -47,12 +47,13 @@ class RecurrentLayer(nn.Module):
         self.hidden_size = hidden_size
         self.use_dale = use_dale
         self.set_activation(kwargs.get("activation", "relu"))
-        self.recurrent_noise = kwargs.get("recurrent_noise", 0.05)
+        self.recurrent_noise = kwargs.get("recurrent_noise", 0.00)
         self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
         self.ei_balance = ei_balance
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
         self.layer_masks = layer_masks
+        self.hidden_state = torch.zeros(self.hidden_size)
 
         self.input_layer = LinearLayer(
             use_dale = False,
@@ -71,14 +72,14 @@ class RecurrentLayer(nn.Module):
             use_dale = self.use_dale,
             dist = self.layer_distributions[1],
             use_bias = self.layer_biases[1],
-            spec_rad = kwargs.get("spec_rad", 1),
+            spec_rad = kwargs.get("spec_rad", 0.95),
             mask = self.layer_masks[1],
             self_connections = kwargs.get("self_connections", False),
             allow_negative = allow_negative[1],
             ei_balance = self.ei_balance,
         )
 
-    
+
     # INITIALIZATION
     # ==================================================================================================
     def set_activation(self, act):
@@ -89,11 +90,17 @@ class RecurrentLayer(nn.Module):
             self.activation = torch.tanh
         elif self.act == "sigmoid":
             self.activation = torch.sigmoid
+        elif self.act == "retanh":
+            self.activation = lambda x: torch.maximum(torch.tanh(x),torch.tensor(0))
     # ==================================================================================================
 
 
     # FORWARD
     # ==================================================================================================
+    def reset_state(self):
+        self.hidden_state = torch.zeros(self.hidden_size, device=self.hidden_state.device)
+
+
     def recurrence(self, input, hidden):
         """
         Hidden layer updates 
@@ -101,45 +108,50 @@ class RecurrentLayer(nn.Module):
         @param hidden: hidden layer of the CTRNN
         """
         hidden_out = self.hidden_layer(self.activation(hidden)) # r(t) @ W_rec + b
-        # print(hidden_out.mean(), hidden_out.max(), hidden_out.min())
         new_input = self.input_layer(input) # u(t) @ W_in
         if self.recurrent_noise > 0:
-            noise = torch.from_numpy(np.random.normal(0, self.recurrent_noise, self.hidden_size))
+            noise = torch.randn(self.hidden_size, device=hidden.device) * self.recurrent_noise
             hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input+noise)
         else:
             hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input)
 
         return hidden_new
 
+
     def enforce_constraints(self):
         self.input_layer.enforce_constraints()
         self.hidden_layer.enforce_constraints()
 
 
-    def forward(self, input, hidden=None):
+    def forward(self, input):
         """
         Propogate input through the network.
         @param input: shape=(seq_len, batch, input_dim), network input
-        @return output: shape=(seq_len, batch, hidden_size), stack of hidden layer status
-        @return hidden: shape=(batch, hidden_size), hidden layer final status
+        @return stacked_states: shape=(seq_len, batch, hidden_size), stack of hidden layer status
         """
-        # initialize hidden
-        if hidden is None:
-            hidden = torch.zeros(self.hidden_size)
-
-        # update hidden and append to output
-        output = []
+        # update hidden state and append to stacked_states
+        stacked_states = []
         for i in range(input.size(0)):
-            hidden = self.recurrence(input[i], hidden)
-            output.append(hidden)
-        output = torch.stack(output, dim=0)
+            self.hidden_state = self.recurrence(input[i], self.hidden_state)
+            stacked_states.append(self.hidden_state.clone())
+        stacked_states = torch.stack(stacked_states, dim=0)
         
-        return output, hidden
+        return stacked_states
     # ==================================================================================================
 
 
     # HELPER FUNCTIONS
     # ==================================================================================================
+    def to(self, device):
+        """
+        Move the network to the device (cpu/gpu)
+        """
+        super().to(device)
+        self.input_layer.to(device)
+        self.hidden_layer.to(device)
+        self.hidden_state = self.hidden_state.to(device)
+
+
     def print_layer(self):
         param_dict = {
             "recurrent_noise": self.recurrent_noise,

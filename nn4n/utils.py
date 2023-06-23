@@ -8,6 +8,7 @@ def print_dict(title, params):
         print(3*' ' + '| {}:{}{}'.format(k, (maxlen - len(k) + 1)*' ', params[k]))
     print()
 
+
 def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     r = np.max(np.abs(w))
     

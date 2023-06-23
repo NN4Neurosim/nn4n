@@ -59,42 +59,46 @@ class LinearLayer(nn.Module):
         self.bias = self.generate_bias()
         
         # enfore constraints
-        self.init_constraints()
+        self.dale_mask, self.sparse_mask = None, None
+        # self.init_constraints()
 
         # convert weight and bias to torch tensor
-        self.weight = nn.Parameter(torch.from_numpy(self.weight).float())
-        self.bias = nn.Parameter(torch.from_numpy(self.bias).float(), requires_grad=self.use_bias)
+        self.weight = nn.Parameter(self.weight)
+        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias)
 
 
     # INITIALIZATION
     # ======================================================================================
-    def init_constraints(self):
-        """
-        Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
-        It will also balance excitatory and inhibitory neurons
-        """
-        if self.dale_mask is not None:
-            self.weight *= self.dale_mask
-            self.balance_excitatory_inhibitory()
-        if self.sparse_mask is not None:
-            self.weight *= self.sparse_mask
+    # def init_constraints(self):
+    #     """
+    #     Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
+    #     It will also balance excitatory and inhibitory neurons
+    #     """
+    #     if self.dale_mask is not None:
+    #         self.weight *= self.dale_mask
+    #         self.balance_excitatory_inhibitory()
+    #     if self.sparse_mask is not None:
+    #         self.weight *= self.sparse_mask
 
 
-    def balance_excitatory_inhibitory(self):
-        """ Balance excitatory and inhibitory weights """
-        scale_mat = np.ones_like(self.weight)
+    def _balance_excitatory_inhibitory(self):
+        """ 
+        Balance excitatory and inhibitory weights 
+        """
+        scale_mat = torch.ones_like(self.weight)
+        # if using number of neurons to balance e/i connections
         if self.ei_balance == 'neuron':
-            exc_pct = np.count_nonzero(self.ei_list == 1.0) / self.hidden_size
-            if exc_pct == 0 or exc_pct == 1: return # avoid division by zero
+            exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.hidden_size
             scale_mat[:, self.ei_list == 1] = 1 / exc_pct
             scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
+        # if using number of synapses to balance e/i connections
         elif self.ei_balance == 'synapse':
-            exc_syn = np.count_nonzero(self.weight > 0)
-            inh_syn = np.count_nonzero(self.weight < 0)
+            exc_syn = torch.count_nonzero(self.weight > 0)
+            inh_syn = torch.count_nonzero(self.weight < 0)
             exc_pct = exc_syn / (exc_syn + inh_syn)
-            if exc_pct == 0 or exc_pct == 1: return # avoid division by zero
             scale_mat[self.weight > 0] = 1 / exc_pct
             scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
+        # assert error if ei_balance is not 'neuron' or 'synapse'
         else:
             assert False, "ei_balance must be either 'neuron' or 'synapse'"
 
@@ -122,7 +126,7 @@ class LinearLayer(nn.Module):
         # generate mask for Dale's law
         dale_mask = np.ones(mask.shape)
         dale_mask[:, self.ei_list == -1] = -1
-        self.dale_mask = dale_mask
+        self.dale_mask = torch.from_numpy(dale_mask).float()
 
 
     def generate_weight(self):
@@ -137,7 +141,7 @@ class LinearLayer(nn.Module):
         if self.sparse_mask is not None:
             w = self.rescale_weight_bias(w)
 
-        return w
+        return torch.from_numpy(w).float()
 
 
     def generate_bias(self):
@@ -154,7 +158,7 @@ class LinearLayer(nn.Module):
         else:
             b = np.zeros(self.output_dim)
 
-        return b
+        return torch.from_numpy(b).float()
     
 
     def rescale_weight_bias(self, w):
@@ -166,13 +170,14 @@ class LinearLayer(nn.Module):
             n_entries = self.sparse_mask.sum()
             n_total = self.output_dim * self.input_dim
             scale = (n_total / n_entries)
-        return w * scale
+        return torch.from_numpy(w * scale).float()
     # ======================================================================================
 
 
     # FORWARD
     # ======================================================================================
     def enforce_constraints(self):
+        print('linear enforce')
         """ Enforce mask """
         if self.sparse_mask is not None:
             self.enforce_sparsity()
@@ -182,19 +187,15 @@ class LinearLayer(nn.Module):
 
     def enforce_sparsity(self):
         """ Enforce sparsity """
-        w = self.weight.detach().numpy()
-        w *= self.sparse_mask
-        w = torch.nn.Parameter(torch.from_numpy(w))
-        self.weight.data.copy_(w)
+        self.weight = torch.nn.Parameter(self.weight * self.sparse_mask)
 
 
     def enforce_dale(self):
         """ Enforce Dale's law """
-        w = self.weight.detach().numpy()
-        w[self.dale_mask == 1] = w[self.dale_mask == 1].clip(min=0)
-        w[self.dale_mask == -1] = w[self.dale_mask == -1].clip(max=0)
-        w = torch.nn.Parameter(torch.from_numpy(w))
-        self.weight.data.copy_(w)
+        w = self.weight.clone()
+        w[self.dale_mask == 1] = torch.clamp(w[self.dale_mask == 1], min=0)
+        w[self.dale_mask == -1] = torch.clamp(w[self.dale_mask == -1], max=0)
+        self.weight = torch.nn.Parameter(w)
 
 
     def forward(self, x):
@@ -206,6 +207,19 @@ class LinearLayer(nn.Module):
 
     # HELPER FUNCTIONS
     # ======================================================================================
+    def to(self, device):
+        """
+        Move the network to the device (cpu/gpu)
+        """
+        super().to(device)
+        if self.sparse_mask is not None:
+            self.sparse_mask = self.sparse_mask.to(device)
+        if self.dale_mask is not None:
+            self.dale_mask = self.dale_mask.to(device)
+        if not self.use_bias:
+            self.bias = self.bias.to(device)
+
+
     def print_layer(self):
         param_dict = {
             "in_size": self.input_dim,
