@@ -50,8 +50,8 @@ class HiddenLayer(nn.Module):
         # NOTE: weight are np.ndarray before that, but now they are torch.Tensor
         # init new_synapse, dale's law, and spectral radius
         self.dale_mask, self.sparse_mask = None, None
-        # self.init_constraints(mask)
-        # self.enforce_spec_rad()
+        self.init_constraints(mask)
+        self.enforce_spec_rad()
 
         # parameterize the weights and bias
         self.weight = nn.Parameter(self.weight.float())
@@ -173,13 +173,19 @@ class HiddenLayer(nn.Module):
 
     def enforce_spec_rad(self):
         """ Enforce spectral radius """
-        scale = self.spec_rad / np.max(np.abs(np.linalg.eigvals(self.weight)))
-        if self.use_bias: self.bias *= scale
-        self.weight *= scale
+        # Move weight to CPU and convert to numpy
+        weight_cpu = self.weight.detach().cpu().numpy()
+        # Calculate scale
+        scale = self.spec_rad / np.abs(np.linalg.eigvals(weight_cpu)).max()
+        # Convert scale to a tensor and move to the original device of self.weight
+        scale = torch.tensor(scale, dtype=self.weight.dtype, device=self.weight.device)
+        # Scale bias and weight
+        if self.use_bias: 
+            self.bias.data *= scale
+        self.weight.data *= scale
 
 
     def enforce_constraints(self):
-        print('hidden enforce')
         """ Enforce constraints """
         if self.sparse_mask is not None:
             self.enforce_sparsity()
@@ -217,6 +223,8 @@ class HiddenLayer(nn.Module):
 
 
     def print_layer(self):
+        # plot weight matrix
+        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         param_dict = {
             "self_connections": self.self_connections,
             "spec_rad": self.spec_rad,
@@ -231,9 +239,9 @@ class HiddenLayer(nn.Module):
             "weight_mean": self.weight.mean().item(),
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
-            "sparsity": self.sparse_mask.sum() / self.sparse_mask.size if self.sparse_mask is not None else "None",
-            "spectral_radius": np.max(np.abs(np.linalg.eigvals(self.weight.detach().numpy()))),
+            "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else None,
+            "spectral_radius": np.max(np.abs(np.linalg.eigvals(weight.detach().numpy()))),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
     # ======================================================================================

@@ -60,7 +60,7 @@ class LinearLayer(nn.Module):
         
         # enfore constraints
         self.dale_mask, self.sparse_mask = None, None
-        # self.init_constraints()
+        self.init_constraints()
 
         # convert weight and bias to torch tensor
         self.weight = nn.Parameter(self.weight)
@@ -69,16 +69,16 @@ class LinearLayer(nn.Module):
 
     # INITIALIZATION
     # ======================================================================================
-    # def init_constraints(self):
-    #     """
-    #     Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
-    #     It will also balance excitatory and inhibitory neurons
-    #     """
-    #     if self.dale_mask is not None:
-    #         self.weight *= self.dale_mask
-    #         self.balance_excitatory_inhibitory()
-    #     if self.sparse_mask is not None:
-    #         self.weight *= self.sparse_mask
+    def init_constraints(self):
+        """
+        Initialize constraints (because enforce_dale will clip the weights, but we don't want that during initialization)
+        It will also balance excitatory and inhibitory neurons
+        """
+        if self.dale_mask is not None:
+            self.weight *= self.dale_mask
+            self.balance_excitatory_inhibitory()
+        if self.sparse_mask is not None:
+            self.weight *= self.sparse_mask
 
 
     def _balance_excitatory_inhibitory(self):
@@ -177,7 +177,6 @@ class LinearLayer(nn.Module):
     # FORWARD
     # ======================================================================================
     def enforce_constraints(self):
-        print('linear enforce')
         """ Enforce mask """
         if self.sparse_mask is not None:
             self.enforce_sparsity()
@@ -200,8 +199,7 @@ class LinearLayer(nn.Module):
 
     def forward(self, x):
         """ Forward Pass """
-        result = x.float() @ self.weight.T + self.bias
-        return result
+        return x.float() @ self.weight.T + self.bias
     # ======================================================================================
     
 
@@ -234,10 +232,13 @@ class LinearLayer(nn.Module):
             "sparsity": self.sparse_mask.sum() / self.sparse_mask.size if self.sparse_mask is not None else "None"
         }
         utils.print_dict("Linear Layer", param_dict)
-        if self.weight.size(0) < self.weight.size(1):
-            utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Weight Matrix", False, not self.new_synapse)
+
+        # plot weight matrix
+        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
+        if weight.size(0) < weight.size(1):
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, not self.new_synapse)
         else:
-            utils.plot_connectivity_matrix_dist(self.weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapse)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapse)
     
 
     # def get_weight(self):

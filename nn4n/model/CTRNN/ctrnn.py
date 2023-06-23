@@ -133,8 +133,8 @@ class CTRNN(nn.Module):
         Forwardly update network W_in -> n x W_rc -> W_out
         """
         # skip constraints if not training
-        # if self.training:
-        #     self.enforce_constraints()
+        if self.training:
+            self.enforce_constraints()
         hidden_states = self.recurrent(x)
         output = self.readout_layer(hidden_states.float())
         if not self.keep_state: self.recurrent.reset_state() # whether to reset state after each forward pass
