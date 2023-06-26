@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
 
 from .recurrent_layer import RecurrentLayer
 from .linear_layer import LinearLayer
@@ -38,15 +37,16 @@ class CTRNN(nn.Module):
         self.hidden_size = kwargs.pop("hidden_size", 100)
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
-        # constraints
+        # dynamics
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapse = kwargs.pop("new_synapse", True)
         self.allow_negative = kwargs.pop("allow_negative", True)
         self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
         self.keep_state = kwargs.pop("keep_state", False)
+        self.recurrent_noise = kwargs.pop("recurrent_noise", 0)
 
-        self.check_parameters()
+        self._check_parameters()
 
         # layers
         self.recurrent = RecurrentLayer(
@@ -58,6 +58,7 @@ class CTRNN(nn.Module):
             layer_distributions = self.layer_distributions,
             layer_biases = self.layer_biases,
             layer_masks = self.layer_masks,
+            recurrent_noise = self.recurrent_noise,
             **kwargs
         )
         self.readout_layer = LinearLayer(
@@ -75,11 +76,11 @@ class CTRNN(nn.Module):
         if self.use_dale:
             hidden_ei_list = self.recurrent.hidden_layer.ei_list
             readout_ei_list = self.readout_layer.ei_list
-            nonzero_idx = np.where(readout_ei_list != 0)[0]
-            assert np.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), "ei_list of hidden layer and readout layer must be the same when use_dale is True"
+            nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
+            assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), "ei_list of hidden layer and readout layer must be the same when use_dale is True"
 
 
-    def check_parameters(self):
+    def _check_parameters(self):
         """
         Check parameters
         """
@@ -121,10 +122,12 @@ class CTRNN(nn.Module):
     # FORWARD
     # ======================================================================================
     def train(self):
+        self.recurrent.recurrent_noise = self.recurrent_noise
         self.training = True
 
 
     def eval(self):
+        self.recurrent.recurrent_noise = 0
         self.training = False
 
 

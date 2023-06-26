@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 import torch.nn as nn
 import nn4n.utils as utils
 
@@ -44,51 +43,50 @@ class HiddenLayer(nn.Module):
         self.ei_balance = ei_balance
 
         # generate weights and bias
-        self.weight = self.generate_weight()
-        self.bias = self.generate_bias()
+        self.weight = self._generate_weight()
+        self.bias = self._generate_bias()
 
-        # NOTE: weight are np.ndarray before that, but now they are torch.Tensor
         # init new_synapse, dale's law, and spectral radius
         self.dale_mask, self.sparse_mask = None, None
-        self.init_constraints(mask)
-        self.enforce_spec_rad()
+        self._init_constraints(mask)
+        self._enforce_spec_rad()
 
         # parameterize the weights and bias
-        self.weight = nn.Parameter(self.weight.float())
-        self.bias = nn.Parameter(self.bias.float(), requires_grad=self.use_bias)
+        self.weight = nn.Parameter(self.weight)
+        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias)
 
 
     # INITIALIZATION
     # ======================================================================================
-    def generate_weight(self):
+    def _generate_weight(self):
         """ Generate random weight """
         if self.dist == 'uniform':
             k = 1/self.hidden_size
-            w = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size, self.hidden_size))
-            if not self.allow_negative: w = np.abs(w)
+            w = (torch.rand(self.hidden_size, self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
+            if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
         elif self.dist == 'normal':
-            if self.allow_negative: 
-                w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size))
-            else:
-                w = np.random.normal(0, 1/3, (self.hidden_size, self.hidden_size)) / 2 + 0.5
+            w = torch.randn(self.hidden_size, self.hidden_size)
+            w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
+            if not self.allow_negative: w = (w + 1) / 2
 
-        return torch.from_numpy(w).float()
+        return w.float()
     
 
-    def generate_bias(self):
+    def _generate_bias(self):
         if self.use_bias:
             if self.dist == 'uniform':
                 k = 1/self.hidden_size
-                b = np.random.uniform(-np.sqrt(k), np.sqrt(k), (self.hidden_size))
+                b = (torch.rand(self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
             elif self.dist == 'normal':
-                b = np.random.normal(0, 1/3, (self.hidden_size))
+                b = torch.randn(self.hidden_size)
+                b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
         else:
-            b = np.zeros((self.hidden_size))
+            b = torch.zeros(self.hidden_size)
 
-        return torch.from_numpy(b).float()
+        return b.float()
 
 
-    def init_constraints(self, mask):
+    def _init_constraints(self, mask):
         """
         Initialize constraints
         It will also balance excitatory and inhibitory neurons
@@ -98,10 +96,11 @@ class HiddenLayer(nn.Module):
             assert not self.use_dale, "mask must be provided if use_dale is True"
             assert self.new_synapse, "mask must be provided if synapses are not plastic"
         else:
+            mask = torch.from_numpy(mask).int() # convert to torch.Tensor
             if self.use_dale:
-                self._init_dale_mask(mask)
+                self._init_dale_mask(mask) # initialize dale's mask
             if not self.new_synapse:
-                self.sparse_mask = torch.where(mask == 0, 0, 1)
+                self.sparse_mask = (mask != 0).int() # convert to a binary mask
         
         # Whether to delete self connections
         if not self.self_connections: 
@@ -109,7 +108,7 @@ class HiddenLayer(nn.Module):
                 # if mask is not provided, create a mask
                 self.sparse_mask = torch.ones((self.hidden_size, self.hidden_size))
             self.sparse_mask = torch.where(torch.eye(self.hidden_size) == 1, 0, self.sparse_mask)
-
+        
         # Balance excitatory and inhibitory neurons and apply masks
         if self.dale_mask is not None:
             self.weight *= self.dale_mask
@@ -122,9 +121,9 @@ class HiddenLayer(nn.Module):
         """ initialize settings required for Dale's law """
         # Dale's law only applies to output edges
         # create a ei_list to store whether a neuron's output edges are all positive or all negative
-        ei_list = np.zeros(mask.shape[1])
-        all_neg = np.all(mask <= 0, axis=0) # whether all output edges are negative
-        all_pos = np.all(mask >= 0, axis=0) # whether all output edges are positive
+        ei_list = torch.zeros(mask.shape[1])
+        all_neg = torch.all(mask <= 0, dim=0) # whether all output edges are negative
+        all_pos = torch.all(mask >= 0, axis=0) # whether all output edges are positive
 
         # check whether a neuron's output edges are all positive or all negative
         for i in range(mask.shape[1]):
@@ -134,9 +133,8 @@ class HiddenLayer(nn.Module):
         self.ei_list = ei_list
 
         # create a mask for Dale's law
-        dale_mask = np.ones(mask.shape)
-        dale_mask[:, self.ei_list == -1] = -1
-        self.dale_mask = torch.from_numpy(dale_mask).int()
+        self.dale_mask = torch.ones(mask.shape, dtype=int)
+        self.dale_mask[:, self.ei_list == -1] = -1
 
 
     def _balance_excitatory_inhibitory(self):
@@ -171,14 +169,10 @@ class HiddenLayer(nn.Module):
         return x.float() @ self.weight.T + self.bias
 
 
-    def enforce_spec_rad(self):
+    def _enforce_spec_rad(self):
         """ Enforce spectral radius """
-        # Move weight to CPU and convert to numpy
-        weight_cpu = self.weight.detach().cpu().numpy()
         # Calculate scale
-        scale = self.spec_rad / np.abs(np.linalg.eigvals(weight_cpu)).max()
-        # Convert scale to a tensor and move to the original device of self.weight
-        scale = torch.tensor(scale, dtype=self.weight.dtype, device=self.weight.device)
+        scale = self.spec_rad / torch.abs(torch.linalg.eig(self.weight)[0]).max()
         # Scale bias and weight
         if self.use_bias: 
             self.bias.data *= scale
@@ -188,22 +182,34 @@ class HiddenLayer(nn.Module):
     def enforce_constraints(self):
         """ Enforce constraints """
         if self.sparse_mask is not None:
-            self.enforce_sparsity()
+            self._enforce_sparsity()
         if self.dale_mask is not None:
-            self.enforce_dale()
+            self._enforce_dale()
 
 
-    def enforce_dale(self):
-        """ Enforce dale """
-        w = self.weight.clone()
+    def _enforce_sparsity(self):
+        """ Enforce sparsity """
+        # print('hidden sparse')
+        # w = self.weight.detach()
+        # w *= self.sparse_mask
+        # w = torch.nn.Parameter(w)
+        # self.weight.data.copy_(w)
+        w = self.weight.detach().clone() * self.sparse_mask
+        self.weight.data.copy_(torch.nn.Parameter(w))
+
+
+    def _enforce_dale(self):
+        """ Enforce Dale's law """
+        # print('hidden dale')
+        # w = self.weight.detach()
+        # w[self.dale_mask == 1] = w[self.dale_mask == 1].clip(min=0)
+        # w[self.dale_mask == -1] = w[self.dale_mask == -1].clip(max=0)
+        # w = torch.nn.Parameter(w)
+        # self.weight.data.copy_(w)
+        w = self.weight.detach().clone()
         w[self.dale_mask == 1] = torch.clamp(w[self.dale_mask == 1], min=0)
         w[self.dale_mask == -1] = torch.clamp(w[self.dale_mask == -1], max=0)
-        self.weight = torch.nn.Parameter(w)
-
-
-    def enforce_sparsity(self):
-        """ Enforce sparsity """
-        self.weight = torch.nn.Parameter(self.weight * self.sparse_mask)
+        self.weight.data.copy_(torch.nn.Parameter(w))
     # ======================================================================================
     
 
@@ -224,12 +230,9 @@ class HiddenLayer(nn.Module):
 
     def print_layer(self):
         # plot weight matrix
-        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         param_dict = {
             "self_connections": self.self_connections,
-            "spec_rad": self.spec_rad,
-            "in_size": self.hidden_size,
-            "out_size": self.hidden_size,
+            "input/output_dim": self.hidden_size,
             "distribution": self.dist,
             "bias": self.use_bias,
             "dale": self.use_dale,
@@ -239,9 +242,9 @@ class HiddenLayer(nn.Module):
             "weight_mean": self.weight.mean().item(),
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
-            "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else None,
-            "spectral_radius": np.max(np.abs(np.linalg.eigvals(weight.detach().numpy()))),
+            "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
+            "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
+        utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
     # ======================================================================================

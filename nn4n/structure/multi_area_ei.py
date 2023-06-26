@@ -19,12 +19,12 @@ class MultiAreaEI(MultiArea):
         self.inter_area_connections = kwargs.get("inter_area_connections", [True, True, True, True])
         self.inh_output = kwargs.get("inh_output", True)
 
-        self.check_parameters()
-        self.generate_mask()
+        self._check_parameters()
+        self._generate_mask()
 
 
-    def check_parameters(self):
-        super().check_parameters()
+    def _check_parameters(self):
+        super()._check_parameters()
 
         ## check exc_pct
         assert 0 <= self.exc_pct <= 1, "exc_pct must be between 0 and 1"
@@ -35,16 +35,16 @@ class MultiAreaEI(MultiArea):
             assert isinstance(self.inter_area_connections[i], bool), "inter_area_connections must be list of 4 boolean"
 
 
-    def generate_mask(self):
+    def _generate_mask(self):
         """
         Generate the mask for the multi-area network
         """
-        super().generate_mask()
-        self.generate_ei_assigment()
-        self.masks_to_ei()
+        super()._generate_mask()
+        self._generate_ei_assigment()
+        self._masks_to_ei()
 
 
-    def generate_ei_assigment(self):
+    def _generate_ei_assigment(self):
         """
         Generate the assignment of excitatory and inhibitory neurons
         """
@@ -59,7 +59,7 @@ class MultiAreaEI(MultiArea):
             self.inhibitory_neurons[i] = self.node_assigment[i][n_exc:]
 
 
-    def masks_to_ei(self):
+    def _masks_to_ei(self):
         """
         Convert the masks to ei masks
         """

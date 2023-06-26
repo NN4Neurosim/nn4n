@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 import torch.nn as nn
 from nn4n.utils import *
 
@@ -17,6 +16,7 @@ class RecurrentLayer(nn.Module):
             layer_distributions,
             layer_biases,
             layer_masks,
+            recurrent_noise,
             **kwargs
         ):
         """
@@ -46,8 +46,8 @@ class RecurrentLayer(nn.Module):
 
         self.hidden_size = hidden_size
         self.use_dale = use_dale
-        self.set_activation(kwargs.get("activation", "relu"))
-        self.recurrent_noise = kwargs.get("recurrent_noise", 0.00)
+        self._set_activation(kwargs.get("activation", "relu"))
+        self.recurrent_noise = recurrent_noise
         self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
         self.ei_balance = ei_balance
         self.layer_distributions = layer_distributions
@@ -82,7 +82,7 @@ class RecurrentLayer(nn.Module):
 
     # INITIALIZATION
     # ==================================================================================================
-    def set_activation(self, act):
+    def _set_activation(self, act):
         self.act = act
         if self.act == "relu":
             self.activation = torch.relu
@@ -129,11 +129,13 @@ class RecurrentLayer(nn.Module):
         @param input: shape=(seq_len, batch, input_dim), network input
         @return stacked_states: shape=(seq_len, batch, hidden_size), stack of hidden layer status
         """
+        
+        hidden_state = torch.zeros(self.hidden_size, device=input.device)
         # update hidden state and append to stacked_states
         stacked_states = []
         for i in range(input.size(0)):
-            self.hidden_state = self.recurrence(input[i], self.hidden_state)
-            stacked_states.append(self.hidden_state.clone())
+            hidden_state = self.recurrence(input[i], hidden_state)
+            stacked_states.append(hidden_state)
         stacked_states = torch.stack(stacked_states, dim=0)
         
         return stacked_states

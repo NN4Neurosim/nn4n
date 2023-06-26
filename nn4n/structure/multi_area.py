@@ -21,11 +21,11 @@ class MultiArea():
 
         # run if it is not a child class
         if self.__class__.__name__ == "MultiArea":
-            self.check_parameters()
-            self.generate_mask()
+            self._check_parameters()
+            self._generate_mask()
 
 
-    def check_parameters(self):
+    def _check_parameters(self):
         """
         Check if parameters are valid
         """
@@ -85,16 +85,16 @@ class MultiArea():
             assert np.all(0 <= self.output_areas) and np.all(self.output_areas < self.n_areas), "output_areas must be between 0 and n_areas"
 
     
-    def generate_mask(self):
+    def _generate_mask(self):
         """
         Generate the mask for the multi-area network
         """
-        self.generate_hidden_mask()
-        self.generate_input_mask()
-        self.generate_output_mask()
+        self._generate_hidden_mask()
+        self._generate_input_mask()
+        self._generate_output_mask()
  
 
-    def generate_hidden_mask(self):
+    def _generate_hidden_mask(self):
         """
         Generate the mask for the hidden layer
         """
@@ -104,33 +104,33 @@ class MultiArea():
                 if self.area_connectivities[i, j] > 0:
                     area_i_size = len(self.node_assigment[i])
                     area_j_size = len(self.node_assigment[j])
-                    hidden_mask[np.ix_(self.node_assigment[i], self.node_assigment[j])] = self.generate_sparse_matrix(area_i_size, area_j_size, self.area_connectivities[i, j])
+                    hidden_mask[np.ix_(self.node_assigment[i], self.node_assigment[j])] = self._generate_sparse_matrix(area_i_size, area_j_size, self.area_connectivities[i, j])
         self.hidden_mask = hidden_mask
 
 
-    def generate_input_mask(self):
+    def _generate_input_mask(self):
         """
         Generate the mask for the input layer
         """
         input_mask = np.zeros((self.hidden_size, self.input_dim))
         for i in self.input_areas:
             area_i_size = len(self.node_assigment[i])
-            input_mask[np.ix_(self.node_assigment[i], np.arange(self.input_dim))] = self.generate_sparse_matrix(area_i_size, self.input_dim, 1)
+            input_mask[np.ix_(self.node_assigment[i], np.arange(self.input_dim))] = self._generate_sparse_matrix(area_i_size, self.input_dim, 1)
         self.input_mask = input_mask
 
 
-    def generate_output_mask(self):
+    def _generate_output_mask(self):
         """
         Generate the mask for the output layer
         """
         output_mask = np.zeros((self.output_dim, self.hidden_size))
         for i in self.output_areas:
             area_i_size = len(self.node_assigment[i])
-            output_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self.generate_sparse_matrix(self.output_dim, area_i_size, 1)
+            output_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.output_dim, area_i_size, 1)
         self.output_mask = output_mask
 
 
-    def generate_sparse_matrix(self, n, m, p):
+    def _generate_sparse_matrix(self, n, m, p):
         """
         Generate a sparse matrix with size n x m and density p. 1 if connection exists, 0 otherwise
         """
@@ -147,3 +147,7 @@ class MultiArea():
 
         utils.plot_connectivity_matrix(input_mask_, "Input Layer Connectivity", False)
         utils.plot_connectivity_matrix(output_mask_, "Output Layer Connectivity", False)
+        
+
+    def masks(self):
+        return [self.input_mask, self.hidden_mask, self.output_mask]
