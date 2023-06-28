@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -37,3 +38,16 @@ def plot_connectivity_matrix(w, title, colorbar=True):
     if colorbar: fig.colorbar(ax.imshow(w, cmap='bwr', vmin=-r, vmax=r), ax=ax)
     # plt.tight_layout()
     plt.show()
+
+
+def clip_grad_norm(model, max_norm=1):
+    gradient = [] # store all gradients
+    for param in model.parameters(): # model.parameters include those defined in __init__ even if they are not used in forward pass
+        if param.requires_grad is True: # model.parameters include those defined in __init__ even if param.requires_grad is False (in this case param.grad is None)
+            gradient.append(param.grad.detach().flatten().numpy())
+    gradient = np.concatenate(gradient) # gradient = torch.cat(gradient)
+    # assert np.allclose(gradient.size,model.numparameters), "size of gradient and number of learned parameters don't match!"
+    gradient_norm = np.sqrt(np.sum(gradient**2))
+
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+    return gradient_norm

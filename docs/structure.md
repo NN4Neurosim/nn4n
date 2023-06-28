@@ -1,4 +1,14 @@
 # RNN structure(s)
+## Table of Contents
+- [Introduction](#introduction)
+- [Structures](#structures)
+    - [Multi Area](#multiarea)
+        - [MultiArea Parameters](#multiarea-parameters)
+        - [Forward Backward Specifications](#forward-backward-specifications)
+    - [Multi Area EI](#multiareaei)
+        - [MultiAreaEI Parameters](#multiareaei-parameters)
+        - [Inter-Area Connections Under EI Constraints](#inter-area-connections-under-ei-constraints)
+
 ## Introduction
 This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in the `model` module<br>
 
@@ -6,15 +16,12 @@ This module defines structures for any RNN in the standard 3-layer architectures
 
 Where yellow nodes are in the input layer, green nodes are in the hidden layer, and purple nodes are in the output layer.
 
-## Table of contents
-- [Multi Area](#multiarea)
-- [Multi Area EI](#multiareaei)
-
-## Structure
+## Structures
 ### MultiArea
-#### [Examples](../examples/MultiArea.ipynb)
+See [Examples](../examples/MultiArea.ipynb) <br>
 This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/output masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
+#### MultiArea Parameters
 | Parameter                | Default       | Type                       | Description                                |	
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
 | n_areas                  | 2             | `int` or `list`            | Number of areas.<br>- If `n_areas` is an integer, `n_areas` must be a divisor of `hidden_size`. It will divide the HiddenLayer into three equal size regions.<br>- If `n_areas` is a list, it must sums up to `hidden_size`, where each element in the list denote the number of neurons in that area.   |
@@ -45,7 +52,9 @@ $W$ may not matter if your connectivity matrix is symetric. But if it's not, you
 <!-- ![area_connectivities](../img/Multi_Area_Transpose.png) -->
 
 ### MultiAreaEI
-#### [Examples](../examples/MultiArea.ipynb)
+[Examples](../examples/MultiArea.ipynb) <br>
+This class is a child class of `MultiArea`. It will generate a multi-area RNN with E/I constraints. Therefore, by default, the input/hidden/output masks are signed masks. Use cautious as it will change the sign of the weights. 
+#### MultiAreaEI Parameters
 | Parameter                     | Default                 | Type                       | Description                                |
 |:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
 | ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons           |

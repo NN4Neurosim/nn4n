@@ -68,6 +68,7 @@ class LinearLayer(nn.Module):
             if self.use_dale:
                 self._init_dale_mask(mask)
             if not self.new_synapse:
+                # TODO: re-write this part
                 self.sparse_mask = (mask != 0).float()
 
         if self.dale_mask is not None:

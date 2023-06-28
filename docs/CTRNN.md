@@ -1,4 +1,18 @@
 # Continuous-Time RNN
+## Table of Contents
+- [Introduction](#introduction)
+- [Excitatory-Inhibitory Contrainted Continuous-Time RNN](#excitatory-inhibitory-contrainted-continuous-time-rnn)
+- [Model Structure](#model-structure)
+- [Parameters](#parameters)
+    - [Structure and I/O dimensions](#structure-and-io-dimensions)
+    - [Training parameters](#training-parameters)
+    - [Constraints](#constraints)
+- [Constraints And Masks](#constraints-and-masks)
+    - [Dale's Law](#dales-law)
+    - [New Synapse](#new-synapse)
+    - [Self Connections](#self-connections)
+- [Methods](#methods)
+
 ## Introduction
 This is an implementation of the standard Continuous-Time RNN. CTRNN is in the standard 3-layer RNN structure as depicted below:
 
@@ -58,25 +72,33 @@ These parameters primarily determine the constraints of the network. By default,
 | Parameter                | Default       | Type                       | Description                                |	
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
 | allow_negative           | True          | `boolean`/`list`      | Allow negative values or not in each layer.  If its a list, must have precisely three elements                   |
-| use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                            |
-| ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                    |
-| new_synapse              | True         | `boolean`/`list`             | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements                   |
+| use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the OutputLayer                                                             |
+| ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                   |
+| new_synapse              | True         | `boolean`/`list`            | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements. Note: this must be checked even if your mask is sparse, otherwise new connection will still be generated                   |
 | layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapse/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Output weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.              |
 
 
-### Constraints and masks
+## Constraints and masks
 Constraints are enforced before each forward pass
-#### Dale's Law:
+### Dale's Law:
 Masks (input, hidden, and output) cannot be `None` if `use_dale` is `True`.<br>
 Only entries signs matter for the enforcement of Dale's law. All edges from the same neuron must be all excitatory or inhibitory. This is enforced across training using the `relu()` and `-relu()` functions.<br>
 When `use_dale` is set to true, it will automatically balance the excitatory/inhibitory based on number of e/i neurons. To balance excitatory/inhibitory based on excitatory/inhibitory connection numbers, set `ei_balance` to 'synapse'.
-#### new_synapse:
+### New Synapse:
 `new_synapse` defines whether a neuron can 'grow' new connections.<br>
 If plasiticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `new_synapse` is set to False.<br>
 Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.
-#### Self-Connections:
+### Self Connections:
 Whether a neuron can connect to itself. This is enforced along with the `new_synapse` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
 
+## Methods
+| Method                   | Parameters                  | Description                                |
+|:-------------------------|:---------------------------:|:-------------------------------------------|
+| `save()`                 | `path`                      | Save the network to a given path           |
+| `load()`                 | `path`                      | Load the network from a given path         |
+| `print_layers()`         | None                        | Print the network architecture and layer-by-layer specifications |
+| `train()`                | None                        | Set the network to training mode, training will be performed and constraints will be enforced |
+| `eval()`                 | None                        | Set the network to evaluation mode, no training will be performed and no constraints will be enforced |
 
 ## Todos
 - [ ] Load in connectivity matrices
@@ -91,3 +113,5 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 - [x] Merge hidden_dist, input_dist, output_dist to a single parameter
 - [ ] Check different exc_pct
 - [ ] Consider to design 'allow_negative' better so that it won't be so verbotic
+- [ ] When layer masks is not full
+- [ ] Optimize constraints parameters

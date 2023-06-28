@@ -137,14 +137,14 @@ class CTRNN(nn.Module):
         """
         # skip constraints if not training
         if self.training:
-            self.enforce_constraints()
+            self._enforce_constraints()
         hidden_states = self.recurrent(x)
         output = self.readout_layer(hidden_states.float())
         if not self.keep_state: self.recurrent.reset_state() # whether to reset state after each forward pass
         return output, hidden_states
 
 
-    def enforce_constraints(self):
+    def _enforce_constraints(self):
         self.recurrent.enforce_constraints()
         self.readout_layer.enforce_constraints()
 

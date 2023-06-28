@@ -114,6 +114,7 @@ class HiddenLayer(nn.Module):
             self.weight *= self.dale_mask
             self._balance_excitatory_inhibitory()
         if self.sparse_mask is not None:
+            # TODO: re-write this part
             self.weight *= self.sparse_mask
 
 
@@ -243,8 +244,9 @@ class HiddenLayer(nn.Module):
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
             "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
-            "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
+            # "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        utils.plot_connectivity_matrix_dist(self.weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
+        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
     # ======================================================================================
