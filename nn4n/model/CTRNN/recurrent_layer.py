@@ -107,7 +107,7 @@ class RecurrentLayer(nn.Module):
         @param input: shape=(batch_size, 4)
         @param hidden: hidden layer of the CTRNN
         """
-        hidden_out = self.hidden_layer(self.activation(hidden)) # r(t) @ W_rec + b
+        hidden_out = self.hidden_layer(hidden) # r(t) @ W_rec + b
         new_input = self.input_layer(input) # u(t) @ W_in
         if self.recurrent_noise > 0:
             noise = torch.randn(self.hidden_size, device=hidden.device) * self.recurrent_noise
@@ -115,7 +115,7 @@ class RecurrentLayer(nn.Module):
         else:
             hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input)
 
-        return hidden_new
+        return self.activation(hidden_new)
 
 
     def enforce_constraints(self):

@@ -65,7 +65,9 @@ class RNNLoss(nn.Module):
         """
         Compute the loss for metabolic states
         """
-        return torch.square(states).mean()
+        # return torch.square(states).mean()
+        l1_loss_per_timestep = torch.norm(states, p=1, dim=1)
+        return l1_loss_per_timestep.mean()
 
 
     def forward(self, pred, label, **kwargs):

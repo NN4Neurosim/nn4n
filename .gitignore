@@ -1,5 +1,5 @@
 ############# CUSTOM GITIGNORE #############
-
+.DS_Store
 
 ############# DEFAULT GITIGNORE #############
 # Byte-compiled / optimized / DLL files
