@@ -14,7 +14,7 @@ class MultiArea():
         self.n_areas = kwargs.get("n_areas", 2)
         self.area_connectivities = kwargs.get("area_connectivities", [0.1, 0.1])
         self.input_areas = np.array(kwargs.get("input_areas", None))
-        self.output_areas = np.array(kwargs.get("output_areas", None))
+        self.readout_areas = np.array(kwargs.get("readout_areas", None))
         self.hidden_size = kwargs.get("hidden_size", None)
         self.input_dim = kwargs.get("input_dim", 1)
         self.output_dim = kwargs.get("output_dim", 1)
@@ -56,7 +56,7 @@ class MultiArea():
 
         if self.n_areas == 1:
             self.input_areas = np.array([0])
-            self.output_areas = np.array([0])
+            self.readout_areas = np.array([0])
 
         ## check area_connectivities
         assert np.all(0 <= np.array(self.area_connectivities)) and np.all(np.array(self.area_connectivities) <= 1), "area_connectivities must be between 0 and 1"
@@ -73,16 +73,16 @@ class MultiArea():
         else:
             assert False, "area_connectivities must be list or np.ndarray"
 
-        ## check input_areas and output_areas
+        ## check input_areas and readout_areas
         if self.input_areas is None:
             self.input_areas = np.arange(self.n_areas)
         else:
             assert np.all(0 <= self.input_areas) and np.all(self.input_areas < self.n_areas), "input_areas must be between 0 and n_areas"
         
-        if self.output_areas is None:
-            self.output_areas = np.arange(self.n_areas)
+        if self.readout_areas is None:
+            self.readout_areas = np.arange(self.n_areas)
         else:
-            assert np.all(0 <= self.output_areas) and np.all(self.output_areas < self.n_areas), "output_areas must be between 0 and n_areas"
+            assert np.all(0 <= self.readout_areas) and np.all(self.readout_areas < self.n_areas), "readout_areas must be between 0 and n_areas"
 
     
     def _generate_mask(self):
@@ -91,7 +91,7 @@ class MultiArea():
         """
         self._generate_hidden_mask()
         self._generate_input_mask()
-        self._generate_output_mask()
+        self._generate_readout_mask()
  
 
     def _generate_hidden_mask(self):
@@ -119,15 +119,15 @@ class MultiArea():
         self.input_mask = input_mask
 
 
-    def _generate_output_mask(self):
+    def _generate_readout_mask(self):
         """
-        Generate the mask for the output layer
+        Generate the mask for the readout layer
         """
-        output_mask = np.zeros((self.output_dim, self.hidden_size))
-        for i in self.output_areas:
+        readout_mask = np.zeros((self.output_dim, self.hidden_size))
+        for i in self.readout_areas:
             area_i_size = len(self.node_assigment[i])
-            output_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.output_dim, area_i_size, 1)
-        self.output_mask = output_mask
+            readout_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.output_dim, area_i_size, 1)
+        self.readout_mask = readout_mask
 
 
     def _generate_sparse_matrix(self, n, m, p):
@@ -143,11 +143,11 @@ class MultiArea():
         utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Connectivity", False)
 
         input_mask_ = self.input_mask if self.input_mask.shape[1] > self.input_mask.shape[0] else self.input_mask.T
-        output_mask_ = self.output_mask if self.output_mask.shape[1] > self.output_mask.shape[0] else self.output_mask.T
+        readout_mask_ = self.readout_mask if self.readout_mask.shape[1] > self.readout_mask.shape[0] else self.readout_mask.T
 
         utils.plot_connectivity_matrix(input_mask_, "Input Layer Connectivity", False)
-        utils.plot_connectivity_matrix(output_mask_, "Output Layer Connectivity", False)
+        utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Connectivity", False)
         
 
     def masks(self):
-        return [self.input_mask, self.hidden_mask, self.output_mask]
+        return [self.input_mask, self.hidden_mask, self.readout_mask]

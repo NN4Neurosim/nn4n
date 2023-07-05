@@ -12,7 +12,7 @@ class LinearLayer(nn.Module):
             use_bias,
             mask,
             use_dale,
-            new_synapse,
+            new_synapses,
             allow_negative,
             ei_balance,
         ) -> None:
@@ -26,7 +26,7 @@ class LinearLayer(nn.Module):
             @param input_dim: input dimension
             @param output_dim: output dimension
             @param use_dale: whether to use Dale's law
-            @param new_synapse: whether to use new_synapse
+            @param new_synapses: whether to use new_synapses
             @param allow_negative: whether to allow negative weights, a boolean value
             @param ei_balance: method to balance E/I neurons, default: "neuron"
         """
@@ -36,7 +36,7 @@ class LinearLayer(nn.Module):
         self.dist = dist
         self.use_bias = use_bias
         self.use_dale = use_dale
-        self.new_synapse = new_synapse
+        self.new_synapses = new_synapses
         self.allow_negative = allow_negative
         self.ei_balance = ei_balance
         
@@ -62,46 +62,46 @@ class LinearLayer(nn.Module):
         """
         if mask is None:
             assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert self.new_synapse, "mask must be provided if synapses are not plastic"
+            assert self.new_synapses, "mask must be provided if synapses are not plastic"
         else:
             mask = torch.tensor(mask)
             if self.use_dale:
                 self._init_dale_mask(mask)
-            if not self.new_synapse:
+            if not self.new_synapses:
                 # TODO: re-write this part
                 self.sparse_mask = (mask != 0).float()
 
         if self.dale_mask is not None:
             self.weight *= self.dale_mask
-            self.balance_excitatory_inhibitory()
+            # self._balance_excitatory_inhibitory()
         if self.sparse_mask is not None:
             self.weight *= self.sparse_mask
             self.weight = self._rescale_weight_bias(self.weight)
             # self.bias = self._rescale_weight_bias(self.bias)
 
 
-    def _balance_excitatory_inhibitory(self):
-        """ 
-        Balance excitatory and inhibitory weights 
-        """
-        scale_mat = torch.ones_like(self.weight)
-        # if using number of neurons to balance e/i connections
-        if self.ei_balance == 'neuron':
-            exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.hidden_size
-            scale_mat[:, self.ei_list == 1] = 1 / exc_pct
-            scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
-        # if using number of synapses to balance e/i connections
-        elif self.ei_balance == 'synapse':
-            exc_syn = torch.count_nonzero(self.weight > 0)
-            inh_syn = torch.count_nonzero(self.weight < 0)
-            exc_pct = exc_syn / (exc_syn + inh_syn)
-            scale_mat[self.weight > 0] = 1 / exc_pct
-            scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
-        # assert error if ei_balance is not 'neuron' or 'synapse'
-        else:
-            assert False, "ei_balance must be either 'neuron' or 'synapse'"
+    # def _balance_excitatory_inhibitory(self):
+    #     """ 
+    #     Balance excitatory and inhibitory weights 
+    #     """
+    #     scale_mat = torch.ones_like(self.weight)
+    #     # if using number of neurons to balance e/i connections
+    #     if self.ei_balance == 'neuron':
+    #         exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.
+    #         scale_mat[:, self.ei_list == 1] = 1 / exc_pct
+    #         scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
+    #     # if using number of synapses to balance e/i connections
+    #     elif self.ei_balance == 'synapse':
+    #         exc_syn = torch.count_nonzero(self.weight > 0)
+    #         inh_syn = torch.count_nonzero(self.weight < 0)
+    #         exc_pct = exc_syn / (exc_syn + inh_syn)
+    #         scale_mat[self.weight > 0] = 1 / exc_pct
+    #         scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
+    #     # assert error if ei_balance is not 'neuron' or 'synapse'
+    #     else:
+    #         assert False, "ei_balance must be either 'neuron' or 'synapse'"
 
-        self.weight *= scale_mat
+    #     self.weight *= scale_mat
 
 
     def _init_dale_mask(self, mask):
@@ -122,9 +122,9 @@ class LinearLayer(nn.Module):
             if all_zero[i]: ei_list[i] = 0
         self.ei_list = ei_list
         
-        # generate mask for Dale's law
-        dale_mask = torch.ones(mask.shape, dtype=int)
-        dale_mask[:, self.ei_list == -1] = -1
+        # create a mask for Dale's law
+        self.dale_mask = torch.ones(mask.shape, dtype=int)
+        self.dale_mask[:, self.ei_list == -1] = -1
 
 
     def _generate_weight(self):
@@ -172,7 +172,7 @@ class LinearLayer(nn.Module):
         """ Enforce mask """
         if self.sparse_mask is not None:
             self._enforce_sparsity()
-        if self.use_dale:
+        if self.dale_mask is not None:
             self._enforce_dale()
 
 
@@ -240,9 +240,9 @@ class LinearLayer(nn.Module):
         # plot weight matrix
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, not self.new_synapse)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, not self.new_synapses)
         else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapse)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapses)
     
 
     # def get_weight(self):

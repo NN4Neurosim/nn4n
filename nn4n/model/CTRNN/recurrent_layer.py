@@ -10,7 +10,7 @@ class RecurrentLayer(nn.Module):
             self,
             hidden_size,
             use_dale,
-            new_synapse,
+            new_synapses,
             allow_negative,
             ei_balance,
             layer_distributions,
@@ -24,7 +24,7 @@ class RecurrentLayer(nn.Module):
         Parameters:
             @param hidden_size: number of hidden neurons
             @param use_dale: use dale's law or not
-            @param new_synapse: use new_synapse or not
+            @param new_synapses: use new_synapses or not
             @param allow_negative: allow negative weights or not, a list of 3 boolean values
             @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
             @param layer_distributions: distribution of weights for each layer, a list of 3 strings
@@ -56,8 +56,8 @@ class RecurrentLayer(nn.Module):
         self.hidden_state = torch.zeros(self.hidden_size)
 
         self.input_layer = LinearLayer(
-            use_dale = False,
-            new_synapse = new_synapse[0],
+            use_dale = self.use_dale,
+            new_synapses = new_synapses[0],
             output_dim = self.hidden_size,
             input_dim = kwargs.get("input_dim", 1),
             use_bias = self.layer_biases[0],
@@ -68,7 +68,7 @@ class RecurrentLayer(nn.Module):
         )
         self.hidden_layer = HiddenLayer(
             hidden_size = self.hidden_size,
-            new_synapse = new_synapse[1],
+            new_synapses = new_synapses[1],
             use_dale = self.use_dale,
             dist = self.layer_distributions[1],
             use_bias = self.layer_biases[1],

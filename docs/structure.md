@@ -10,16 +10,16 @@
         - [Inter-Area Connections Under EI Constraints](#inter-area-connections-under-ei-constraints)
 
 ## Introduction
-This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and output_mask that are used in the `model` module<br>
+This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and readout_mask that are used in the `model` module<br>
 
 <p align="center"><img src="../img/RNN_structure.png" width="400"></p>
 
-Where yellow nodes are in the input layer, green nodes are in the hidden layer, and purple nodes are in the output layer.
+Where yellow nodes are in the InputLayer, green nodes are in the HiddenLayer, and purple nodes are in the ReadoutLayer.
 
 ## Structures
 ### MultiArea
 See [Examples](../examples/MultiArea.ipynb) <br>
-This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/output masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.
+This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
 #### MultiArea Parameters
 | Parameter                | Default       | Type                       | Description                                |	
@@ -27,7 +27,7 @@ This will generate a multi-area RNN without E/I constraints. Therefore, by defau
 | n_areas                  | 2             | `int` or `list`            | Number of areas.<br>- If `n_areas` is an integer, `n_areas` must be a divisor of `hidden_size`. It will divide the HiddenLayer into three equal size regions.<br>- If `n_areas` is a list, it must sums up to `hidden_size`, where each element in the list denote the number of neurons in that area.   |
 | area_connectivities      | [0.1, 0.1]    | `list` or `np.ndarray`   | Area-to-area connection connectivity. Entries must between `[0,1]`<br>- When `area_connectivities` is a list, all forward/backward connections will have the same sparsity.<br>- If its a list of two elements, the first element is the forward connectivity, and the second is the backward connectivity. The within-area connectivity will be 1.<br>- If its a list of three elements, the last element will be the within-area connectivity.<br>- If `area_connectivities` is an `np.ndarray`, it must be of shape (`n_areas`, `n_areas`). See [forward/backward specifications](#forward-backward-specifications)|
 | input_areas              | `None`        | `list` or `None`          | Areas that receive input. None if input to all areas. InputLayer is either densely connect to an area or doesn't connect to it at all.    |
-| output_areas             | `None`        | `list` or `None`          | Areas that readout from. None if readout from all areas. OutputLayer is either densely connect to an area or doesn't connect to it at all.    |
+| readout_areas            | `None`        | `list` or `None`          | Areas that readout from. None if readout from all areas. OutputLayer is either densely connect to an area or doesn't connect to it at all.    |
 | hidden_size              | None          | `int`                      | HiddenLayer size. Must be set.              |
 | input_dim                | 1             | `int`                      | Input dimension. It is used to compute the size of input layer, must be set.  |
 | output_dim               | 1             | `int`                      | Output dimension. It is used to compute the size of input layer, must be set. |
@@ -53,13 +53,13 @@ $W$ may not matter if your connectivity matrix is symetric. But if it's not, you
 
 ### MultiAreaEI
 [Examples](../examples/MultiArea.ipynb) <br>
-This class is a child class of `MultiArea`. It will generate a multi-area RNN with E/I constraints. Therefore, by default, the input/hidden/output masks are signed masks. Use cautious as it will change the sign of the weights. 
+This class is a child class of `MultiArea`. It will generate a multi-area RNN with E/I constraints. Therefore, by default, the input/hidden/readout masks are signed masks. Use cautious as it will change the sign of the weights. 
 #### MultiAreaEI Parameters
 | Parameter                     | Default                 | Type                       | Description                                |
 |:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
 | ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons           |
 | inter_area_connections        |[True, True, True, True] | `list` (of booleans)       | Allows for what type of inter-area connections. `inter_area_connections` must be a `boolean` list of 4 elements, denoting whether 'exc-exc', 'exc-inh', 'inh-exc', and 'inh-inh' connections are allowed between areas. see [inter-area connections under EI constraints](#inter-area-connections-under-ei-constraints). |
-| inh_output                    | True                     | `boolean`                 | Whether to have inhibitory output neurons    |
+| inh_readout                    | True                     | `boolean`                 | Whether to readout inhibitory neurons    |
 
 #### Inter-Area Connections Under EI Constraints
 Depending on the specific problem you are investigating on, it is possible that you want to eliminate inhibitory connections between areas. Or, you might not want excitatory neurons to connect to inhibitory neurons in other areas. See figure below for different cases of inter-area connections under EI constraints.

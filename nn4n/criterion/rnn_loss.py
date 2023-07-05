@@ -13,7 +13,7 @@ class RNNLoss(nn.Module):
         Initialize the loss functions
         """
         # the number of loss functions
-        n_losses = 4
+        n_losses = 5
 
         # init lambdas
         lambda_list = [0] * n_losses
@@ -21,6 +21,7 @@ class RNNLoss(nn.Module):
         lambda_list[1] = kwargs.get("lambda_rec", 0)
         lambda_list[2] = kwargs.get("lambda_out", 0)
         lambda_list[3] = kwargs.get("lambda_met", 0)
+        lambda_list[4] = kwargs.get("lambda_fr", 0)
         self.lambda_list = lambda_list
 
         # init loss functions
@@ -29,6 +30,7 @@ class RNNLoss(nn.Module):
         loss_list[1] = self._loss_rec
         loss_list[2] = self._loss_out
         loss_list[3] = self._loss_met
+        loss_list[4] = self._loss_fr
         self.loss_list = loss_list
 
         # init constants
@@ -56,10 +58,17 @@ class RNNLoss(nn.Module):
 
     def _loss_out(self, **kwargs):
         """
-        Compute the loss for output layer
+        Compute the loss for readout layer
         """
         return torch.norm(self.model.readout_layer.weight, p='fro')**2/self.n_out_dividend
     
+
+    def _loss_fr(self, states, **kwargs):
+        """
+        Compute the loss for firing rate
+        """
+        return torch.square(states).mean()
+
 
     def _loss_met(self, states, **kwargs):
         """

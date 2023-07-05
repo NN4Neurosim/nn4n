@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import nn4n.utils as utils
+import matplotlib.pyplot as plt
 
 class HiddenLayer(nn.Module):
     def __init__(
@@ -11,7 +12,7 @@ class HiddenLayer(nn.Module):
             spec_rad,
             mask,
             use_dale,
-            new_synapse,
+            new_synapses,
             self_connections,
             allow_negative,
             ei_balance,
@@ -22,9 +23,9 @@ class HiddenLayer(nn.Module):
             @param hidden_size: number of hidden units
             @param dist: distribution of hidden weights
             @param use_bias: use bias or not
-            @param new_synapse: use new_synapse or not
+            @param new_synapses: use new_synapses or not
             @param spec_rad: spectral radius of hidden weights
-            @param mask: mask for hidden weights, used to enforce new_synapse and/or dale's law
+            @param mask: mask for hidden weights, used to enforce new_synapses and/or dale's law
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
             @param self_connections: allow self connections or not
             @param allow_negative: allow negative weights or not, a boolean value
@@ -37,7 +38,7 @@ class HiddenLayer(nn.Module):
         self.use_bias = use_bias
         self.spec_rad = spec_rad
         self.use_dale = use_dale
-        self.new_synapse = new_synapse
+        self.new_synapses = new_synapses
         self.self_connections = self_connections
         self.allow_negative = allow_negative
         self.ei_balance = ei_balance
@@ -46,7 +47,7 @@ class HiddenLayer(nn.Module):
         self.weight = self._generate_weight()
         self.bias = self._generate_bias()
 
-        # init new_synapse, dale's law, and spectral radius
+        # init new_synapses, dale's law, and spectral radius
         self.dale_mask, self.sparse_mask = None, None
         self._init_constraints(mask)
         self._enforce_spec_rad()
@@ -91,15 +92,15 @@ class HiddenLayer(nn.Module):
         Initialize constraints
         It will also balance excitatory and inhibitory neurons
         """
-        # Initialize dale's law and new_synapse masks
+        # Initialize dale's law and new_synapses masks
         if mask is None:
             assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert self.new_synapse, "mask must be provided if synapses are not plastic"
+            assert self.new_synapses, "mask must be provided if synapses are not plastic"
         else:
             mask = torch.from_numpy(mask).int() # convert to torch.Tensor
             if self.use_dale:
                 self._init_dale_mask(mask) # initialize dale's mask
-            if not self.new_synapse:
+            if not self.new_synapses:
                 self.sparse_mask = (mask != 0).int() # convert to a binary mask
         
         # Whether to delete self connections
@@ -248,5 +249,5 @@ class HiddenLayer(nn.Module):
         }
         utils.print_dict("Hidden Layer", param_dict)
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
-        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapse)
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapses)
     # ======================================================================================

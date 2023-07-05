@@ -11,7 +11,7 @@ class CTRNN(nn.Module):
         Base RNN constructor
         Keyword Arguments:
             @kwarg use_dale: use dale's law or not
-            @kwarg new_synapse: use new_synapse or not
+            @kwarg new_synapses: use new_synapses or not
             @kwarg hidden_size: number of hidden neurons
             @kwarg output_dim: output dimension
             @kwarg allow_negative: allow negative weights or not
@@ -39,7 +39,7 @@ class CTRNN(nn.Module):
         self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
         # dynamics
         self.use_dale = kwargs.pop("use_dale", False)
-        self.new_synapse = kwargs.pop("new_synapse", True)
+        self.new_synapses = kwargs.pop("new_synapses", True)
         self.allow_negative = kwargs.pop("allow_negative", True)
         self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
@@ -52,7 +52,7 @@ class CTRNN(nn.Module):
         self.recurrent = RecurrentLayer(
             hidden_size = self.hidden_size,
             use_dale = self.use_dale,
-            new_synapse = self.new_synapse,
+            new_synapses = self.new_synapses,
             allow_negative = self.allow_negative,
             ei_balance = self.ei_balance,
             layer_distributions = self.layer_distributions,
@@ -68,7 +68,7 @@ class CTRNN(nn.Module):
             dist = self.layer_distributions[2],
             use_bias = self.layer_biases[2],
             mask = self.layer_masks[2],
-            new_synapse = self.new_synapse[2],
+            new_synapses = self.new_synapses[2],
             allow_negative = self.allow_negative[2],
             ei_balance = self.ei_balance,
         )
@@ -91,8 +91,8 @@ class CTRNN(nn.Module):
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
         assert self.hidden_size > 0, "hidden_size must be a positive integer"
 
-        ## check new_synapse
-        assert type(self.new_synapse) == bool, "new_synapse must be a boolean"
+        ## check new_synapses
+        assert type(self.new_synapses) == bool, "new_synapses must be a boolean"
 
         ## check allow_negative
         if type(self.allow_negative) == bool:
@@ -107,15 +107,15 @@ class CTRNN(nn.Module):
             print("WARNING: allow_negative is ignored because use_dale is set to True")
             self.allow_negative = [False, False, False]
 
-        ## check new_synapse
-        if type(self.new_synapse) == bool:
-            self.new_synapse = [self.new_synapse] * 3
-        elif type(self.new_synapse) == list:
-            assert len(self.new_synapse) == 3, "new_synapse must be a list of length 3"
-            for i in self.new_synapse:
-                assert type(i) == bool, "new_synapse must be a list of booleans"
+        ## check new_synapses
+        if type(self.new_synapses) == bool:
+            self.new_synapses = [self.new_synapses] * 3
+        elif type(self.new_synapses) == list:
+            assert len(self.new_synapses) == 3, "new_synapses must be a list of length 3"
+            for i in self.new_synapses:
+                assert type(i) == bool, "new_synapses must be a list of booleans"
         else:
-            raise ValueError("new_synapse must be a boolean or a list of booleans")
+            raise ValueError("new_synapses must be a boolean or a list of booleans")
     # ======================================================================================
 
 
