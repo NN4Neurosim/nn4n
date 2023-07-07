@@ -47,12 +47,12 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 These parameters primarily determine the structure of the network. It is recommended to check these parameters before initializing the network.
 | Parameter                | Default       | Type                                | Description                                |	
 |:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
-| input_dim                | 1             | `int`                               | Input dimension                            |
-| output_dim               | 1             | `int`                               | Output dimension                           |
-| hidden_size              | 100           | `int`                               | Number of hidden nodes                     |
-| spec_rad                 | 0.95          | `float`                             | HiddenLayer spectral radius                |
-| self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself     |
-| activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                        |
+| input_dim                | 1             | `int`                               | Input dimension                  |
+| output_dim               | 1             | `int`                               | Output dimension                  |
+| hidden_size              | 100           | `int`                               | Number of hidden nodes                      |
+| scaling                  | 1.0           | `float`                             | Scaling factor for the recurrent weights, it will scale the recurrent weight by $\frac{scaling}{\sqrt{hidden\_size}}$. Won't be effected when HiddenLayer distribution is `uniform`.   |
+| self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself          |
+| activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                   |
 | layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and ReadoutLayer, respectively.       |
 | layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and ReadoutLayer, respectively. |
 

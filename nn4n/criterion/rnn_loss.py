@@ -18,7 +18,7 @@ class RNNLoss(nn.Module):
         # init lambdas
         lambda_list = [0] * n_losses
         lambda_list[0] = kwargs.get("lambda_in", 0)
-        lambda_list[1] = kwargs.get("lambda_rec", 0)
+        lambda_list[1] = kwargs.get("lambda_hid", 0)
         lambda_list[2] = kwargs.get("lambda_out", 0)
         lambda_list[3] = kwargs.get("lambda_met", 0)
         lambda_list[4] = kwargs.get("lambda_fr", 0)
@@ -27,7 +27,7 @@ class RNNLoss(nn.Module):
         # init loss functions
         loss_list = [None] * n_losses
         loss_list[0] = self._loss_in
-        loss_list[1] = self._loss_rec
+        loss_list[1] = self._loss_hid
         loss_list[2] = self._loss_out
         loss_list[3] = self._loss_met
         loss_list[4] = self._loss_fr
@@ -38,7 +38,7 @@ class RNNLoss(nn.Module):
         n_size = self.model.recurrent.hidden_layer.weight.shape[0]
         n_out = self.model.readout_layer.weight.shape[0]
         self.n_in_dividend = n_in*n_size
-        self.n_rec_dividend = n_size*n_size
+        self.n_hid_dividend = n_size*n_size
         self.n_out_dividend = n_out*n_size
 
 
@@ -49,11 +49,11 @@ class RNNLoss(nn.Module):
         return torch.norm(self.model.recurrent.input_layer.weight, p='fro')**2/self.n_in_dividend
     
 
-    def _loss_rec(self, **kwargs):
+    def _loss_hid(self, **kwargs):
         """
         Compute the loss for recurrent layer
         """
-        return torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')**2/self.n_rec_dividend
+        return torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')**2/self.n_hid_dividend
 
 
     def _loss_out(self, **kwargs):
@@ -87,13 +87,13 @@ class RNNLoss(nn.Module):
         @param dur: duration of the trial
         """
         loss = torch.square(pred-label).mean()
-        print('mse loss', loss)
+        # print('mse loss', loss)
         for i in range(len(self.loss_list)):
             if self.lambda_list[i] == 0:
                 continue
             else:
                 loss_ = self.lambda_list[i]*self.loss_list[i](**kwargs)
-                print('other loss', loss_)
+                # print('other loss', loss_)
                 loss += loss_
         return loss
         

@@ -143,15 +143,16 @@ class LinearLayer(nn.Module):
 
     def _generate_bias(self):
         """ Generate random bias """
-        if self.use_bias:
-            if self.dist == 'uniform':
-                k = 1/self.input_dim
-                b = (torch.rand(self.output_dim) * 2 - 1) * torch.sqrt(torch.tensor(k))
-            elif self.dist == 'normal':
-                b = torch.randn(self.output_dim)
-                b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
-        else:
-            b = torch.zeros(self.output_dim)
+        # if self.use_bias:
+        #     if self.dist == 'uniform':
+        #         k = 1/self.input_dim
+        #         b = (torch.rand(self.output_dim) * 2 - 1) * torch.sqrt(torch.tensor(k))
+        #     elif self.dist == 'normal':
+        #         b = torch.randn(self.output_dim)
+        #         b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
+        # else:
+        #     b = torch.zeros(self.output_dim)
+        b = torch.zeros(self.output_dim)
 
         return b.float()
     

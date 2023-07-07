@@ -72,7 +72,7 @@ class RecurrentLayer(nn.Module):
             use_dale = self.use_dale,
             dist = self.layer_distributions[1],
             use_bias = self.layer_biases[1],
-            spec_rad = kwargs.get("spec_rad", 0.95),
+            scaling = kwargs.get("scaling", 1.0),
             mask = self.layer_masks[1],
             self_connections = kwargs.get("self_connections", False),
             allow_negative = allow_negative[1],
@@ -107,7 +107,7 @@ class RecurrentLayer(nn.Module):
         @param input: shape=(batch_size, 4)
         @param hidden: hidden layer of the CTRNN
         """
-        hidden_out = self.hidden_layer(hidden) # r(t) @ W_rec + b
+        hidden_out = self.hidden_layer(hidden) # r(t) @ W_hid + b
         new_input = self.input_layer(input) # u(t) @ W_in
         if self.recurrent_noise > 0:
             noise = torch.randn(self.hidden_size, device=hidden.device) * self.recurrent_noise

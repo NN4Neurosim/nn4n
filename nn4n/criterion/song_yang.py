@@ -6,7 +6,7 @@ class SongYangLoss(nn.Module):
         super().__init__()
         self.model = model
         self.lambda_in = kwargs.get("lambda_in", 1)
-        self.lambda_rec = kwargs.get("lambda_rec", 1)
+        self.lambda_hid = kwargs.get("lambda_hid", 1)
         self.lambda_out = kwargs.get("lambda_out", 1)
         self.dt = kwargs.get("dt", 1)
 
@@ -22,7 +22,7 @@ class SongYangLoss(nn.Module):
         n_size = self.model.recurrent.hidden_layer.weight.shape[0]
         mse = torch.square(pred-label).mean()
         loss_in = torch.norm(self.model.recurrent.input_layer.weight, p='fro')/(n_in*n_size)**2
-        loss_rec = torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')/(n_size*n_size)**2
+        loss_hid = torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')/(n_size*n_size)**2
         loss_out = torch.norm(self.model.readout_layer.weight, p='fro')/(n_out*n_size)**2
         
-        return mse + self.lambda_in*loss_in + self.lambda_rec*loss_rec + self.lambda_out*loss_out
+        return mse + self.lambda_in*loss_in + self.lambda_hid*loss_hid + self.lambda_out*loss_out

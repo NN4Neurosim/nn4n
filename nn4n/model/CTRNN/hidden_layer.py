@@ -9,7 +9,7 @@ class HiddenLayer(nn.Module):
             hidden_size,
             dist,
             use_bias,
-            spec_rad,
+            scaling,
             mask,
             use_dale,
             new_synapses,
@@ -24,7 +24,7 @@ class HiddenLayer(nn.Module):
             @param dist: distribution of hidden weights
             @param use_bias: use bias or not
             @param new_synapses: use new_synapses or not
-            @param spec_rad: spectral radius of hidden weights
+            @param scaling: scaling of hidden weights
             @param mask: mask for hidden weights, used to enforce new_synapses and/or dale's law
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
             @param self_connections: allow self connections or not
@@ -36,7 +36,7 @@ class HiddenLayer(nn.Module):
         self.hidden_size = hidden_size
         self.dist = dist
         self.use_bias = use_bias
-        self.spec_rad = spec_rad
+        self.scaling = scaling
         self.use_dale = use_dale
         self.new_synapses = new_synapses
         self.self_connections = self_connections
@@ -50,7 +50,7 @@ class HiddenLayer(nn.Module):
         # init new_synapses, dale's law, and spectral radius
         self.dale_mask, self.sparse_mask = None, None
         self._init_constraints(mask)
-        self._enforce_spec_rad()
+        self._enforce_scaling()
 
         # parameterize the weights and bias
         self.weight = nn.Parameter(self.weight)
@@ -67,22 +67,29 @@ class HiddenLayer(nn.Module):
             if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
         elif self.dist == 'normal':
             w = torch.randn(self.hidden_size, self.hidden_size)
-            w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
-            if not self.allow_negative: w = (w + 1) / 2
+            # # Normalizing to [-1, 1] seems to be unnecessary, as it will be scaled later
+            # # DISABLE ========================
+            # w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
+            # if not self.allow_negative: w = (w + 1) / 2
 
         return w.float()
     
 
     def _generate_bias(self):
-        if self.use_bias:
-            if self.dist == 'uniform':
-                k = 1/self.hidden_size
-                b = (torch.rand(self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
-            elif self.dist == 'normal':
-                b = torch.randn(self.hidden_size)
-                b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
-        else:
-            b = torch.zeros(self.hidden_size)
+        # # Bias seem to have too much effect on the network
+        # # DISABLE ========================
+        # if self.use_bias:
+        #     if self.dist == 'uniform':
+        #         k = 1/self.hidden_size
+        #         b = (torch.rand(self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
+        #     elif self.dist == 'normal':
+        #         b = torch.randn(self.hidden_size)
+        #         # b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
+        # else:
+        #     b = torch.zeros(self.hidden_size)
+        # # ================================
+
+        b = torch.zeros(self.hidden_size)
 
         return b.float()
 
@@ -174,7 +181,18 @@ class HiddenLayer(nn.Module):
     def _enforce_spec_rad(self):
         """ Enforce spectral radius """
         # Calculate scale
-        scale = self.spec_rad / torch.abs(torch.linalg.eig(self.weight)[0]).max()
+        print('WARNING: spectral radius not applied, the feature is deprecated, use scaling instead')
+        # scale = self.spec_rad / torch.abs(torch.linalg.eig(self.weight)[0]).max()
+        # # Scale bias and weight
+        # if self.use_bias: 
+        #     self.bias.data *= scale
+        # self.weight.data *= scale
+
+    
+    def _enforce_scaling(self):
+        """ Enforce scaling """
+        # Calculate scale
+        scale = self.scaling / torch.sqrt(self.hidden_size)
         # Scale bias and weight
         if self.use_bias: 
             self.bias.data *= scale
@@ -245,6 +263,7 @@ class HiddenLayer(nn.Module):
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
             "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
+            "scaling": self.scaling,
             # "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)

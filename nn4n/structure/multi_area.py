@@ -1,23 +1,19 @@
 import numpy as np
 import nn4n.utils as utils
+from nn4n.structure.base_struct import BaseStuct
 
-class MultiArea():
+class MultiArea(BaseStuct):
     def __init__(self, **kwargs):
         """
         Generate the multi-area network mask
         @kwarg n_areas: number of areas, list or int, default: 2
-        @area_connectivities: connectivity between areas, list or np.ndarray, default: [0.1, 0.1]
-        @hidden_size: number of hidden neurons in total, must be defined
-        @input_dim: input dimension, default: 1
-        @output_dim: output dimension, default: 1
+        @kwarg area_connectivities: connectivity between areas, list or np.ndarray, default: [0.1, 0.1]
         """
+        super().__init__(**kwargs)
         self.n_areas = kwargs.get("n_areas", 2)
         self.area_connectivities = kwargs.get("area_connectivities", [0.1, 0.1])
         self.input_areas = np.array(kwargs.get("input_areas", None))
         self.readout_areas = np.array(kwargs.get("readout_areas", None))
-        self.hidden_size = kwargs.get("hidden_size", None)
-        self.input_dim = kwargs.get("input_dim", 1)
-        self.output_dim = kwargs.get("output_dim", 1)
 
         # run if it is not a child class
         if self.__class__.__name__ == "MultiArea":
@@ -29,10 +25,7 @@ class MultiArea():
         """
         Check if parameters are valid
         """
-        ## check hidden_size
-        assert self.hidden_size is not None, "hidden_size must be defined"
-        assert isinstance(self.hidden_size, int), "hidden_size must be int"
-        assert self.hidden_size > 0, "hidden_size must be positive"
+        super()._check_parameters()
 
         ## check n_areas
         if isinstance(self.n_areas, int):
@@ -83,15 +76,6 @@ class MultiArea():
             self.readout_areas = np.arange(self.n_areas)
         else:
             assert np.all(0 <= self.readout_areas) and np.all(self.readout_areas < self.n_areas), "readout_areas must be between 0 and n_areas"
-
-    
-    def _generate_mask(self):
-        """
-        Generate the mask for the multi-area network
-        """
-        self._generate_hidden_mask()
-        self._generate_input_mask()
-        self._generate_readout_mask()
  
 
     def _generate_hidden_mask(self):
@@ -128,26 +112,40 @@ class MultiArea():
             area_i_size = len(self.node_assigment[i])
             readout_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.output_dim, area_i_size, 1)
         self.readout_mask = readout_mask
-
-
-    def _generate_sparse_matrix(self, n, m, p):
-        """
-        Generate a sparse matrix with size n x m and density p. 1 if connection exists, 0 otherwise
-        """
-        assert 0 <= p <= 1, "p must be between 0 and 1"
-        mask = np.random.rand(n, m) < p
-        return mask.astype(int)
     
 
-    def visualize(self):
-        utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Connectivity", False)
+    def get_input_idx(self):
+        """
+        Return the indices of neurons that receive input
+        """
+        return np.where(self.input_mask.sum(axis=1) != 0)[0]
+    
 
-        input_mask_ = self.input_mask if self.input_mask.shape[1] > self.input_mask.shape[0] else self.input_mask.T
-        readout_mask_ = self.readout_mask if self.readout_mask.shape[1] > self.readout_mask.shape[0] else self.readout_mask.T
+    def get_non_input_idx(self):
+        """
+        Return the indices of neurons that do not receive input
+        """
+        return np.where(self.input_mask.sum(axis=1) == 0)[0]
+    
 
-        utils.plot_connectivity_matrix(input_mask_, "Input Layer Connectivity", False)
-        utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Connectivity", False)
-        
+    def get_readout_idx(self):
+        """
+        Return the indices of neurons that send output
+        """
+        return np.where(self.readout_mask.sum(axis=0) != 0)[0]
 
-    def masks(self):
-        return [self.input_mask, self.hidden_mask, self.readout_mask]
+
+    def get_area_idx(self, n):
+        """
+        Return the indices of neurons in area n
+        """
+        if isinstance(n, str):
+            n = self.get_areas().index(n)
+        return self.node_assigment[n]
+
+
+    def get_areas(self):
+        """
+        Return the number of areas
+        """
+        return [f"area_{i+1}" for i in range(self.n_areas)]

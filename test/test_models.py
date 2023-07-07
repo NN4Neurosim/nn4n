@@ -14,7 +14,7 @@ MODEL_PARAMS = {
     
     # hyperparameters
     "tau": 100,
-    "spec_rad": 1.5,
+    "scaling": 1.0,
     "dt": 10,
     "activation": "relu",
     "recurrent_noise": 0.0,
