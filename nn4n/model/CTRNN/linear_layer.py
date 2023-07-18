@@ -134,9 +134,12 @@ class LinearLayer(nn.Module):
             w = (torch.rand(self.output_dim, self.input_dim) * 2 - 1) * torch.sqrt(torch.tensor(k))
             if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
         elif self.dist == 'normal':
-            w = torch.randn(self.output_dim, self.input_dim)
-            w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
-            if not self.allow_negative: w = (w + 1) / 2
+            w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(torch.tensor(self.input_dim))
+            if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
+        elif self.dist == 'zero':
+            w = torch.zeros((self.output_dim, self.input_dim))
+        else:
+            raise NotImplementedError
 
         return w.float()
 

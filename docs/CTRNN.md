@@ -53,7 +53,7 @@ These parameters primarily determine the structure of the network. It is recomme
 | scaling                  | 1.0           | `float`                             | Scaling factor for the recurrent weights, it will scale the recurrent weight by $\frac{scaling}{\sqrt{hidden\_size}}$. Won't be effected when HiddenLayer distribution is `uniform`.   |
 | self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself          |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                   |
-| layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform' or 'normal'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and ReadoutLayer, respectively.       |
+| layer_distributions      | ['uniform', 'normal', 'uniform']      | `string`/`list`            | Layer distributions. Either `string` or a `list` of three elements. The `string` or `list` element must be either 'uniform', 'normal', or 'zero'. If the given value is a `string`, it will set all three layers to the given distribution. If the provided value is a `list` of three elements, from the first to the last, correspond to the distribution of the InputLayer, HiddenLayer, and ReadoutLayer, respectively.       |
 | layer_biases             | [False, False, False] | `boolean` or `list`  | Whether to use bias in each layer. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, correspond to the InputLayer, HiddenLayer, and ReadoutLayer, respectively. |
 
 
@@ -64,7 +64,7 @@ These parameters primarily determine the training process of the network. The `t
 | tau                      | 1             | `float`                             | Time constant                              |
 | dt                       | 1             | `float`                             | Constant that used to discretize time      |
 | recurrent_noise          | 0.05          | `float`                             | Whether to add zero-mean Gaussian recurrent noise during training. This is often employed to simulate the effect of biological perceptual noise. |
-| keep_state               | False         | `boolean`                           | Whether to keep using the hidden state from previous trial |
+| init_state               | 'zero'        | 'zero', 'keep', 'learn'             | Method to initialize the hidden states. 'zero' will set the hidden states to zero at the beginning of each trial. 'keep' will keep the hidden states at the end of the previous trial. 'learn' will learn the initial hidden states. |
 
 
 ### Constraints

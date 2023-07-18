@@ -66,11 +66,16 @@ class HiddenLayer(nn.Module):
             w = (torch.rand(self.hidden_size, self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
             if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
         elif self.dist == 'normal':
-            w = torch.randn(self.hidden_size, self.hidden_size)
+            w = torch.randn(self.hidden_size, self.hidden_size) / torch.sqrt(torch.tensor(self.hidden_size))
+            if not self.allow_negative: w = (w + torch.abs(w.min())) / 2
             # # Normalizing to [-1, 1] seems to be unnecessary, as it will be scaled later
             # # DISABLE ========================
             # w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
             # if not self.allow_negative: w = (w + 1) / 2
+        elif self.dist == 'zero':
+            w = torch.zeros((self.output_dim, self.input_dim))
+        else:
+            raise NotImplementedError
 
         return w.float()
     
@@ -192,11 +197,7 @@ class HiddenLayer(nn.Module):
     def _enforce_scaling(self):
         """ Enforce scaling """
         # Calculate scale
-        scale = self.scaling / torch.sqrt(self.hidden_size)
-        # Scale bias and weight
-        if self.use_bias: 
-            self.bias.data *= scale
-        self.weight.data *= scale
+        self.weight.data *= self.scaling
 
 
     def enforce_constraints(self):

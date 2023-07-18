@@ -1,4 +1,7 @@
 # Neural Networks for Neuroscience
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/nn4n.svg)](https://badge.fury.io/py/nn4n)
+<br>
 Some of the most commonly used the NN architectures in neuroscience research are included in this project to ease the implementation process.
 
 ## Table of contents
@@ -48,10 +51,13 @@ The implementation of both Single-Area RNN and Multi-Area RNN can be easily achi
 
 
 ## Criterion
-### Song-Yang Loss function
-Loss function proposed in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016.
-
+### RNNLoss
+The loss function is modularized. Each criterion is designed in the format of $\lambda_L L(\cdot)$. By default, all $\lambda_{*}$ are set to 0 and won't be added to loss (nor the auto-grad tree). By changing the corresponding $\lambda_{*}$ to non-zero positive values, the corresponding loss function will be added to the total loss. The total loss is the sum of all loss functions with non-zero $\lambda_{*}$.
+- [Documentation](./docs/criterion.md)
 
 ## Others
 For similar projects: 
 - [nn-brain](https://github.com/gyyang/nn-brain)
+
+## Acknowledgements
+Immense thanks to Christopher J. Cueva for his mentorship in developing this project. This project can't be done without his invaluable help.
