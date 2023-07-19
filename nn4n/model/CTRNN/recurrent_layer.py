@@ -94,7 +94,9 @@ class RecurrentLayer(nn.Module):
         elif self.act == "sigmoid":
             self.activation = torch.sigmoid
         elif self.act == "retanh":
-            self.activation = lambda x: torch.maximum(torch.tanh(x),torch.tensor(0))
+            self.activation = lambda x: torch.maximum(torch.tanh(x), torch.tensor(0))
+        else:
+            raise NotImplementedError
 
 
     def _set_hidden_state(self):
@@ -137,17 +139,16 @@ class RecurrentLayer(nn.Module):
             # through hidden layer
             hidden_out = self.hidden_layer(hidden) # r(t) @ W_hid + b
             # add recurrent noise and update hidden state
+            hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input)
+            # add noise
             if self.recurrent_noise > 0:
-                noise = torch.randn(self.hidden_size, device=hidden.device) * self.recurrent_noise
-                hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input+noise)
-            else:
-                hidden_new = (1-self.alpha)*hidden + self.alpha*(hidden_out+new_input)
+                hidden = hidden + torch.randn((input.size(1), self.hidden_size), device=input.device) * self.recurrent_noise
             # apply activation function
             hidden = self.activation(hidden_new)
-            stacked_states.append(hidden.clone())
+            stacked_states.append(hidden)
 
         # if keeping the last state, save it to hidden_state
-        if self.init_state == 'last': self.hidden_state = hidden.detach().clone()
+        if self.init_state == 'keep': self.hidden_state = hidden.detach().clone() # TODO: haven't tested this yet
         
         return torch.stack(stacked_states, dim=0)
     # ==================================================================================================
@@ -167,6 +168,9 @@ class RecurrentLayer(nn.Module):
 
     def print_layer(self):
         param_dict = {
+            "hidden_min": self.hidden_state.min(),
+            "hidden_max": self.hidden_state.max(),
+            "hidden_mean": self.hidden_state.mean(),
             "recurrent_noise": self.recurrent_noise,
             "activation": self.act,
             "alpha": self.alpha,

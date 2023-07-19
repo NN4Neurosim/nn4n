@@ -15,26 +15,27 @@ class RNNLoss(nn.Module):
         self.lambda_mse = kwargs.get("lambda_mse", 1)
 
         # the number of loss functions
-        n_losses = 6
+        lambda_list, loss_list = [], []
 
         # init lambdas
-        lambda_list = [0] * n_losses
-        lambda_list[0] = kwargs.get("lambda_in", 0)
-        lambda_list[1] = kwargs.get("lambda_hid", 0)
-        lambda_list[2] = kwargs.get("lambda_out", 0)
-        lambda_list[3] = kwargs.get("lambda_met", 0)
-        lambda_list[4] = kwargs.get("lambda_fr", 0)
-        lambda_list[5] = kwargs.get("lambda_fr_std", 0)
-        self.lambda_list = lambda_list
-
+        lambda_list.append(kwargs.get("lambda_in", 0))
+        lambda_list.append(kwargs.get("lambda_hid", 0))
+        lambda_list.append(kwargs.get("lambda_out", 0))
+        lambda_list.append(kwargs.get("lambda_met", 0))
+        lambda_list.append(kwargs.get("lambda_fr", 0))
+        lambda_list.append(kwargs.get("lambda_fr_std", 0))
+        lambda_list.append(kwargs.get("lambda_fr_cv", 0))
         # init loss functions
-        loss_list = [None] * n_losses
-        loss_list[0] = self._loss_in
-        loss_list[1] = self._loss_hid
-        loss_list[2] = self._loss_out
-        loss_list[3] = self._loss_met
-        loss_list[4] = self._loss_fr
-        loss_list[5] = self._loss_fr_std
+        loss_list.append(self._loss_in)
+        loss_list.append(self._loss_hid)
+        loss_list.append(self._loss_out)
+        loss_list.append(self._loss_met)
+        loss_list.append(self._loss_fr)
+        loss_list.append(self._loss_fr_std)
+        loss_list.append(self._loss_fr_cv)
+
+        # save to self
+        self.lambda_list = lambda_list
         self.loss_list = loss_list
 
         # init constants
@@ -80,9 +81,17 @@ class RNNLoss(nn.Module):
 
     def _loss_fr_std(self, states, **kwargs):
         """
-        Compute the loss for firing rate for each neuron
+        Compute the loss for firing rate for each neuron in terms of std
         """
         return torch.sqrt(torch.square(states)).mean(dim=(0, 1)).std()
+    
+
+    def _loss_fr_cv(self, states, **kwargs):
+        """
+        Compute the loss for firing rate for each neuron in terms of coefficient of variation
+        """
+        avg_fr = torch.sqrt(torch.square(states)).mean(dim=(0, 1))
+        return avg_fr.std()/avg_fr.mean()
 
 
     def _loss_met(self, states, **kwargs):
@@ -102,7 +111,7 @@ class RNNLoss(nn.Module):
         @param label: size=(-1, batch_size, 2), labels
         @param dur: duration of the trial
         """
-        loss = [self.lambda_mse * torch.square(pred-label).mean()]
+        loss = [self.lambda_mse * torch.sqrt(torch.square(pred-label).mean())]
         # print('mse loss', loss)
         for i in range(len(self.loss_list)):
             if self.lambda_list[i] == 0:

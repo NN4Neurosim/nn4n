@@ -93,7 +93,6 @@ class HiddenLayer(nn.Module):
         # else:
         #     b = torch.zeros(self.hidden_size)
         # # ================================
-
         b = torch.zeros(self.hidden_size)
 
         return b.float()
@@ -270,4 +269,5 @@ class HiddenLayer(nn.Module):
         utils.print_dict("Hidden Layer", param_dict)
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapses)
+        utils.plot_eigenvalues(weight.detach().numpy(), "Hidden Layer")
     # ======================================================================================
