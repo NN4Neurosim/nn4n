@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 
+
 class RNNLoss(nn.Module):
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
         self._init_losses(**kwargs)
         self.dt = kwargs.get("dt", 10)
-    
+
     def _init_losses(self, **kwargs):
         """
         Initialize the loss functions
@@ -23,7 +24,7 @@ class RNNLoss(nn.Module):
         lambda_list.append(kwargs.get("lambda_out", 0))
         lambda_list.append(kwargs.get("lambda_met", 0))
         lambda_list.append(kwargs.get("lambda_fr", 0))
-        lambda_list.append(kwargs.get("lambda_fr_std", 0))
+        lambda_list.append(kwargs.get("lambda_fr_sd", 0))
         lambda_list.append(kwargs.get("lambda_fr_cv", 0))
         # init loss functions
         loss_list.append(self._loss_in)
@@ -31,7 +32,7 @@ class RNNLoss(nn.Module):
         loss_list.append(self._loss_out)
         loss_list.append(self._loss_met)
         loss_list.append(self._loss_fr)
-        loss_list.append(self._loss_fr_std)
+        loss_list.append(self._loss_fr_sd)
         loss_list.append(self._loss_fr_cv)
 
         # save to self
@@ -46,53 +47,30 @@ class RNNLoss(nn.Module):
         self.n_hid_dividend = n_size*n_size
         self.n_out_dividend = n_out*n_size
 
-
     def _loss_in(self, **kwargs):
-        """
-        Compute the loss for input layer
-        Lin = \sum_{i,j} W_{ij}^2 / (n_in * n_size)
-        """
+        """ Compute the loss for input layer """
         return torch.norm(self.model.recurrent.input_layer.weight, p='fro')**2/self.n_in_dividend
-    
 
     def _loss_hid(self, **kwargs):
-        """
-        Compute the loss for recurrent layer
-        Lhid = \sum_{i,j} W_{ij}^2 / (n_size * n_size)
-        """
+        """ Compute the loss for recurrent layer """
         return torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')**2/self.n_hid_dividend
 
-
     def _loss_out(self, **kwargs):
-        """
-        Compute the loss for readout layer
-        Lout = \sum_{i,j} W_{ij}^2 / (n_out * n_size)
-        """
+        """ Compute the loss for readout layer """
         return torch.norm(self.model.readout_layer.weight, p='fro')**2/self.n_out_dividend
-    
 
     def _loss_fr(self, states, **kwargs):
-        """
-        Compute the loss for firing rate
-        Lfr = \sum_{t} \sum{batch} \sum_{i} sqrt(firing_rate_i)^2 / (n_size * n_batch * n_time)
-        """
+        """ Compute the loss for firing rate """
         return torch.sqrt(torch.square(states)).mean()
-    
 
-    def _loss_fr_std(self, states, **kwargs):
-        """
-        Compute the loss for firing rate for each neuron in terms of std
-        """
+    def _loss_fr_sd(self, states, **kwargs):
+        """ Compute the loss for firing rate for each neuron in terms of SD """
         return torch.sqrt(torch.square(states)).mean(dim=(0, 1)).std()
-    
 
     def _loss_fr_cv(self, states, **kwargs):
-        """
-        Compute the loss for firing rate for each neuron in terms of coefficient of variation
-        """
+        """ Compute the loss for firing rate for each neuron in terms of coefficient of variation """
         avg_fr = torch.sqrt(torch.square(states)).mean(dim=(0, 1))
         return avg_fr.std()/avg_fr.mean()
-
 
     def _loss_met(self, states, **kwargs):
         # """
@@ -103,7 +81,6 @@ class RNNLoss(nn.Module):
         # return l1_loss_per_timestep.mean()
         raise NotImplementedError
 
-
     def forward(self, pred, label, **kwargs):
         """
         Compute the loss
@@ -111,8 +88,7 @@ class RNNLoss(nn.Module):
         @param label: size=(-1, batch_size, 2), labels
         @param dur: duration of the trial
         """
-        loss = [self.lambda_mse * torch.sqrt(torch.square(pred-label).mean())]
-        # print('mse loss', loss)
+        loss = [self.lambda_mse * torch.square(pred-label).mean()]
         for i in range(len(self.loss_list)):
             if self.lambda_list[i] == 0:
                 continue
@@ -120,4 +96,3 @@ class RNNLoss(nn.Module):
                 loss.append(self.lambda_list[i]*self.loss_list[i](**kwargs))
         loss = torch.stack(loss)
         return loss.sum(), loss
-        

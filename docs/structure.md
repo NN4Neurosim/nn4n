@@ -2,12 +2,17 @@
 ## Table of Contents
 - [Introduction](#introduction)
 - [Structures](#structures)
+    - [BaseStruct](#basestruct)
+        - [Parameters](#basestruct-parameters)
+        - [Methods](#basestruct-methods)
     - [Multi Area](#multiarea)
-        - [MultiArea Parameters](#multiarea-parameters)
+        - [Parameters](#multiarea-parameters)
         - [Forward Backward Specifications](#forward-backward-specifications)
     - [Multi Area EI](#multiareaei)
-        - [MultiAreaEI Parameters](#multiareaei-parameters)
+        - [Parameters](#multiareaei-parameters)
         - [Inter-Area Connections Under EI Constraints](#inter-area-connections-under-ei-constraints)
+    - [Random Input](#randominput)
+        - [Parameters](#randominput-parameters)
 
 ## Introduction
 This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and readout_mask that are used in the `model` module<br>
@@ -17,9 +22,30 @@ This module defines structures for any RNN in the standard 3-layer architectures
 Where yellow nodes are in the InputLayer, green nodes are in the HiddenLayer, and purple nodes are in the ReadoutLayer.
 
 ## Structures
+### BaseStruct
+Base class for all structures. It defines the basic structure of a RNN. It serves as a boilerplate for other structures. It is not meant to be used directly.
+
+#### BaseStruct Parameters
+| Parameter                | Default       | Type                       | Description                                |
+|:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
+| input_dim                | 1             | `int`                      | Input dimension. It is used to compute the size of input layer, must be set.  |
+| hidden_size              | None          | `int`                      | HiddenLayer size. Must be set.              |
+| output_dim               | 1             | `int`                      | Output dimension. It is used to compute the size of input layer, must be set. |
+
+#### BaseStruct Methods
+Methods that are shared by all structures. <br>
+| Method                   | Parameters                  | Description                                |
+|:-------------------------|:---------------------------:|:-------------------------------------------|
+| `get_input_idx()`        | None                        | Get indices of neurons that receive input. |
+| `get_readout_idx()`      | None                        | Get indices of neurons that readout from.  |
+| `get_non_input_idx()`    | None                        | Get indices of neurons that do not receive input. |
+| `visualize()`            | None                        | Visualize the structure.                   |
+| `masks()`                | None                        | Return a list of np.ndarray masks. It will be of length 3, where the first element is the input mask, the second element is the hidden mask, and the third element is the readout mask. For those structures that do not have specification for a certain mask, it will be an all-one matrix. |
+
+
 ### MultiArea
 See [Examples](../examples/MultiArea.ipynb) <br>
-This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to True, because it will make all neurons to be excitatory.
+This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to `True`, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
 #### MultiArea Parameters
 | Parameter                | Default       | Type                       | Description                                |	
@@ -40,6 +66,8 @@ This will generate a multi-area RNN without E/I constraints. Therefore, by defau
 | input_dim                | `int`                      | Input dimension                            |
 | output_dim               | `int`                      | Output dimension                           |
 | area_connectivities      | `np.ndarray`               | Area-to-area connectivity matrix. If it is a list in params, it will be transformed into a numpy matrix after initialization                   |
+| get_areas()              | None                        | Get a list of areas names.                 | 
+| get_area_idx()           | `area`                      | Get indices of neurons in a specific area. The parameter `area` could be either a string from the `get_areas()` or a index of the area. |
 
 #### Forward Backward Specifications
 RNNs can be implemented in various ways, in this library,
@@ -51,15 +79,17 @@ $W$ may not matter if your connectivity matrix is symetric. But if it's not, you
 
 <!-- ![area_connectivities](../img/Multi_Area_Transpose.png) -->
 
+
 ### MultiAreaEI
 [Examples](../examples/MultiArea.ipynb) <br>
 This class is a child class of `MultiArea`. It will generate a multi-area RNN with E/I constraints. Therefore, by default, the input/hidden/readout masks are signed masks. Use cautious as it will change the sign of the weights. 
 #### MultiAreaEI Parameters
 | Parameter                     | Default                 | Type                       | Description                                |
 |:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
-| ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons           |
+| ext_pct                       | 0.8                     | `float`                    | Percentage of excitatory neurons              |
 | inter_area_connections        |[True, True, True, True] | `list` (of booleans)       | Allows for what type of inter-area connections. `inter_area_connections` must be a `boolean` list of 4 elements, denoting whether 'exc-exc', 'exc-inh', 'inh-exc', and 'inh-inh' connections are allowed between areas. see [inter-area connections under EI constraints](#inter-area-connections-under-ei-constraints). |
-| inh_readout                    | True                     | `boolean`                 | Whether to readout inhibitory neurons    |
+| inh_readout                   | True                     | `boolean`                 | Whether to readout inhibitory neurons              |
+
 
 #### Inter-Area Connections Under EI Constraints
 Depending on the specific problem you are investigating on, it is possible that you want to eliminate inhibitory connections between areas. Or, you might not want excitatory neurons to connect to inhibitory neurons in other areas. See figure below for different cases of inter-area connections under EI constraints.
@@ -67,3 +97,14 @@ Depending on the specific problem you are investigating on, it is possible that 
 <p align="center"><img src="../img/Multi_Area_EI.png" width="550"></p>
 
 To specify what kinds of inter-area connections you want to keep, simple pass a 4-element boolean list to `inter_area_connections`. The 4 elements denotes whether to keep inter-area 'exc-exc', 'exc-inh', 'inh-exc', and 'inh-inh' connections.
+
+### RandomInput
+Randomly inject input to the network. Neurons's dynamic receiving input will be heavily driven by the inputting signal. Injecting signal to only part of the neuron will result in more versatile and hierarchical dynamics. See [A Versatile Hub Model For Efficient Information Propagation And Feature Selection](https://arxiv.org/abs/2307.02398) <br>
+
+#### RandomInput Parameters
+| Parameter                     | Default                 | Type                       | Description                                |
+|:------------------------------|:-----------------------:|:--------------------------:|:-------------------------------------------|
+| input_spar                    | 1                       | `float`                    | Input sparsity. Percentage of neurons that receive input.             |
+| readout_spars                 | 1                       | `float`                    | Readout sparsity. Percentage of neurons that readout from.              |
+| hidden_spar                   | 1                       | `float`                    | Hidden sparsity. Percentage of edges that are non-zero.                |
+| overlap                       | `True`                  | `boolean`                  | Whether to allow overlap between input and readout neurons.            |

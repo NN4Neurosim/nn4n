@@ -7,7 +7,7 @@ setup(
     description='Neural Networks for Neuroscience',
     author='Zhaoze Wang',
     license='MIT',
-    
+
     packages=find_packages(),
     install_requires=[
         'numpy',

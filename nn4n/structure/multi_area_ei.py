@@ -1,6 +1,6 @@
 import numpy as np
-import nn4n.utils as utils
 from .multi_area import MultiArea
+
 
 class MultiAreaEI(MultiArea):
     def __init__(self, **kwargs):
@@ -14,26 +14,23 @@ class MultiAreaEI(MultiArea):
         @kwarg inh_readout: whether to readout inhibitory neurons, default: True
         """
         super().__init__(**kwargs)
-
+        # initialize parameters
         self.exc_pct = kwargs.get("exc_pct", 0.8)
         self.inter_area_connections = kwargs.get("inter_area_connections", [True, True, True, True])
         self.inh_readout = kwargs.get("inh_readout", True)
-
+        # check parameters and generate mask
         self._check_parameters()
         self._generate_mask()
 
-
     def _check_parameters(self):
         super()._check_parameters()
-
-        ## check exc_pct
+        # check exc_pct
         assert 0 <= self.exc_pct <= 1, "exc_pct must be between 0 and 1"
-
-        ## check if inter_area_connections is list of 4 boolean
-        assert isinstance(self.inter_area_connections, list) and len(self.inter_area_connections) == 4, "inter_area_connections must be list of 4 boolean"
+        # check if inter_area_connections is list of 4 boolean
+        assert isinstance(self.inter_area_connections, list) and len(self.inter_area_connections) == 4, \
+            "inter_area_connections must be list of 4 boolean"
         for i in range(4):
             assert isinstance(self.inter_area_connections[i], bool), "inter_area_connections must be list of 4 boolean"
-
 
     def _generate_mask(self):
         """
@@ -42,7 +39,6 @@ class MultiAreaEI(MultiArea):
         super()._generate_mask()
         self._generate_ei_assigment()
         self._masks_to_ei()
-
 
     def _generate_ei_assigment(self):
         """
@@ -54,10 +50,8 @@ class MultiAreaEI(MultiArea):
         for i in range(self.n_areas):
             area_i_size = len(self.node_assigment[i])
             n_exc = int(area_i_size * self.exc_pct)
-            n_inh = area_i_size - n_exc
             self.excitatory_neurons[i] = self.node_assigment[i][:n_exc]
             self.inhibitory_neurons[i] = self.node_assigment[i][n_exc:]
-
 
     def _masks_to_ei(self):
         """

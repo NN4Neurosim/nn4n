@@ -4,20 +4,21 @@ from nn4n.model import CTRNN
 from nn4n.structure import MultiArea
 
 
-## Constants
+# Constants ===================================================================
 SPARSE = 1
 MODEL_PARAMS = {
     # size
     "input_dim": 1,
     "hidden_size": 200,
     "output_dim": 1,
-    
+
     # hyperparameters
     "tau": 100,
     "scaling": 1.0,
     "dt": 10,
     "activation": "relu",
-    "recurrent_noise": 0.0,
+    "preact_noise": 0,
+    "postact_noise": 0,
     "self_connections": False,
 
     # bias and distribution
@@ -35,21 +36,23 @@ STRUCT_PARAMS = {
 }
 
 
-## Checker functions
+# Checker functions ============================================================
 def test_models(logger):
     check_vanilla_rnn(logger)
     check_forward_pass(logger)
     check_struct(logger)
     check_fwd_bwd(logger)
 
+
 def check_vanilla_rnn(logger):
     # check base CTRNN construction
     logger.info('Testing CTRNN construction...')
     try:
-        rnn = CTRNN()
+        CTRNN()
     except Exception as e:
         logger.error('Error in constructing vanilla CTRNN without parameters.')
         raise e
+
 
 def check_vanilla_rnn_with_parameters(logger):
     # check CTRNN construction with parameters
@@ -74,7 +77,7 @@ def check_vanilla_rnn_with_parameters(logger):
     except Exception as e:
         logger.error('Error in constructing CTRNN with parameters.')
         raise e
-    
+
 
 def check_forward_pass(logger):
     # check forward pass
@@ -82,7 +85,7 @@ def check_forward_pass(logger):
     try:
         in_ = torch.randn(1, 1)
         rnn = CTRNN(**MODEL_PARAMS)
-        
+
         # check forward pass value
         a = MODEL_PARAMS['dt'] / MODEL_PARAMS['tau']
         pre_hidden = in_ @ rnn.recurrent.input_layer.weight.T + rnn.recurrent.input_layer.bias
@@ -96,7 +99,8 @@ def check_forward_pass(logger):
     except Exception as e:
         logger.error('Error in performing forward pass.')
         raise e
-    
+
+
 def check_struct(logger):
     logger.info('Testing MultiArea construction...')
     try:
@@ -114,14 +118,14 @@ def check_struct(logger):
         assert readout_mask.shape == (1, 200), AssertionError('Readout mask should be of shape (1, 200).')
 
         # check input/readout masks
-        assert np.all(input_mask[:100,:] == 1), AssertionError('Input mask for area 1 should be all ones.')
-        assert np.all(input_mask[100:,:] == 0), AssertionError('Input mask for area 2 should be all zeros.')
-        assert np.all(readout_mask[:,:100] == 0), AssertionError('Readout mask for area 1 should be all zeros.')
-        assert np.all(readout_mask[:,100:] == 1), AssertionError('Readout mask for area 2 should be all ones.')
-        
+        assert np.all(input_mask[:100, :] == 1), AssertionError('Input mask for area 1 should be all ones.')
+        assert np.all(input_mask[100:, :] == 0), AssertionError('Input mask for area 2 should be all zeros.')
+        assert np.all(readout_mask[:, :100] == 0), AssertionError('Readout mask for area 1 should be all zeros.')
+        assert np.all(readout_mask[:, 100:] == 1), AssertionError('Readout mask for area 2 should be all ones.')
+
         # check hidden mask
-        assert np.all(hidden_mask[:100,:100] == 1), AssertionError('Hidden mask for area 1 should be all ones.')
-        assert np.all(hidden_mask[100:,100:] == 1), AssertionError('Hidden mask for area 2 should be all ones.')
+        assert np.all(hidden_mask[:100, :100] == 1), AssertionError('Hidden mask for area 1 should be all ones.')
+        assert np.all(hidden_mask[100:, 100:] == 1), AssertionError('Hidden mask for area 2 should be all ones.')
     except Exception as e:
         logger.error('Error in constructing MultiArea.')
         raise e
@@ -134,37 +138,36 @@ def check_fwd_bwd(logger):
     # # no area-area connections
     # hidden_states = connectivity_check_helper(np.array([[1, 0], [0, 1]]))
     # assert torch.all(hidden_states[0,100:] == 0), AssertionError('Hidden states for area 2 should be all zeros.')
-    
+
     # area 1 -> area 2
     # input to area 1
     hidden_states = connectivity_check_helper(np.array(([[1, 0], [SPARSE, 1]])))
-    assert torch.any(hidden_states[1,100:] != 0), AssertionError('Hidden states for area 2 should not be all zeros.')
+    assert torch.any(hidden_states[1, 100:] != 0), AssertionError('Hidden states for area 2 should not be all zeros.')
     # input to area 2
     hidden_states = connectivity_check_helper(np.array(([[1, 0], [SPARSE, 1]])), in_a=[1], out_a=[0])
-    assert torch.all(hidden_states[1,:100] == 0), AssertionError('Hidden states for area 1 should be all zeros.')
+    assert torch.all(hidden_states[1, :100] == 0), AssertionError('Hidden states for area 1 should be all zeros.')
 
     # area 2 -> area 1
     # input to area 1
     hidden_states = connectivity_check_helper(np.array([[1, SPARSE], [0, 1]]))
-    assert torch.all(hidden_states[1,100:] == 0), AssertionError('Hidden states for area 2 should be all zeros.')
+    assert torch.all(hidden_states[1, 100:] == 0), AssertionError('Hidden states for area 2 should be all zeros.')
     # input to area 2
     hidden_states = connectivity_check_helper(np.array([[1, SPARSE], [0, 1]]), in_a=[1], out_a=[0])
-    assert torch.any(hidden_states[1,:100] != 0), AssertionError('Hidden states for area 1 should not be all zeros.')
-
-
+    assert torch.any(hidden_states[1, :100] != 0), AssertionError('Hidden states for area 1 should not be all zeros.')
 
 
 def connectivity_check_helper(conn, in_a=[0], out_a=[1]):
+    # construct structure parameters
     _struct_pm = STRUCT_PARAMS.copy()
     _struct_pm['area_connectivities'] = conn
     _struct_pm['input_areas'] = in_a
     _struct_pm['readout_areas'] = out_a
     struct = MultiArea(**_struct_pm)
-
+    # construct model parameters
     _model_pm = MODEL_PARAMS.copy()
     _model_pm['new_synapses'] = False
     _model_pm['layer_masks'] = struct.masks()
-
+    # intialize model
     rnn = CTRNN(**_model_pm)
     in_ = torch.randn(2, 1)
     _, hidden_states = rnn.forward(in_)

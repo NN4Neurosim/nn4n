@@ -25,75 +25,74 @@ class CTRNN(nn.Module):
         self.kwargs_checkpoint = kwargs.copy()
         self.initialize(**kwargs)
 
-
     # INITIALIZATION
     # ======================================================================================
     def initialize(self, **kwargs):
-        """
-        Initialize/Reinitialize the network
-        """
+        """ Initialize/Reinitialize the network """
         # parameters that used in all layers
-        # structure
+        # structure parameters
         self.hidden_size = kwargs.pop("hidden_size", 100)
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
-        # dynamics
+        # dynamics parameters
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapses = kwargs.pop("new_synapses", True)
         self.allow_negative = kwargs.pop("allow_negative", True)
         self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
-        self.recurrent_noise = kwargs.pop("recurrent_noise", 0)
+        self.preact_noise = kwargs.pop("preact_noise", 0)
+        self.postact_noise = kwargs.pop("postact_noise", 0)
 
+        # check if all parameters meet the requirements
         self._check_parameters()
 
         # layers
         self.recurrent = RecurrentLayer(
-            hidden_size = self.hidden_size,
-            use_dale = self.use_dale,
-            new_synapses = self.new_synapses,
-            allow_negative = self.allow_negative,
-            ei_balance = self.ei_balance,
-            layer_distributions = self.layer_distributions,
-            layer_biases = self.layer_biases,
-            layer_masks = self.layer_masks,
-            recurrent_noise = self.recurrent_noise,
+            hidden_size=self.hidden_size,
+            use_dale=self.use_dale,
+            new_synapses=self.new_synapses,
+            allow_negative=self.allow_negative,
+            ei_balance=self.ei_balance,
+            layer_distributions=self.layer_distributions,
+            layer_biases=self.layer_biases,
+            layer_masks=self.layer_masks,
+            preact_noise=self.preact_noise,
+            postact_noise=self.postact_noise,
             **kwargs
         )
         self.readout_layer = LinearLayer(
-            input_dim = self.hidden_size,
-            use_dale = self.use_dale,
-            output_dim = kwargs.get("output_dim", 1),
-            dist = self.layer_distributions[2],
-            use_bias = self.layer_biases[2],
-            mask = self.layer_masks[2],
-            new_synapses = self.new_synapses[2],
-            allow_negative = self.allow_negative[2],
-            ei_balance = self.ei_balance,
+            input_dim=self.hidden_size,
+            use_dale=self.use_dale,
+            output_dim=kwargs.get("output_dim", 1),
+            dist=self.layer_distributions[2],
+            use_bias=self.layer_biases[2],
+            mask=self.layer_masks[2],
+            new_synapses=self.new_synapses[2],
+            allow_negative=self.allow_negative[2],
+            ei_balance=self.ei_balance,
         )
 
+        # if using dale's law
         if self.use_dale:
             hidden_ei_list = self.recurrent.hidden_layer.ei_list
             readout_ei_list = self.readout_layer.ei_list
             nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
-            assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), "ei_list of hidden layer and readout layer must be the same when use_dale is True"
-
+            assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), \
+                "ei_list of hidden layer and readout layer must be the same when use_dale is True"
 
     def _check_parameters(self):
-        """
-        Check parameters
-        """
-        ## check use_dale
+        """ Check parameters """
+        # check use_dale
         assert type(self.use_dale) == bool, "use_dale must be a boolean"
 
-        ## check hidden_size
+        # check hidden_size
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
         assert self.hidden_size > 0, "hidden_size must be a positive integer"
 
-        ## check new_synapses
+        # check new_synapses
         assert type(self.new_synapses) == bool, "new_synapses must be a boolean"
 
-        ## check allow_negative
+        # check allow_negative
         if type(self.allow_negative) == bool:
             self.allow_negative = [self.allow_negative] * 3
         elif type(self.allow_negative) == list:
@@ -106,7 +105,7 @@ class CTRNN(nn.Module):
             print("WARNING: allow_negative is ignored because use_dale is set to True")
             self.allow_negative = [False, False, False]
 
-        ## check new_synapses
+        # check new_synapses
         if type(self.new_synapses) == bool:
             self.new_synapses = [self.new_synapses] * 3
         elif type(self.new_synapses) == list:
@@ -117,49 +116,41 @@ class CTRNN(nn.Module):
             raise ValueError("new_synapses must be a boolean or a list of booleans")
     # ======================================================================================
 
-
     # FORWARD
     # ======================================================================================
     def train(self):
-        self.recurrent.recurrent_noise = self.recurrent_noise
+        self.recurrent.preact_noise = self.preact_noise
+        self.recurrent.postact_noise = self.postact_noise
         self.training = True
 
-
     def eval(self):
-        self.recurrent.recurrent_noise = 0
+        self.recurrent.preact_noise = 0
+        self.recurrent.postact_noise = 0
         self.training = False
 
-
     def forward(self, x):
-        """
-        Forwardly update network W_in -> n x W_rc -> W_out
-        """
-        # skip constraints if not training
+        """ Forwardly update network W_in -> n x W_rc -> W_out """
+        # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
         hidden_states = self.recurrent(x)
         output = self.readout_layer(hidden_states.float())
         return output, hidden_states
 
-
     def _enforce_constraints(self):
         self.recurrent.enforce_constraints()
         self.readout_layer.enforce_constraints()
 
-
     # HELPER FUNCTIONS
     # ======================================================================================
     def to(self, device):
-        """
-        Move the network to device
-        """
+        """ Move the network to device """
         super().to(device)
         self.recurrent.to(device)
         self.readout_layer.to(device)
 
-
     def save(self, path):
-        # save model and kwargs to the same file
+        """ save model and kwargs to the same file """
         assert type(path) == str, "path must be a string"
         assert path[-4:] == ".pth", "path must end with .pth"
         torch.save({
@@ -167,9 +158,8 @@ class CTRNN(nn.Module):
             "kwargs": self.kwargs_checkpoint
         }, path)
 
-
     def load(self, path):
-        # load model and kwargs from the same file
+        """ load model and kwargs from the same file """
         assert type(path) == str, "path must be a string"
         assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
         checkpoint = torch.load(path)
@@ -177,8 +167,8 @@ class CTRNN(nn.Module):
         self.initialize(**self.kwargs_checkpoint)
         self.load_state_dict(checkpoint["model_state_dict"])
 
-
     def print_layers(self):
+        """ Print the parameters of each layer """
         self.recurrent.print_layer()
         self.readout_layer.print_layer()
     # ======================================================================================

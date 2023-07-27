@@ -7,8 +7,6 @@ import logging
 import traceback
 import os.path as osp
 
-
-from nn4n.model import CTRNN
 from test_models import test_models
 
 
@@ -21,14 +19,14 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     # remove osp.join(current_file_dir, 'test.log')
-    if os.path.exists(osp.join(current_file_dir, 'test.log')): 
+    if os.path.exists(osp.join(current_file_dir, 'test.log')):
         os.remove(osp.join(current_file_dir, 'test.log'))
     file_handler = logging.FileHandler(osp.join(current_file_dir, 'test.log'))
     stream_handler = logging.StreamHandler()
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
-    # ==========================================================    
-    
+    # ==========================================================
+
     # test list ================================================
     test_list = [
         'test_base_rnn'
@@ -41,7 +39,6 @@ if __name__ == '__main__':
     os.mkdir(test_path)
     # ==========================================================
 
-
     # test functions ===========================================
     if 'test_base_rnn' in test_list:
         logger.info('Testing base RNN...')
@@ -52,9 +49,8 @@ if __name__ == '__main__':
         except Exception as e:
             # print error massage and line number
             traceback.print_exc()
-            logger.error('Base RNN Failed.')
+            logger.error(f'Base RNN Failed. Error: {e}')
     # ==========================================================
-
 
     # remove the testing file ==================================
     shutil.rmtree(test_path)

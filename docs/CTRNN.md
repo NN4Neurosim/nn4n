@@ -1,4 +1,10 @@
 # Continuous-Time RNN
+[Back to Home](../README.md)
+## Introduction
+This is an implementation of the standard Continuous-Time RNN. CTRNN is in the standard 3-layer RNN structure as depicted below:
+
+<p align="center"><img src="../img/RNN_structure.png" width="400"></p>
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Excitatory-Inhibitory Contrainted Continuous-Time RNN](#excitatory-inhibitory-contrainted-continuous-time-rnn)
@@ -12,11 +18,6 @@
     - [New Synapse](#new-synapse)
     - [Self Connections](#self-connections)
 - [Methods](#methods)
-
-## Introduction
-This is an implementation of the standard Continuous-Time RNN. CTRNN is in the standard 3-layer RNN structure as depicted below:
-
-<p align="center"><img src="../img/RNN_structure.png" width="400"></p>
 
 
 ## Excitatory-Inhibitory Contrainted Continuous-Time RNN
@@ -63,8 +64,9 @@ These parameters primarily determine the training process of the network. The `t
 |:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
 | tau                      | 1             | `float`                             | Time constant                              |
 | dt                       | 1             | `float`                             | Constant that used to discretize time      |
-| recurrent_noise          | 0.05          | `float`                             | Whether to add zero-mean Gaussian recurrent noise during training. This is often employed to simulate the effect of biological perceptual noise. |
-| init_state               | 'zero'        | 'zero', 'keep', 'learn'             | Method to initialize the hidden states. 'zero' will set the hidden states to zero at the beginning of each trial. 'keep' will keep the hidden states at the end of the previous trial. 'learn' will learn the initial hidden states. |
+| preact_noise             | 0             | `float`                             | Whether to add zero-mean Gaussian preactivation noise during training. The noise is added before the activation function being applied. |
+| postact_noise            | 0             | `float`                             | Whether to add zero-mean Gaussian postactivation noise during training. The noise is added after the activation function being applied. |
+| init_state               | 'zero'        | 'zero', 'keep', 'learn'             | Method to initialize the hidden states. 'zero' will set the hidden states to zero at the beginning of each trial. 'keep' will keep the hidden states at the end of the previous trial. 'learn' will learn the initial hidden states. **Note:** 'keep' hasn't been tested yet. |
 
 
 ### Constraints
@@ -74,8 +76,8 @@ These parameters primarily determine the constraints of the network. By default,
 | allow_negative           | True          | `boolean`/`list`      | Allow negative values or not in each layer.  If its a list, must have precisely three elements                   |
 | use_dale                 | False         | `boolean`                  | Enfore Dale's law or not. Dale's law will only be enforced on the HiddenLayer and the ReadoutLayer                                                             |
 | ei_balance               | 'neuron'      | 'neuron' or 'synapse'      | Balance excitatory/inhibitory connection strength on neuron e/i ratio or synapse e/i ratio                                                                   |
-| new_synapses              | True         | `boolean`/`list`            | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements. Note: this must be checked even if your mask is sparse, otherwise new connection will still be generated                   |
-| layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapses/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Readout weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.              |
+| new_synapses             | True         | `boolean`/`list`            | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If its a list, must have precisely three elements. Note: this must be checked even if your mask is sparse, otherwise new connection will still be generated                  |
+| layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `new_synapses/use_dale is set to true. From the first to last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Readout weights, respectively. Each mask must has the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.                   |
 
 
 ## Constraints and masks
@@ -94,14 +96,13 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 ## Methods
 | Method                   | Parameters                  | Description                                |
 |:-------------------------|:---------------------------:|:-------------------------------------------|
-| `save()`                 | `path`                      | Save the network to a given path           |
-| `load()`                 | `path`                      | Load the network from a given path         |
+| `save()`                 | `path`                      | Save the network to a given path. Must end with `.pth`           |
+| `load()`                 | `path`                      | Load the network from a given path. Must end with `.pth`         |
 | `print_layers()`         | None                        | Print the network architecture and layer-by-layer specifications |
-| `train()`                | None                        | Set the network to training mode, training will be performed and constraints will be enforced |
+| `train()`                | None                        | Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noise won't be added.  |
 | `eval()`                 | None                        | Set the network to evaluation mode, no training will be performed and no constraints will be enforced |
 
 ## Todos
-- [ ] Load in connectivity matrices
 - [ ] Test different activation functions
 - [x] Bias when using dale's law?
 - [ ] If the masks are not set, there need default values.
