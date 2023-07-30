@@ -1,5 +1,5 @@
 # RNN structure(s)
-[Back to Home](https://github.com/zhaozewang/NN4Neurosci/README.md)
+[Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md)
 ## Table of Contents
 - [Introduction](#introduction)
 - [Structures](#structures)
@@ -18,7 +18,7 @@
 ## Introduction
 This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and readout_mask that are used in the `model` module<br>
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/basics/RNN_structure.png" width="400"></p>
+<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/RNN_structure.png" width="400"></p>
 
 Where yellow nodes are in the InputLayer, green nodes are in the HiddenLayer, and purple nodes are in the ReadoutLayer.
 
@@ -37,17 +37,17 @@ Base class for all structures. It defines the basic structure of a RNN. It serve
 Methods that are shared by all structures. <br>
 | Method                                               | Description                                         |
 |:-----------------------------------------------------|:----------------------------------------------------|
-| [`get_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_input_idx.md)      | Get indices of neurons that receive input.          |
-| [`get_readout_idx()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_readout_idx.md)  | Get indices of neurons that readout from.           |
-| [`get_non_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_non_input_idx.md) | Get indices of neurons that don't receive input. |
-| [`visualize()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/visualize.md)              | Visualize the generated masks.                      |
-| [`masks()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/masks.md)                      | Return a list of np.ndarray masks. It will be of length 3, where the first element is the input mask, the second element is the hidden mask, and the third element is the readout mask. For those structures that do not have specification for a certain mask, it will be an all-one matrix. |
-| [`get_areas()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_areas.md)              | Get a list of areas names.                 | 
-| [`get_area_idx()`](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_area_idx.md)        | Get indices of neurons in a specific area. The parameter `area` could be either a string from the `get_areas()` or a index of the area. |
+| [`get_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_input_idx.md)      | Get indices of neurons that receive input.          |
+| [`get_readout_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_readout_idx.md)  | Get indices of neurons that readout from.           |
+| [`get_non_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_non_input_idx.md) | Get indices of neurons that don't receive input. |
+| [`visualize()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/visualize.md)              | Visualize the generated masks.                      |
+| [`masks()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/masks.md)                      | Return a list of np.ndarray masks. It will be of length 3, where the first element is the input mask, the second element is the hidden mask, and the third element is the readout mask. For those structures that do not have specification for a certain mask, it will be an all-one matrix. |
+| [`get_areas()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_areas.md)              | Get a list of areas names.                 | 
+| [`get_area_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_area_idx.md)        | Get indices of neurons in a specific area. The parameter `area` could be either a string from the `get_areas()` or a index of the area. |
 
 
 ### MultiArea
-See [Examples](https://github.com/zhaozewang/NN4Neurosci/examples/MultiArea.ipynb) <br>
+See [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb) <br>
 This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to `True`, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
 #### MultiArea Parameters
@@ -74,13 +74,13 @@ $$s W^T + b$$
 is used in the HiddenLayer forward pass, where $W$ is the connectivity matrix of the HiddenLayer and $s$ is the current HiddenLayer state.<br>
 $W$ may not matter if your connectivity matrix is symmetric. But if it's not, you might want to pay attention to the forward connections and backward connections. In the figure below, three networks (`n_areas` = 2, 3, 4) and their corresponding forward/backward connection matrix are provided. The blue regions are intra-area connectivity, the green regions are forward connections, and the red regions are backward connections.
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/basics/Multi_Area.png" width="700"></p>
+<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/Multi_Area.png" width="700"></p>
 
 <!-- ![area_connectivities](../img/Multi_Area_Transpose.png) -->
 
 
 ### MultiAreaEI
-[Examples](https://github.com/zhaozewang/NN4Neurosci/examples/MultiArea.ipynb) <br>
+[Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb) <br>
 This class is a child class of `MultiArea`. It will generate a multi-area RNN with E/I constraints. Therefore, by default, the input/hidden/readout masks are signed masks. Use cautious as it will change the sign of the weights. 
 #### MultiAreaEI Parameters
 | Parameter                     | Default                 | Type                       | Description                                |
@@ -93,7 +93,7 @@ This class is a child class of `MultiArea`. It will generate a multi-area RNN wi
 #### Inter-Area Connections Under EI Constraints
 Depending on the specific problem you are investigating on, it is possible that you want to eliminate inhibitory connections between areas. Or, you might not want excitatory neurons to connect to inhibitory neurons in other areas. See figure below for different cases of inter-area connections under EI constraints.
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/basics/Multi_Area_EI.png" width="550"></p>
+<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/Multi_Area_EI.png" width="550"></p>
 
 To specify what kinds of inter-area connections you want to keep, simple pass a 4-element boolean list to `inter_area_connections`. The 4 elements denotes whether to keep inter-area 'exc-exc', 'exc-inh', 'inh-exc', and 'inh-inh' connections.
 

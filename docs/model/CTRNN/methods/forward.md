@@ -1,6 +1,6 @@
 # nn4n.model.CTRNN.forward()
 
-[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/index.md) </br>
+[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md) </br>
 
 ## Introduction
 The forward pass of the CTRNN model. As CTRNN is a child class of `torch.nn.Module`, it can be called either using `ctrnn.forward()` or `ctrnn()`, where `ctrnn` is a instance of `CTRNN`.

@@ -1,6 +1,6 @@
 # nn4n.structure.get_area_idx()
 
-[Back to structure](https://github.com/zhaozewang/NN4Neurosci/docs/structure/index.md) </br>
+[Back to structure](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md) </br>
 
 ## Introduction
 Get the node indices of a specific area.
@@ -35,4 +35,4 @@ array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
        34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49])
 ```
 
-see also: [get_areas()]('https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_areas.md')
+see also: [get_areas()]('https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_areas.md')

@@ -1,6 +1,6 @@
 # nn4n.model.CTRNN.train()
 
-[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/index.md) </br>
+[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md) </br>
 
 ## Introduction
 Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noises (preact_noise and postact_noise) won't be added.
@@ -25,4 +25,4 @@ for _ in range(100):
     optimizer.step()
 ```
 
-see also: [eval()](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/eval.md)
+see also: [eval()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/eval.md)

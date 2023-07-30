@@ -1,6 +1,6 @@
 # nn4n.structure.masks()
 
-[Back to structure](https://github.com/zhaozewang/NN4Neurosci/docs/structure/index.md) </br>
+[Back to structure](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md) </br>
 
 ## Introduction
 Return layer masks in a list.

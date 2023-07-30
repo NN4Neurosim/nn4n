@@ -1,6 +1,6 @@
 # nn4n.structure.visualize()
 
-[Back to structure](https://github.com/zhaozewang/NN4Neurosci/docs/structure/index.md) </br>
+[Back to structure](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md) </br>
 
 ## Introduction
 Print out the generated mask.
@@ -31,8 +31,8 @@ multiarea.visualize()
 
 Output
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/structure/input_mask.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/structure/hidden_mask.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/structure/readout_mask.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/structure/input_mask.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/structure/hidden_mask.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/structure/readout_mask.png" width="500"></br>
 
-see also: [get_readout_idx()](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_readout_idx.md) | [get_input_idx()](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_input_idx.md) | [get_non_input_idx()](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_non_input_idx.md)
+see also: [get_readout_idx()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_readout_idx.md) | [get_input_idx()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_input_idx.md) | [get_non_input_idx()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_non_input_idx.md)

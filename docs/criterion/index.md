@@ -1,5 +1,5 @@
 # Criterion
-[Back to Home](https://github.com/zhaozewang/NN4Neurosci/README.md)
+[Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md)
 ## RNNLoss Introduction
 The loss function is modularized. Each criterion is designed in the format of $`\lambda_L L(\cdot)`$. By default, all $`\lambda_{L}`$ are set to 0 and won't be added to loss (nor the auto-grad tree). By changing the corresponding $`\lambda_{L}`$ to non-zero positive values, the corresponding loss function will be added to the total loss. The total loss is the sum of all loss functions with non-zero $`\lambda_{L}`$.
 

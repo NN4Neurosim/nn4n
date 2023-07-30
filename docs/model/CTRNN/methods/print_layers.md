@@ -1,6 +1,6 @@
 # nn4n.model.CTRNN.print_layers()
 
-[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/index.md) </br>
+[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md) </br>
 
 ## Introduction
 Print out all layer details of the CTRNN.
@@ -27,8 +27,8 @@ Linear Layer:
    | sparsity:   1
 ```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_input.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_input_dist.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_input.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_input_dist.png" width="500"></br>
 
 ```
 Recurrence: 
@@ -56,9 +56,9 @@ Hidden Layer:
    | scaling:          1.0
 ```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_hidden.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_hidden_dist.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs//images/model/ctrnn_hidden_eig.png" width="300"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_hidden.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_hidden_dist.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs//images/model/ctrnn_hidden_eig.png" width="300"></br>
 
 ```
 Linear Layer: 
@@ -74,5 +74,5 @@ Linear Layer:
    | sparsity:   1
 ```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_readout.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/model/ctrnn_readout_dist.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_readout.png" width="500"></br>
+<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_readout_dist.png" width="500"></br>

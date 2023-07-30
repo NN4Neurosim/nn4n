@@ -1,6 +1,6 @@
 # nn4n.structure.get_areas()
 
-[Back to structure](https://github.com/zhaozewang/NN4Neurosci/docs/structure/index.md) </br>
+[Back to structure](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md) </br>
 
 ## Introduction
 Retrieve the area names
@@ -28,4 +28,4 @@ Output
 ['area_1', 'area_2']
 ```
 
-see also: [get_area_idx()]('https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_area_idx.md')
+see also: [get_area_idx()]('https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_area_idx.md')

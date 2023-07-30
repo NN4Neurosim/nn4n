@@ -1,6 +1,6 @@
 # nn4n.structure.get_non_input_idx()
 
-[Back to structure](https://github.com/zhaozewang/NN4Neurosci/docs/structure/index.md) </br>
+[Back to structure](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md) </br>
 
 ## Introduction
 Get the indices of the neurons that receive inputs.
@@ -37,4 +37,4 @@ array([30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
        81, 82, 83, 84, 85, 86, 87, 88, 89])
 ```
 
-see also: [get_readout_idx()](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_readout_idx.md) | [get_input_idx()](https://github.com/zhaozewang/NN4Neurosci/docs/structure/methods/get_input_idx.md)
+see also: [get_readout_idx()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_readout_idx.md) | [get_input_idx()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_input_idx.md)

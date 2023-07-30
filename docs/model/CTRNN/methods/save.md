@@ -1,6 +1,6 @@
 # nn4n.model.CTRNN.save()
 
-[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/index.md) </br>
+[Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md) </br>
 
 ## Introduction
 Save the CTRNN model to a `.pth` file. All model parameters and attributes will be saved.
@@ -17,4 +17,4 @@ ctrnn = CTRNN()
 ctrnn.save('ctrnn.pth')
 ```
 
-see also: [load()](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/load.md)
+see also: [load()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/load.md)

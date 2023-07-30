@@ -1,9 +1,9 @@
 # Continuous-Time RNN
-[Back to Home](https://github.com/zhaozewang/NN4Neurosci/README.md)
+[Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md)
 ## Introduction
 This is an implementation of the standard Continuous-Time RNN. CTRNN is in the standard 3-layer RNN structure as depicted below:
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/basics/RNN_structure.png" width="400"></p>
+<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/RNN_structure.png" width="400"></p>
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -27,7 +27,7 @@ The original [code](https://github.com/frsong/pycog) is implemented in [Theano](
 
 A visual illustration of the EIRNN is shown below.
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/docs/images/basics/EIRNN_structure.png" width="400"></p>
+<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/EIRNN_structure.png" width="400"></p>
 
 
 The yellow nodes denotes nodes in the input layer. The middle circle denotes the hidden layer. There are blue nodes and red nodes, representing inhibitory neurons and ecitatory neurons, respectively. The depicted network has E/I ratio of 4/1. The purple nodes are ReadoutLayer neurons. The network structure is as follows:
@@ -96,12 +96,12 @@ Whether a neuron can connect to itself. This is enforced along with the `new_syn
 ## Methods
 | Method                                        | Description                                |
 |:----------------------------------------------|:-------------------------------------------|
-| [`forward()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/forward.md)           | Forward pass                               |
-| [`save()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/save.md)                 | Save the network to a given path.          |
-| [`load()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/load.md)                 | Load the network from a given path.        |
-| [`print_layers()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/print_layers.md) | Print the network architecture and layer-by-layer specifications |
-| [`train()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/train.md)               | Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noises (preact_noise and postact_noise) won't be added.  |
-| [`eval()`](https://github.com/zhaozewang/NN4Neurosci/docs/model/CTRNN/methods/eval.md)                 | Set the network to evaluation mode, no training will be performed and no constraints will be enforced |
+| [`forward()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/forward.md)           | Forward pass                               |
+| [`save()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/save.md)                 | Save the network to a given path.          |
+| [`load()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/load.md)                 | Load the network from a given path.        |
+| [`print_layers()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/print_layers.md) | Print the network architecture and layer-by-layer specifications |
+| [`train()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/train.md)               | Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noises (preact_noise and postact_noise) won't be added.  |
+| [`eval()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/eval.md)                 | Set the network to evaluation mode, no training will be performed and no constraints will be enforced |
 
 ## Todos
 - [x] Test different activation functions
