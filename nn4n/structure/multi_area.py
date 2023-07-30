@@ -12,8 +12,8 @@ class MultiArea(BaseStuct):
         super().__init__(**kwargs)
         self.n_areas = kwargs.get("n_areas", 2)
         self.area_connectivities = kwargs.get("area_connectivities", [0.1, 0.1])
-        self.input_areas = np.array(kwargs.get("input_areas", None))
-        self.readout_areas = np.array(kwargs.get("readout_areas", None))
+        self.input_areas = kwargs.get("input_areas", None)
+        self.readout_areas = kwargs.get("readout_areas", None)
 
         # run if it is not a child class
         if self.__class__.__name__ == "MultiArea":
@@ -68,10 +68,12 @@ class MultiArea(BaseStuct):
         if self.input_areas is None:
             self.input_areas = np.arange(self.n_areas)
         else:
+            self.input_areas = np.array(self.input_areas)
             assert np.all(0 <= self.input_areas) and np.all(self.input_areas < self.n_areas), "input_areas must be between 0 and n_areas"
         if self.readout_areas is None:
             self.readout_areas = np.arange(self.n_areas)
         else:
+            self.readout_areas = np.array(self.readout_areas)
             assert np.all(0 <= self.readout_areas) and np.all(self.readout_areas < self.n_areas), "readout_areas must be between 0 and n_areas"
 
     def _generate_hidden_mask(self):

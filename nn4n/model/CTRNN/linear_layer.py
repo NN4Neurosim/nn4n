@@ -130,10 +130,12 @@ class LinearLayer(nn.Module):
     def _generate_weight(self):
         """ Generate random weight """
         if self.dist == 'uniform':
-            k = 1/self.input_dim
-            w = (torch.rand(self.output_dim, self.input_dim) * 2 - 1) * torch.sqrt(torch.tensor(k))
-            if not self.allow_negative:
-                w = (w + torch.abs(w.min())) / 2
+            # if uniform, let w be uniform in [-sqrt(k), sqrt(k)]
+            sqrt_k = torch.sqrt(torch.tensor(1/self.input_dim))
+            if self.allow_negative:
+                w = torch.rand(self.output_dim, self.input_dim) * 2 * sqrt_k - sqrt_k
+            else:
+                w = torch.rand(self.output_dim, self.input_dim) * sqrt_k
         elif self.dist == 'normal':
             w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(torch.tensor(self.input_dim))
             if not self.allow_negative:
@@ -147,15 +149,6 @@ class LinearLayer(nn.Module):
 
     def _generate_bias(self):
         """ Generate random bias """
-        # if self.use_bias:
-        #     if self.dist == 'uniform':
-        #         k = 1/self.input_dim
-        #         b = (torch.rand(self.output_dim) * 2 - 1) * torch.sqrt(torch.tensor(k))
-        #     elif self.dist == 'normal':
-        #         b = torch.randn(self.output_dim)
-        #         b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
-        # else:
-        #     b = torch.zeros(self.output_dim)
         b = torch.zeros(self.output_dim)
 
         return b.float()

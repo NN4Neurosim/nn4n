@@ -13,19 +13,29 @@ def print_dict(title, params):
 def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     r = np.max(np.abs(w))
 
-    fig, axs = plt.subplots(2, 1, figsize=(6, 7 * w.shape[0] / w.shape[1] + 3), gridspec_kw={'height_ratios': [w.shape[0] / w.shape[1], 0.3]})
+    img_width, hist_height = 6, 2
+    hw_ratio = w.shape[0] / w.shape[1]
+    plt_height = img_width * hw_ratio + hist_height
 
-    axs[0].imshow(-w, cmap='bwr', vmin=-r, vmax=r)
-    axs[0].set_title(title)
+    fig, ax = plt.subplots(figsize=(img_width, plt_height))
+    ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r)
+    ax.set_title(f'{title}')
     if colorbar:
-        fig.colorbar(axs[0].imshow(-w, cmap='bwr', vmin=-r, vmax=r), ax=axs[0])
+        fig.colorbar(ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r), ax=ax)
+    if w.shape[1] < 5:
+        ax.set_xticks([])
+    if w.shape[0] < 5:
+        ax.set_yticks([])
+    plt.tight_layout()
+    plt.show()
 
+    fig, ax = plt.subplots(figsize=(img_width, hist_height))
+    ax.set_title(f'{title} distribution')
     if ignore_zeros:
-        axs[1].hist(w[w != 0].flatten(), bins=50)
+        ax.hist(w[w != 0].flatten(), bins=50)
     else:
-        axs[1].hist(w.flatten(), bins=50)
-    axs[1].set_title(f"{title} Distribution")
-    # plt.tight_layout()
+        ax.hist(w.flatten(), bins=50)
+    plt.tight_layout()
     plt.show()
 
 

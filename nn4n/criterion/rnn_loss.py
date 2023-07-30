@@ -40,23 +40,23 @@ class RNNLoss(nn.Module):
         self.loss_list = loss_list
 
         # init constants
-        n_in = self.model.recurrent.input_layer.weight.shape[0]
-        n_size = self.model.recurrent.hidden_layer.weight.shape[0]
+        n_in = self.model.recurrent_layer.input_layer.weight.shape[0]
+        n_size = self.model.recurrent_layer.hidden_layer.weight.shape[0]
         n_out = self.model.readout_layer.weight.shape[0]
         self.n_in_dividend = n_in*n_size
         self.n_hid_dividend = n_size*n_size
         self.n_out_dividend = n_out*n_size
 
     def _loss_in(self, **kwargs):
-        """ Compute the loss for input layer """
-        return torch.norm(self.model.recurrent.input_layer.weight, p='fro')**2/self.n_in_dividend
+        """ Compute the loss for InputLayer """
+        return torch.norm(self.model.recurrent_layer.input_layer.weight, p='fro')**2/self.n_in_dividend
 
     def _loss_hid(self, **kwargs):
-        """ Compute the loss for recurrent layer """
-        return torch.norm(self.model.recurrent.hidden_layer.weight, p='fro')**2/self.n_hid_dividend
+        """ Compute the loss for RecurrentLayer """
+        return torch.norm(self.model.recurrent_layer.hidden_layer.weight, p='fro')**2/self.n_hid_dividend
 
     def _loss_out(self, **kwargs):
-        """ Compute the loss for readout layer """
+        """ Compute the loss for ReadoutLayer """
         return torch.norm(self.model.readout_layer.weight, p='fro')**2/self.n_out_dividend
 
     def _loss_fr(self, states, **kwargs):

@@ -52,7 +52,7 @@ class RecurrentLayer(nn.Module):
         self.use_dale = use_dale
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
-        self.alpha = kwargs.get("dt", 1) / kwargs.get("tau", 1)
+        self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
         self.ei_balance = ei_balance
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
@@ -138,7 +138,7 @@ class RecurrentLayer(nn.Module):
             new_input = self.input_layer(input[i])  # u(t) @ W_in
             # through hidden layer
             curr_h = self.hidden_layer(curr_h)  # r(t) @ W_hid + b
-            # add recurrent noise and update hidden state
+            # update hidden state
             prev_h = (1-self.alpha)*prev_h + self.alpha*(curr_h+new_input)
 
             # add noise

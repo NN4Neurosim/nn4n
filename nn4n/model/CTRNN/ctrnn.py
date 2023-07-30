@@ -33,7 +33,7 @@ class CTRNN(nn.Module):
         # structure parameters
         self.hidden_size = kwargs.pop("hidden_size", 100)
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
-        self.layer_biases = kwargs.pop("layer_biases", [False, False, False])
+        self.layer_biases = kwargs.pop("layer_biases", [True, True, True])
         # dynamics parameters
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapses = kwargs.pop("new_synapses", True)
@@ -47,7 +47,7 @@ class CTRNN(nn.Module):
         self._check_parameters()
 
         # layers
-        self.recurrent = RecurrentLayer(
+        self.recurrent_layer = RecurrentLayer(
             hidden_size=self.hidden_size,
             use_dale=self.use_dale,
             new_synapses=self.new_synapses,
@@ -74,7 +74,7 @@ class CTRNN(nn.Module):
 
         # if using dale's law
         if self.use_dale:
-            hidden_ei_list = self.recurrent.hidden_layer.ei_list
+            hidden_ei_list = self.recurrent_layer.hidden_layer.ei_list
             readout_ei_list = self.readout_layer.ei_list
             nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
             assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), \
@@ -119,13 +119,13 @@ class CTRNN(nn.Module):
     # FORWARD
     # ======================================================================================
     def train(self):
-        self.recurrent.preact_noise = self.preact_noise
-        self.recurrent.postact_noise = self.postact_noise
+        self.recurrent_layer.preact_noise = self.preact_noise
+        self.recurrent_layer.postact_noise = self.postact_noise
         self.training = True
 
     def eval(self):
-        self.recurrent.preact_noise = 0
-        self.recurrent.postact_noise = 0
+        self.recurrent_layer.preact_noise = 0
+        self.recurrent_layer.postact_noise = 0
         self.training = False
 
     def forward(self, x):
@@ -133,12 +133,12 @@ class CTRNN(nn.Module):
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
-        hidden_states = self.recurrent(x)
+        hidden_states = self.recurrent_layer(x)
         output = self.readout_layer(hidden_states.float())
         return output, hidden_states
 
     def _enforce_constraints(self):
-        self.recurrent.enforce_constraints()
+        self.recurrent_layer.enforce_constraints()
         self.readout_layer.enforce_constraints()
 
     # HELPER FUNCTIONS
@@ -146,7 +146,7 @@ class CTRNN(nn.Module):
     def to(self, device):
         """ Move the network to device """
         super().to(device)
-        self.recurrent.to(device)
+        self.recurrent_layer.to(device)
         self.readout_layer.to(device)
 
     def save(self, path):
@@ -169,6 +169,6 @@ class CTRNN(nn.Module):
 
     def print_layers(self):
         """ Print the parameters of each layer """
-        self.recurrent.print_layer()
+        self.recurrent_layer.print_layer()
         self.readout_layer.print_layer()
     # ======================================================================================

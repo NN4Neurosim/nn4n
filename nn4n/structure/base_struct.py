@@ -95,16 +95,16 @@ class BaseStuct():
         return mask.astype(int)
 
     def visualize(self):
-        if self.hidden_mask is not None:
-            utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Connectivity", False)
-
         if self.input_mask is not None:
             input_mask_ = self.input_mask if self.input_mask.shape[1] > self.input_mask.shape[0] else self.input_mask.T
-            utils.plot_connectivity_matrix(input_mask_, "Input Layer Connectivity", False)
+            utils.plot_connectivity_matrix(input_mask_, "Input Layer Mask", False)
+
+        if self.hidden_mask is not None:
+            utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Mask", False)
 
         if self.readout_mask is not None:
             readout_mask_ = self.readout_mask if self.readout_mask.shape[1] > self.readout_mask.shape[0] else self.readout_mask.T
-            utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Connectivity", False)
+            utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Mask", False)
 
     def masks(self):
         assert self.input_mask is not None, "input_mask is not generated"
