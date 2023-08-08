@@ -14,7 +14,6 @@ class LinearLayer(nn.Module):
             use_dale,
             new_synapses,
             allow_negative,
-            ei_balance,
             ) -> None:
         """
         Sparse Linear Layer
@@ -28,7 +27,6 @@ class LinearLayer(nn.Module):
             @param use_dale: whether to use Dale's law
             @param new_synapses: whether to use new_synapses
             @param allow_negative: whether to allow negative weights, a boolean value
-            @param ei_balance: method to balance E/I neurons, default: "neuron"
         """
         super().__init__()
         self.input_dim = input_dim
@@ -38,7 +36,6 @@ class LinearLayer(nn.Module):
         self.use_dale = use_dale
         self.new_synapses = new_synapses
         self.allow_negative = allow_negative
-        self.ei_balance = ei_balance
 
         # generate weights
         self.weight = self._generate_weight()
@@ -81,22 +78,12 @@ class LinearLayer(nn.Module):
     def _balance_excitatory_inhibitory(self):
         """ Balance excitatory and inhibitory weights """
         scale_mat = torch.ones_like(self.weight)
-        # if using number of neurons to balance e/i connections
-        if self.ei_balance == 'neuron':
-            exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.ei_list.shape[0]
-            scale_mat[:, self.ei_list == 1] = 1 / exc_pct
-            scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
-        # if using number of synapses to balance e/i connections
-        elif self.ei_balance == 'synapse':
-            exc_syn = torch.count_nonzero(self.weight > 0)
-            inh_syn = torch.count_nonzero(self.weight < 0)
-            exc_pct = exc_syn / (exc_syn + inh_syn)
-            scale_mat[self.weight > 0] = 1 / exc_pct
-            scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
-        # assert error if ei_balance is not 'neuron' or 'synapse'
-        else:
-            assert False, "ei_balance must be either 'neuron' or 'synapse'"
-
+        ext_sum = self.weight[self.dale_mask == 1].sum()
+        inh_sum = self.weight[self.dale_mask == -1].sum()
+        if ext_sum > abs(inh_sum):
+            scale_mat[self.dale_mask == 1] = abs(inh_sum) / ext_sum
+        elif ext_sum < abs(inh_sum):
+            scale_mat[self.dale_mask == -1] = ext_sum / abs(inh_sum)
         self.weight *= scale_mat
 
     def _init_dale_mask(self, mask):
@@ -219,7 +206,7 @@ class LinearLayer(nn.Module):
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
             "dist": self.dist,
-            "bias": self.use_bias,
+            "use_bias": self.use_bias,
             "shape": self.weight.shape,
             "weight_min": self.weight.min().item(),
             "weight_max": self.weight.max().item(),

@@ -19,7 +19,6 @@ class CTRNN(nn.Module):
             @kwarg layer_masks: masks for each layer, a list of 3 masks
             @kwarg layer_distributions: distribution of weights for each layer, a list of 3 strings
             @kwarg layer_biases: use bias or not for each layer, a list of 3 boolean values
-            @kwarg ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
         """
         super().__init__()
         self.kwargs_checkpoint = kwargs.copy()
@@ -38,10 +37,12 @@ class CTRNN(nn.Module):
         self.use_dale = kwargs.pop("use_dale", False)
         self.new_synapses = kwargs.pop("new_synapses", True)
         self.allow_negative = kwargs.pop("allow_negative", True)
-        self.ei_balance = kwargs.pop("ei_balance", "neuron")
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
+
+        if 'ei_balance' in kwargs:
+            print("WARNING: ei_balance is deprecated. No ei_balance specification is needed.")
 
         # check if all parameters meet the requirements
         self._check_parameters()
@@ -52,7 +53,6 @@ class CTRNN(nn.Module):
             use_dale=self.use_dale,
             new_synapses=self.new_synapses,
             allow_negative=self.allow_negative,
-            ei_balance=self.ei_balance,
             layer_distributions=self.layer_distributions,
             layer_biases=self.layer_biases,
             layer_masks=self.layer_masks,
@@ -69,7 +69,6 @@ class CTRNN(nn.Module):
             mask=self.layer_masks[2],
             new_synapses=self.new_synapses[2],
             allow_negative=self.allow_negative[2],
-            ei_balance=self.ei_balance,
         )
 
         # if using dale's law

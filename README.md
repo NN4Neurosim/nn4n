@@ -9,7 +9,9 @@ Some of the most commonly used neural networks in neuroscience research are incl
 [GitHub](https://github.com/zhaozewang/NN4Neurosci.git)
 
 ## Table of contents
+- [Acknowledgements](#acknowledgements)
 - [Install](#install)
+    - [Install Using pip](#install-using-pip)
     - [Install From GitHub](#install-from-github)
 - [Model](#model)
     - [CTRNN (Continuous-Time RNN)](#ctrnn)
@@ -17,7 +19,13 @@ Some of the most commonly used neural networks in neuroscience research are incl
     - [Multi-Area](#multi-area)
     - [Multi-Area with E/I constraints](#multi-area-with-ei-constraints)
     - [Random Input](#random-input)
+- [Criterion](#criterion)
+    - [RNNLoss](#rnnloss)
+- [Change Logs](#change-logs)
+- [Others](#others)
 
+## Acknowledgements
+Immense thanks to Christopher J. Cueva for his mentorship in developing this project. This project can't be done without his invaluable help.
 
 ## Install
 ### Install using pip
@@ -29,12 +37,12 @@ pip install nn4n
 ```
 git clone https://github.com/zhaozewang/NN4Neurosci.git
 ```
-#### Install using command line
+#### Navigate to the NN4Neurosci directory
 ```
 cd NN4Neurosci/
 python setup.py install
 ```
-#### Install using pip
+#### Install
 ```
 cd NN4Neurosci/
 pip install .
@@ -65,7 +73,7 @@ This class allows for a much easier implementation of the E/I constraints partic
 - [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb)
 
 ### Random Input
-Neurons's dynamic receiving input will be heavily driven by the inputting signal. Injecting signal to only part of the neuron will result in more versatile and hierarchical dynamics. See [A Versatile Hub Model For Efficient Information Propagation And Feature Selection](https://arxiv.org/abs/2307.02398) <br>
+Neurons' dynamic receiving input will be heavily driven by the inputting signal. Injecting signal to only part of the neuron will result in more versatile and hierarchical dynamics. See [A Versatile Hub Model For Efficient Information Propagation And Feature Selection](https://arxiv.org/abs/2307.02398) <br>
 
 - Example to be added
 
@@ -75,9 +83,11 @@ The loss function is modularized. The `RNNLoss` class is designed in modular fas
 
 - [Documentation](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/criterion/index.md)
 
+
+## Change Logs
+- [0.1.3](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/change_logs/v1.0.3.md)
+
+
 ## Others
 For similar projects:
 - [nn-brain](https://github.com/gyyang/nn-brain)
-
-## Acknowledgements
-Immense thanks to Christopher J. Cueva for his mentorship in developing this project. This project can't be done without his invaluable help.

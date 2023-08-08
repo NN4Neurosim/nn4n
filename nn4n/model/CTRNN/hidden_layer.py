@@ -15,7 +15,6 @@ class HiddenLayer(nn.Module):
             new_synapses,
             self_connections,
             allow_negative,
-            ei_balance,
             ) -> None:
         """
         Hidden layer of the RNN
@@ -29,7 +28,6 @@ class HiddenLayer(nn.Module):
             @param use_dale: use dale's law or not. If use_dale is True, mask must be provided
             @param self_connections: allow self connections or not
             @param allow_negative: allow negative weights or not, a boolean value
-            @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
         """
         super().__init__()
         # some params are for verbose printing
@@ -41,7 +39,6 @@ class HiddenLayer(nn.Module):
         self.new_synapses = new_synapses
         self.self_connections = self_connections
         self.allow_negative = allow_negative
-        self.ei_balance = ei_balance
         # generate weights and bias
         self.weight = self._generate_weight()
         self.bias = self._generate_bias()
@@ -116,12 +113,12 @@ class HiddenLayer(nn.Module):
                 self.sparse_mask = torch.ones((self.hidden_size, self.hidden_size))
             self.sparse_mask = torch.where(torch.eye(self.hidden_size) == 1, 0, self.sparse_mask)
         # Balance excitatory and inhibitory neurons and apply masks
-        if self.dale_mask is not None:
-            self.weight *= self.dale_mask
-            self._balance_excitatory_inhibitory()
         if self.sparse_mask is not None:
             # TODO: re-write this part
             self.weight *= self.sparse_mask
+        if self.dale_mask is not None:
+            self.weight *= self.dale_mask
+            self._balance_excitatory_inhibitory()
 
     def _init_dale_mask(self, mask):
         """ initialize settings required for Dale's law """
@@ -147,20 +144,28 @@ class HiddenLayer(nn.Module):
         """ Balance excitatory and inhibitory weights """
         scale_mat = torch.ones_like(self.weight)
         # if using number of neurons to balance e/i connections
-        if self.ei_balance == 'neuron':
-            exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.hidden_size
-            scale_mat[:, self.ei_list == 1] = 1 / exc_pct
-            scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
-        # if using number of synapses to balance e/i connections
-        elif self.ei_balance == 'synapse':
-            exc_syn = torch.count_nonzero(self.weight > 0)
-            inh_syn = torch.count_nonzero(self.weight < 0)
-            exc_pct = exc_syn / (exc_syn + inh_syn)
-            scale_mat[self.weight > 0] = 1 / exc_pct
-            scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
-        # assert error if ei_balance is not 'neuron' or 'synapse'
-        else:
-            assert False, "ei_balance must be either 'neuron' or 'synapse'"
+        # if self.ei_balance == 'neuron':
+        #     exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.hidden_size
+        #     scale_mat[:, self.ei_list == 1] = 1 / exc_pct
+        #     scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
+        # # if using number of synapses to balance e/i connections
+        # elif self.ei_balance == 'synapse':
+        #     exc_syn = torch.count_nonzero(self.weight > 0)
+        #     inh_syn = torch.count_nonzero(self.weight < 0)
+        #     exc_pct = exc_syn / (exc_syn + inh_syn)
+        #     scale_mat[self.weight > 0] = 1 / exc_pct
+        #     scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
+        # # assert error if ei_balance is not 'neuron' or 'synapse'
+        # else:
+        #     assert False, "ei_balance must be either 'neuron' or 'synapse'"
+        ext_sum = self.weight[self.dale_mask == 1].sum()
+        inh_sum = self.weight[self.dale_mask == -1].sum()
+        if ext_sum > abs(inh_sum):
+            _scale = abs(inh_sum).item() / ext_sum.item()
+            scale_mat[self.dale_mask == 1] = _scale
+        elif ext_sum < abs(inh_sum):
+            _scale = ext_sum.item() / abs(inh_sum).item()
+            scale_mat[self.dale_mask == -1] = _scale
         # apply scaling
         self.weight *= scale_mat
     # ======================================================================================
@@ -237,7 +242,7 @@ class HiddenLayer(nn.Module):
             "self_connections": self.self_connections,
             "input/output_dim": self.hidden_size,
             "distribution": self.dist,
-            "bias": self.use_bias,
+            "use_bias": self.use_bias,
             "dale": self.use_dale,
             "shape": self.weight.shape,
             "weight_min": self.weight.min().item(),

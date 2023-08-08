@@ -13,7 +13,6 @@ class RecurrentLayer(nn.Module):
             use_dale,
             new_synapses,
             allow_negative,
-            ei_balance,
             layer_distributions,
             layer_biases,
             layer_masks,
@@ -28,7 +27,6 @@ class RecurrentLayer(nn.Module):
             @param use_dale: use dale's law or not
             @param new_synapses: use new_synapses or not
             @param allow_negative: allow negative weights or not, a list of 3 boolean values
-            @param ei_balance: method to balance e/i connections, based on number of neurons or number of synapses
             @param layer_distributions: distribution of weights for each layer, a list of 3 strings
             @param layer_biases: use bias or not for each layer, a list of 3 boolean values
 
@@ -38,7 +36,6 @@ class RecurrentLayer(nn.Module):
             @kwarg postact_noise: noise added to post-activation, default: 0
             @kwarg dt: time step, default: 1
             @kwarg tau: time constant, default: 1
-            @kwarg ei_balance: method to balance E/I neurons, default: "neuron"
 
             @kwarg input_dim: input dimension, default: 1
 
@@ -53,7 +50,6 @@ class RecurrentLayer(nn.Module):
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
         self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
-        self.ei_balance = ei_balance
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
         self.layer_masks = layer_masks
@@ -71,7 +67,6 @@ class RecurrentLayer(nn.Module):
             dist=self.layer_distributions[0],
             mask=self.layer_masks[0],
             allow_negative=allow_negative[0],
-            ei_balance=self.ei_balance,
         )
         self.hidden_layer = HiddenLayer(
             hidden_size=self.hidden_size,
@@ -83,7 +78,6 @@ class RecurrentLayer(nn.Module):
             mask=self.layer_masks[1],
             self_connections=kwargs.get("self_connections", False),
             allow_negative=allow_negative[1],
-            ei_balance=self.ei_balance,
         )
 
     # INITIALIZATION
@@ -123,44 +117,48 @@ class RecurrentLayer(nn.Module):
         self.input_layer.enforce_constraints()
         self.hidden_layer.enforce_constraints()
 
+    def recurrence(self, fr_t, v_t, u_t):
+        """ Recurrence function """
+        # through input layer
+        w_in_u_t = self.input_layer(u_t)  # u_t @ W_in
+        # through hidden layer
+        w_hid_fr_t = self.hidden_layer(fr_t)  # fr_t @ W_hid + b
+        # update hidden state
+        v_t = (1-self.alpha)*v_t + self.alpha*(w_hid_fr_t+w_in_u_t)
+
+        # add pre-activation noise
+        if self.preact_noise > 0:
+            preact_epsilon = torch.randn((u_t.size(0), self.hidden_size), device=u_t.device) * self.preact_noise
+            v_t = v_t + self.alpha*preact_epsilon
+    
+        # apply activation function
+        fr_t = self.activation(v_t)
+    
+        # add post-activation noise
+        if self.postact_noise > 0:
+            postact_epsilon = torch.randn((u_t.size(0), self.hidden_size), device=u_t.device) * self.postact_noise
+            fr_t = fr_t + postact_epsilon
+        
+        return fr_t, v_t
+
     def forward(self, input):
         """
         Propogate input through the network.
         @param input: shape=(seq_len, batch, input_dim), network input
         @return stacked_states: shape=(seq_len, batch, hidden_size), stack of hidden layer status
         """
-        prev_h = self._reset_state().to(input.device)
-        curr_h = self.activation(prev_h)
+        v_t = self._reset_state().to(input.device)
+        fr_t = self.activation(v_t)
         # update hidden state and append to stacked_states
         stacked_states = []
         for i in range(input.size(0)):
-            # through input layer
-            new_input = self.input_layer(input[i])  # u(t) @ W_in
-            # through hidden layer
-            curr_h = self.hidden_layer(curr_h)  # r(t) @ W_hid + b
-            # update hidden state
-            prev_h = (1-self.alpha)*prev_h + self.alpha*(curr_h+new_input)
-
-            # add noise
-            # add pre-activation noise
-            if self.preact_noise > 0:
-                pre_noise = torch.randn((input.size(1), self.hidden_size), device=input.device) * self.preact_noise
-                prev_h += pre_noise
-
-            # apply activation function
-            curr_h = self.activation(prev_h)
-
-            # add post-activation noise
-            if self.postact_noise > 0:
-                post_noise = torch.randn((input.size(1), self.hidden_size), device=input.device) * self.postact_noise
-                curr_h += post_noise
-
+            fr_t, v_t = self.recurrence(fr_t, v_t, input[i])
             # append to stacked_states
-            stacked_states.append(curr_h)
+            stacked_states.append(fr_t)
 
         # if keeping the last state, save it to hidden_state
         if self.init_state == 'keep':
-            self.hidden_state = curr_h.detach().clone()  # TODO: haven't tested this yet
+            self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
 
         return torch.stack(stacked_states, dim=0)
     # ==================================================================================================
