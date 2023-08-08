@@ -3,7 +3,7 @@
 [Back to CTRNN](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md) </br>
 
 ## Introduction
-Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noises (preact_noise and postact_noise) won't be added.
+Set the network to training mode, training will be performed and constraints will be enforced. Also, during training, the recurrent noises won't be added.
 
 ## Usage
 
