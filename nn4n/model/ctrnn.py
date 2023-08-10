@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 
-from nn4n.model.CTRNN.recurrent_layer import RecurrentLayer
-from nn4n.model.CTRNN.linear_layer import LinearLayer
+from nn4n.model import BaseNN
+from nn4n.layer import RecurrentLayer
+from nn4n.layer import LinearLayer
 
 
-class CTRNN(nn.Module):
+class CTRNN(BaseNN):
     """ Recurrent network model """
     def __init__(self, **kwargs):
         """
@@ -20,17 +21,15 @@ class CTRNN(nn.Module):
             @kwarg layer_distributions: distribution of weights for each layer, a list of 3 strings
             @kwarg layer_biases: use bias or not for each layer, a list of 3 boolean values
         """
-        super().__init__()
-        self.kwargs_checkpoint = kwargs.copy()
-        self.initialize(**kwargs)
+        super().__init__(**kwargs)
 
     # INITIALIZATION
     # ======================================================================================
-    def initialize(self, **kwargs):
+    def _initialize(self, **kwargs):
         """ Initialize/Reinitialize the network """
         # parameters that used in all layers
         # structure parameters
-        self.hidden_size = kwargs.pop("hidden_size", 100)
+        self.hidden_size = kwargs.pop("hidden_size")
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [True, True, True])
         # dynamics parameters
@@ -63,7 +62,7 @@ class CTRNN(nn.Module):
         self.readout_layer = LinearLayer(
             input_dim=self.hidden_size,
             use_dale=self.use_dale,
-            output_dim=kwargs.get("output_dim", 1),
+            output_dim=kwargs.pop("output_dim"),
             dist=self.layer_distributions[2],
             use_bias=self.layer_biases[2],
             mask=self.layer_masks[2],
@@ -147,24 +146,6 @@ class CTRNN(nn.Module):
         super().to(device)
         self.recurrent_layer.to(device)
         self.readout_layer.to(device)
-
-    def save(self, path):
-        """ save model and kwargs to the same file """
-        assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth", "path must end with .pth"
-        torch.save({
-            "model_state_dict": self.state_dict(),
-            "kwargs": self.kwargs_checkpoint
-        }, path)
-
-    def load(self, path):
-        """ load model and kwargs from the same file """
-        assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
-        checkpoint = torch.load(path)
-        self.kwargs_checkpoint = checkpoint["kwargs"]
-        self.initialize(**self.kwargs_checkpoint)
-        self.load_state_dict(checkpoint["model_state_dict"])
 
     def print_layers(self):
         """ Print the parameters of each layer """
