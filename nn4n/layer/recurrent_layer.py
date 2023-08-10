@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from nn4n.utils import print_dict
+from nn4n.utils import print_dict, get_activation
 
-from .hidden_layer import HiddenLayer
-from .linear_layer import LinearLayer
+from nn4n.layer import HiddenLayer
+from nn4n.layer import LinearLayer
 
 
 class RecurrentLayer(nn.Module):
@@ -55,14 +55,15 @@ class RecurrentLayer(nn.Module):
         self.layer_masks = layer_masks
         self.hidden_state = torch.zeros(self.hidden_size)
         self.init_state = kwargs.get("init_state", 'zero')
-        self._set_activation(kwargs.get("activation", "relu"))
+        self.act = kwargs.get("activation", "relu")
+        self.activation = get_activation(self.act)
         self._set_hidden_state()
 
         self.input_layer = LinearLayer(
             use_dale=self.use_dale,
             new_synapses=new_synapses[0],
             output_dim=self.hidden_size,
-            input_dim=kwargs.get("input_dim", 1),
+            input_dim=kwargs.pop("input_dim"),
             use_bias=self.layer_biases[0],
             dist=self.layer_distributions[0],
             mask=self.layer_masks[0],
@@ -82,19 +83,6 @@ class RecurrentLayer(nn.Module):
 
     # INITIALIZATION
     # ==================================================================================================
-    def _set_activation(self, act):
-        self.act = act
-        if self.act == "relu":
-            self.activation = torch.relu
-        elif self.act == "tanh":
-            self.activation = torch.tanh
-        elif self.act == "sigmoid":
-            self.activation = torch.sigmoid
-        elif self.act == "retanh":
-            self.activation = lambda x: torch.maximum(torch.tanh(x), torch.tensor(0))
-        else:
-            raise NotImplementedError
-
     def _set_hidden_state(self):
         """
         Add the hidden layer to the parameter

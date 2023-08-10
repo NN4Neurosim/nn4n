@@ -9,7 +9,7 @@
 - [Excitatory-Inhibitory Constrained Continuous-Time RNN](#excitatory-inhibitory-constrained-continuous-time-rnn)
 - [Model Structure](#model-structure)
 - [Parameters](#parameters)
-    - [Structure and I/O dimensions](#structure-and-io-dimensions)
+    - [Structure parameters](#structure-parameters)
     - [Training parameters](#training-parameters)
     - [Constraint parameters](#constraint-parameters)
 - [Parameter Specifications](#parameter-specifications)
@@ -91,13 +91,10 @@ At the begining of each trial, the hidden states are set to zero. The RecurrentL
 For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pcbi.1004792).
 
 ## Parameters
-### Structure and I/O dimensions
+### Structure parameters
 These parameters primarily determine the structure of the network. It is recommended to check these parameters before initializing the network.
 | Parameter                | Default       | Type                                | Description                                |	
 |:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
-| input_dim                | 1             | `int`                               | Input dimension                  |
-| output_dim               | 1             | `int`                               | Output dimension                  |
-| hidden_size              | 100           | `int`                               | Number of hidden nodes                      |
 | scaling                  | 1.0           | `float`                             | Scaling factor for the hidden weights, it will scale the hidden weight by $`\frac{scaling}{\sqrt{N\_{hid}}}`$. Won't be affected when the HiddenLayer distribution is `uniform`.   |
 | self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself          |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                   |

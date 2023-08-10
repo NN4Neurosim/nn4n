@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,6 +9,19 @@ def print_dict(title, params):
     for k in params.keys():
         print(3*' ' + '| {}:{}{}'.format(k, (maxlen - len(k) + 1)*' ', params[k]))
     print()
+
+
+def get_activation(act):
+    if act == "relu":
+        return torch.relu
+    elif act == "tanh":
+        return torch.tanh
+    elif act == "sigmoid":
+        return torch.sigmoid
+    elif act == "retanh":
+        return lambda x: torch.maximum(torch.tanh(x), torch.tensor(0))
+    else:
+        raise NotImplementedError
 
 
 def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
