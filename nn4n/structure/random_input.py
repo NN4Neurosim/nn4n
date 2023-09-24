@@ -35,8 +35,8 @@ class RandomInput(BaseStuct):
         assert isinstance(self.readout_spar, float), "readout_spar must be float"
         assert 0 <= self.readout_spar <= 1, "readout_spar must be between 0 and 1"
 
-        # if overlap, check if input_spar
-        if self.overlap:
+        # if not overlap, check if input_spar + readout_spar <= 1
+        if not self.overlap:
             assert self.input_spar + self.readout_spar <= 1, "input_spar + readout_spar must be less than 1 if overlap is True"
 
     def _generate_hidden_mask(self):

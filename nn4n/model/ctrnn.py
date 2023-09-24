@@ -112,6 +112,15 @@ class CTRNN(BaseNN):
                 assert type(i) == bool, "new_synapses must be a list of booleans"
         else:
             raise ValueError("new_synapses must be a boolean or a list of booleans")
+        
+        # if layer_masks is not None, check if it is a list of 3 masks
+        if self.layer_masks is not None:
+            assert type(self.layer_masks) == list, "layer_masks must be a list of 3 masks"
+            assert len(self.layer_masks) == 3, "layer_masks must be a list of 3 masks"
+            # check if either use_dale or any of the new_synapses is False
+            if not (self.use_dale or not all(self.new_synapses)):
+                print("WARNING: layer_masks is ignored because use_dale and new_synapses are both set to False")
+                self.layer_masks = [None, None, None]
     # ======================================================================================
 
     # FORWARD

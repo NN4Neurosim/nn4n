@@ -59,11 +59,13 @@ class MLPLoss(nn.Module):
 
     def _loss_fr(self, states, **kwargs):
         """ Compute the loss for firing rate """
-        return torch.sqrt(torch.square(states)).mean()
+        # return torch.sqrt(torch.square(states)).mean()
+        return torch.pow(torch.mean(states, dim=(0, 1)), 3).mean()
 
     def _loss_fr_sd(self, states, **kwargs):
         """ Compute the loss for firing rate for each neuron in terms of SD """
-        return torch.sqrt(torch.square(states)).mean(dim=(0, 1)).std()
+        # return torch.sqrt(torch.square(states)).mean(dim=(0)).std()
+        return torch.pow(torch.mean(states, dim=(0, 1)), 3).std()
 
     def forward(self, pred, label, **kwargs):
         """

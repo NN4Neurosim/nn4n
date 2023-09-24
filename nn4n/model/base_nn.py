@@ -10,9 +10,6 @@ class BaseNN(nn.Module):
     
     def _initialize(self, **kwargs):
         """ initialize the model """
-        # self.input_dim = kwargs.pop("input_dim")
-        # self.output_dim = kwargs.pop("output_dim")
-        # self.hidden_size = kwargs.pop("hidden_size")
         pass
 
     def save(self, path):

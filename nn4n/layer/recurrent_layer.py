@@ -50,6 +50,7 @@ class RecurrentLayer(nn.Module):
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
         self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
+        self.inhibit = kwargs.get("inhibit", 0)
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
         self.layer_masks = layer_masks
@@ -114,6 +115,11 @@ class RecurrentLayer(nn.Module):
         # update hidden state
         v_t = (1-self.alpha)*v_t + self.alpha*(w_hid_fr_t+w_in_u_t)
 
+        # apply lateral inhibition
+        if self.inhibit > 0:
+            inhibition = self.inhibit * (v_t.sum(dim=-1, keepdim=True) - v_t)
+            v_t = v_t - inhibition
+
         # add pre-activation noise
         if self.preact_noise > 0:
             preact_epsilon = torch.randn((u_t.size(0), self.hidden_size), device=u_t.device) * self.preact_noise
@@ -171,6 +177,7 @@ class RecurrentLayer(nn.Module):
             "postact_noise": self.postact_noise,
             "activation": self.act,
             "alpha": self.alpha,
+            "inhibit": self.inhibit if self.inhibit > 0 else None,
         }
         self.input_layer.print_layer()
         print_dict("Recurrence", param_dict)
