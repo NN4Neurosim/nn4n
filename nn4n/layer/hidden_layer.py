@@ -252,6 +252,7 @@ class HiddenLayer(nn.Module):
             "bias_max": self.bias.max().item(),
             "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
             "scaling": self.scaling,
+            "new_synapses": self.new_synapses,
             # "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)

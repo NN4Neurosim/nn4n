@@ -64,11 +64,11 @@ class RNNLoss(nn.Module):
 
     def _loss_fr_sd(self, states, **kwargs):
         """ Compute the loss for firing rate for each neuron in terms of SD """
-        return torch.sqrt(torch.square(states)).mean(dim=(0, 1)).std()
+        return torch.sqrt(torch.square(states)).mean(dim=0).std()
 
     def _loss_fr_cv(self, states, **kwargs):
         """ Compute the loss for firing rate for each neuron in terms of coefficient of variation """
-        avg_fr = torch.sqrt(torch.square(states)).mean(dim=(0, 1))
+        avg_fr = torch.sqrt(torch.square(states)).mean(dim=0)
         return avg_fr.std()/avg_fr.mean()
 
     def _loss_met(self, states, **kwargs):

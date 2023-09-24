@@ -14,6 +14,7 @@ class LinearLayer(nn.Module):
             use_dale,
             new_synapses,
             allow_negative,
+            learnable=True,
             ) -> None:
         """
         Sparse Linear Layer
@@ -46,8 +47,8 @@ class LinearLayer(nn.Module):
         self._init_constraints(mask)
 
         # convert weight and bias to torch tensor
-        self.weight = nn.Parameter(self.weight)
-        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias)
+        self.weight = nn.Parameter(self.weight, requires_grad=learnable)
+        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias and learnable)
 
     # INITIALIZATION
     # ======================================================================================
@@ -206,10 +207,12 @@ class LinearLayer(nn.Module):
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
             "dist": self.dist,
-            "use_bias": self.use_bias,
             "shape": self.weight.shape,
+            "new_synapses": self.new_synapses,
+            "learnable": self.weight.requires_grad,
             "weight_min": self.weight.min().item(),
             "weight_max": self.weight.max().item(),
+            "use_bias": self.bias.requires_grad,
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
             "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
