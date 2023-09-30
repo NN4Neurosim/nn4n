@@ -63,10 +63,6 @@ class HiddenLayer(nn.Module):
             w = torch.randn(self.hidden_size, self.hidden_size) / torch.sqrt(torch.tensor(self.hidden_size))
             if not self.allow_negative:
                 w = (w + torch.abs(w.min())) / 2
-            # # Normalizing to [-1, 1] seems to be unnecessary, as it will be scaled later
-            # # DISABLE ========================
-            # w = (w - w.min()) / (w.max() - w.min()) * 2 - 1
-            # if not self.allow_negative: w = (w + 1) / 2
         elif self.dist == 'zero':
             w = torch.zeros((self.output_dim, self.input_dim))
         else:
@@ -75,21 +71,7 @@ class HiddenLayer(nn.Module):
         return w.float()
 
     def _generate_bias(self):
-        # # Bias seem to have too much effect on the network
-        # # DISABLE ========================
-        # if self.use_bias:
-        #     if self.dist == 'uniform':
-        #         k = 1/self.hidden_size
-        #         b = (torch.rand(self.hidden_size) * 2 - 1) * torch.sqrt(torch.tensor(k))
-        #     elif self.dist == 'normal':
-        #         b = torch.randn(self.hidden_size)
-        #         # b = (b - b.min()) / (b.max() - b.min()) * 2 - 1
-        # else:
-        #     b = torch.zeros(self.hidden_size)
-        # # ================================
-        b = torch.zeros(self.hidden_size)
-
-        return b.float()
+        return torch.zeros(self.hidden_size).float()
 
     def _init_constraints(self, mask):
         """
@@ -143,31 +125,19 @@ class HiddenLayer(nn.Module):
     def _balance_excitatory_inhibitory(self):
         """ Balance excitatory and inhibitory weights """
         scale_mat = torch.ones_like(self.weight)
-        # if using number of neurons to balance e/i connections
-        # if self.ei_balance == 'neuron':
-        #     exc_pct = torch.count_nonzero(self.ei_list == 1.0) / self.hidden_size
-        #     scale_mat[:, self.ei_list == 1] = 1 / exc_pct
-        #     scale_mat[:, self.ei_list == -1] = 1 / (1 - exc_pct)
-        # # if using number of synapses to balance e/i connections
-        # elif self.ei_balance == 'synapse':
-        #     exc_syn = torch.count_nonzero(self.weight > 0)
-        #     inh_syn = torch.count_nonzero(self.weight < 0)
-        #     exc_pct = exc_syn / (exc_syn + inh_syn)
-        #     scale_mat[self.weight > 0] = 1 / exc_pct
-        #     scale_mat[self.weight < 0] = 1 / (1 - exc_pct)
-        # # assert error if ei_balance is not 'neuron' or 'synapse'
-        # else:
-        #     assert False, "ei_balance must be either 'neuron' or 'synapse'"
         ext_sum = self.weight[self.dale_mask == 1].sum()
         inh_sum = self.weight[self.dale_mask == -1].sum()
-        if ext_sum > abs(inh_sum):
-            _scale = abs(inh_sum).item() / ext_sum.item()
-            scale_mat[self.dale_mask == 1] = _scale
-        elif ext_sum < abs(inh_sum):
-            _scale = ext_sum.item() / abs(inh_sum).item()
-            scale_mat[self.dale_mask == -1] = _scale
-        # apply scaling
-        self.weight *= scale_mat
+        if ext_sum == 0 or inh_sum == 0:
+            self.weight /= 10
+        else:
+            if ext_sum > abs(inh_sum):
+                _scale = abs(inh_sum).item() / ext_sum.item()
+                scale_mat[self.dale_mask == 1] = _scale
+            elif ext_sum < abs(inh_sum):
+                _scale = ext_sum.item() / abs(inh_sum).item()
+                scale_mat[self.dale_mask == -1] = _scale
+            # apply scaling
+            self.weight *= scale_mat
     # ======================================================================================
 
     # FORWARD
