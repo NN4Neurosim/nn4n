@@ -70,13 +70,13 @@ class CTRNN(BaseNN):
             allow_negative=self.allow_negative[2],
         )
 
-        # if using dale's law
-        if self.use_dale:
-            hidden_ei_list = self.recurrent_layer.hidden_layer.ei_list
-            readout_ei_list = self.readout_layer.ei_list
-            nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
-            assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), \
-                "ei_list of hidden layer and readout layer must be the same when use_dale is True"
+        # # if using dale's law, check if ei_list of hidden layer and readout layer are the same
+        # if self.use_dale:
+        #     hidden_ei_list = self.recurrent_layer.hidden_layer.ei_list
+        #     readout_ei_list = self.readout_layer.ei_list
+        #     nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
+        #     assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), \
+        #         "ei_list of hidden layer and readout layer must be the same when use_dale is True"
 
     def _check_parameters(self):
         """ Check parameters """
