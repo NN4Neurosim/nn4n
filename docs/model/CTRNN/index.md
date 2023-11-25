@@ -95,6 +95,9 @@ For more details, refer to [Song et al. 2016](https://doi.org/10.1371/journal.pc
 These parameters primarily determine the structure of the network. It is recommended to check these parameters before initializing the network.
 | Parameter                | Default       | Type                                | Description                                |	
 |:-------------------------|:-------------:|:-----------------------------------:|:-------------------------------------------|
+| input_dim                | 1              | `int`                               | Input dimension                  |
+| output_dim               | 1              | `int`                               | Output dimension                  |
+| hidden_size              | 100            | `int`                               | Number of hidden nodes                      |
 | scaling                  | 1.0           | `float`                             | Scaling factor for the hidden weights, it will scale the hidden weight by $`\frac{scaling}{\sqrt{N\_{hid}}}`$. Won't be affected when the HiddenLayer distribution is `uniform`.   |
 | self_connections         | False         | `boolean`                           | Whether a neuron can connect to itself          |
 | activation               | 'relu'        | 'relu'/'tanh'/'sigmoid'/'retanh'    | Activation function                   |
@@ -111,7 +114,6 @@ These parameters primarily determine the training process of the network. The `t
 | preact_noise             | 0             | `float`                             | Whether to add zero-mean Gaussian preactivation noise during training. The noise is added before the activation function is applied. See difference between `preact_noise` and `postact_noise` [here](#preact_noise-and-postact_noise). |
 | postact_noise            | 0             | `float`                             | Whether to add zero-mean Gaussian postactivation noise during training. The noise is added after the activation function is applied. See difference between `preact_noise` and `postact_noise` [here](#preact_noise-and-postact_noise). |
 | init_state               | 'zero'        | 'zero', 'keep', 'learn'             | Method to initialize the hidden states. 'zero' will set the hidden states to zero at the beginning of each trial. 'keep' will keep the hidden states at the end of the previous trial. 'learn' will learn the initial hidden states. **Note:** 'keep' hasn't been tested yet. |
-| inhibit                  | 0            | `float`                             | Inhibition strength. If `inhibit` is set to 0, no inhibition will be applied. |
 
 ### Constraint parameters
 These parameters primarily determine the constraints of the network. By default, the network is initialized using the most lenient constraints, i.e., no constraints being enforced.
@@ -176,7 +178,5 @@ Whether a neuron can connect to itself. This feature is enforced along with the 
 - [x] Check if bias does not change when use_bias = False
 - [x] Merge hidden_bias, input_bias, readout_bias to a single parameter
 - [x] Merge hidden_dist, input_dist, readout_dist to a single parameter
-- [ ] Check different exc_pct
-- [ ] Consider designing 'allow_negative' better so that it won't be so verbose
-- [ ] When layer masks are not full
-- [ ] Optimize constraints parameters
+- [x] Check different exc_pct
+- [x] Optimize constraints parameters

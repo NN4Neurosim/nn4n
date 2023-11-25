@@ -29,7 +29,7 @@ class CTRNN(BaseNN):
         """ Initialize/Reinitialize the network """
         # parameters that used in all layers
         # structure parameters
-        self.hidden_size = kwargs.pop("hidden_size")
+        self.hidden_size = kwargs.pop("hidden_size", 100)
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [True, True, True])
         # dynamics parameters
@@ -62,7 +62,7 @@ class CTRNN(BaseNN):
         self.readout_layer = LinearLayer(
             input_dim=self.hidden_size,
             use_dale=self.use_dale,
-            output_dim=kwargs.pop("output_dim"),
+            output_dim=kwargs.pop("output_dim", 1),
             dist=self.layer_distributions[2],
             use_bias=self.layer_biases[2],
             mask=self.layer_masks[2],
@@ -158,6 +158,11 @@ class CTRNN(BaseNN):
 
     def print_layers(self):
         """ Print the parameters of each layer """
-        self.recurrent_layer.print_layer()
-        self.readout_layer.print_layer()
+        self.recurrent_layer.print_layers()
+        self.readout_layer.print_layers()
+
+    def plot_layers(self, **kwargs):
+        """ Plot the network """
+        self.recurrent_layer.plot_layers(**kwargs)
+        self.readout_layer.plot_layers(**kwargs)
     # ======================================================================================

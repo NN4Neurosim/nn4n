@@ -50,7 +50,6 @@ class RecurrentLayer(nn.Module):
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
         self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
-        self.inhibit = kwargs.get("inhibit", 0)
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
         self.layer_masks = layer_masks
@@ -64,7 +63,7 @@ class RecurrentLayer(nn.Module):
             use_dale=self.use_dale,
             new_synapses=new_synapses[0],
             output_dim=self.hidden_size,
-            input_dim=kwargs.pop("input_dim"),
+            input_dim=kwargs.pop("input_dim", 1),
             use_bias=self.layer_biases[0],
             dist=self.layer_distributions[0],
             mask=self.layer_masks[0],
@@ -109,16 +108,11 @@ class RecurrentLayer(nn.Module):
     def recurrence(self, fr_t, v_t, u_t):
         """ Recurrence function """
         # through input layer
-        w_in_u_t = self.input_layer(u_t)  # u_t @ W_in
+        v_in_u_t = self.input_layer(u_t)  # u_t @ W_in
         # through hidden layer
-        w_hid_fr_t = self.hidden_layer(fr_t)  # fr_t @ W_hid + b
+        v_hid_fr_t = self.hidden_layer(fr_t)  # fr_t @ W_hid + b
         # update hidden state
-        v_t = (1-self.alpha)*v_t + self.alpha*(w_hid_fr_t+w_in_u_t)
-
-        # apply lateral inhibition
-        if self.inhibit > 0:
-            inhibition = self.inhibit * (v_t.sum(dim=-1, keepdim=True) - v_t)
-            v_t = v_t - inhibition
+        v_t = (1-self.alpha)*v_t + self.alpha*(v_hid_fr_t+v_in_u_t)
 
         # add pre-activation noise
         if self.preact_noise > 0:
@@ -168,7 +162,7 @@ class RecurrentLayer(nn.Module):
         self.hidden_layer.to(device)
         self.hidden_state = self.hidden_state.to(device)
 
-    def print_layer(self):
+    def print_layers(self):
         param_dict = {
             "hidden_min": self.hidden_state.min(),
             "hidden_max": self.hidden_state.max(),
@@ -177,9 +171,12 @@ class RecurrentLayer(nn.Module):
             "postact_noise": self.postact_noise,
             "activation": self.act,
             "alpha": self.alpha,
-            "inhibit": self.inhibit if self.inhibit > 0 else None,
         }
-        self.input_layer.print_layer()
+        self.input_layer.print_layers()
         print_dict("Recurrence", param_dict)
-        self.hidden_layer.print_layer()
+        self.hidden_layer.print_layers()
+
+    def plot_layers(self, **kwargs):
+        self.input_layer.plot_layers()
+        self.hidden_layer.plot_layers()
     # ==================================================================================================
