@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+
+import numpy as np
 import nn4n.utils as utils
 
 
@@ -57,11 +59,9 @@ class LinearLayer(nn.Module):
         Initialize constraints (because _enforce_dale will clip the weights, but we don't want that during initialization)
         It will also balance excitatory and inhibitory neurons
         """
-        if mask is None:
-            assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert self.new_synapses, "mask must be provided if synapses are not plastic"
-        else:
-            mask = torch.tensor(mask)
+        if mask is not None:
+            if isinstance(mask, np.ndarray):
+                mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
             if self.use_dale:
                 self._init_dale_mask(mask)
             if not self.new_synapses:
@@ -162,22 +162,11 @@ class LinearLayer(nn.Module):
 
     def _enforce_sparsity(self):
         """ Enforce sparsity """
-        # print('linear sparse')
-        # w = self.weight.detach()
-        # w *= self.sparse_mask
-        # w = torch.nn.Parameter(w)
-        # self.weight.data.copy_(w)
         w = self.weight.detach().clone() * self.sparse_mask
         self.weight.data.copy_(torch.nn.Parameter(w))
 
     def _enforce_dale(self):
         """ Enforce Dale's law """
-        # print('linear dale')
-        # w = self.weight.detach()
-        # w[self.dale_mask == 1] = w[self.dale_mask == 1].clip(min=0)
-        # w[self.dale_mask == -1] = w[self.dale_mask == -1].clip(max=0)
-        # w = torch.nn.Parameter(w)
-        # self.weight.data.copy_(w)
         w = self.weight.detach().clone()
         w[self.dale_mask == 1] = torch.clamp(w[self.dale_mask == 1], min=0)
         w[self.dale_mask == -1] = torch.clamp(w[self.dale_mask == -1], max=0)
@@ -202,7 +191,15 @@ class LinearLayer(nn.Module):
         if not self.use_bias:
             self.bias = self.bias.to(device)
 
-    def print_layer(self):
+    def plot_layers(self):
+        # plot weight matrix
+        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
+        if weight.size(0) < weight.size(1):
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, not self.new_synapses)
+        else:
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapses)
+        
+    def print_layers(self):
         param_dict = {
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
@@ -215,18 +212,7 @@ class LinearLayer(nn.Module):
             "use_bias": self.bias.requires_grad,
             "bias_min": self.bias.min().item(),
             "bias_max": self.bias.max().item(),
-            "sparsity": self.sparse_mask.sum() / self.sparse_mask.numel() if self.sparse_mask is not None else 1,
+            "sparsity": self.weight.nonzero().size(0) / self.weight.numel(),
         }
         utils.print_dict("Linear Layer", param_dict)
-
-        # plot weight matrix
-        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
-        if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, not self.new_synapses)
-        else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapses)
-
-    # def get_weight(self):
-    #     """ Get weight """
-    #     return self.weight.detach().numpy()
     # ======================================================================================

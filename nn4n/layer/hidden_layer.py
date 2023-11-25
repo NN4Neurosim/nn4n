@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+
+import numpy as np
 import nn4n.utils as utils
 
 
@@ -79,15 +81,14 @@ class HiddenLayer(nn.Module):
         It will also balance excitatory and inhibitory neurons
         """
         # Initialize dale's law and new_synapses masks
-        if mask is None:
-            assert not self.use_dale, "mask must be provided if use_dale is True"
-            assert self.new_synapses, "mask must be provided if synapses are not plastic"
-        else:
-            mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
+        if mask is not None:
+            if isinstance(mask, np.ndarray):
+                mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
             if self.use_dale:
                 self._init_dale_mask(mask)  # initialize dale's mask
             if not self.new_synapses:
                 self.sparse_mask = (mask != 0).int()  # convert to a binary mask
+        
         # Whether to delete self connections
         if not self.self_connections:
             if self.sparse_mask is None:
@@ -206,7 +207,12 @@ class HiddenLayer(nn.Module):
         if not self.use_bias:
             self.bias = self.bias.to(device)
 
-    def print_layer(self):
+    def plot_layers(self):
+        """ Plot weight """
+        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapses)
+    
+    def print_layers(self):
         # plot weight matrix
         param_dict = {
             "self_connections": self.self_connections,
@@ -226,7 +232,5 @@ class HiddenLayer(nn.Module):
             # "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)
-        weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
-        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, not self.new_synapses)
-        utils.plot_eigenvalues(weight.detach().numpy(), "Hidden Layer")
+        # utils.plot_eigenvalues(weight.detach().numpy(), "Hidden Layer")
     # ======================================================================================

@@ -1,7 +1,9 @@
 # NN4N: Neural Networks for Neuroscience
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://badge.fury.io/py/nn4n.svg)](https://badge.fury.io/py/nn4n)
-[![Python Package using Conda](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml)<br>
+[![Python Package using Conda](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml)
+[![Downloads](https://static.pepy.tech/badge/nn4n)](https://pepy.tech/project/nn4n)
+[![Downloads](https://static.pepy.tech/badge/nn4n/month)](https://pepy.tech/project/nn4n)<br>
 Some of the most commonly used neural networks in neuroscience research are included in this project to ease the implementation process.
 
 <p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/RNN_structure.png" width="400"></p>

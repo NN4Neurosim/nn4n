@@ -11,13 +11,12 @@ class MLP(BaseNN):
 
     def _initialize(self, **kwargs):
         super()._initialize(**kwargs)
-        self.input_dim = kwargs.pop("input_dim")
-        self.output_dim = kwargs.pop("output_dim")
-        self.hidden_size = kwargs.pop("hidden_size")
+        self.input_dim = kwargs.pop("input_dim", 1)
+        self.output_dim = kwargs.pop("output_dim", 1)
+        self.hidden_size = kwargs.pop("hidden_size", 100)
         self.learnable = kwargs.pop("learnable", [True, True])
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [True, True])
-        self.inhibit = kwargs.pop("inhibit", 0)
         # dynamics parameters
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
@@ -55,26 +54,22 @@ class MLP(BaseNN):
             learnable=self.learnable[1],
         )
 
-    def forward(self, x):
+    def forward(self, input):
         """
         @param x: size=(batch_size, input_dim)
         """
-        x = self.input_layer(x)
+        v = self.input_layer(input)
         if self.preact_noise > 0:
-            x = x + torch.randn_like(x) * self.preact_noise
-        # Apply Lateral Inhibition (pre-activation)
-        if self.inhibit > 0:
-            inhibition = self.inhibit * (x.sum(dim=-1, keepdim=True) - x)
-            x = x - inhibition
-        s = self.activation(x)
+            v = v + torch.randn_like(v) * self.preact_noise
+        fr = self.activation(v)
         if self.postact_noise > 0:
-            s = s + torch.randn_like(s) * self.postact_noise
-        x = self.readout_layer(s)
-        return x, s
+            fr = fr + torch.randn_like(fr) * self.postact_noise
+        v = self.readout_layer(fr)
+        return v, fr
 
     def print_layers(self):
         """
         Print the layer information
         """
-        self.input_layer.print_layer()
-        self.readout_layer.print_layer()
+        self.input_layer.print_layers()
+        self.readout_layer.print_layers()
