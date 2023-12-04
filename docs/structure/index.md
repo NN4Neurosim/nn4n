@@ -48,7 +48,7 @@ Methods that are shared by all structures. <br>
 
 ### MultiArea
 See [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb) <br>
-This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `use_dale` parameter of CTRNN is set to `True`, because it will make all neurons to be excitatory.
+This will generate a multi-area RNN without E/I constraints. Therefore, by default, the input/hidden/readout masks are binary masks. Use cautious when the `positivity_constraint` parameter of CTRNN is set to `True`, because it will make all neurons to be excitatory.
 **NOTE:** This also implicitly covers single area case. If `n_area` is set to 1. All other parameters that conflict this setting will be ignored.
 #### MultiArea Parameters
 | Parameter            | Default       | Required      | Type                      | Description                                |

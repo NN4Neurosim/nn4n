@@ -12,11 +12,10 @@ class CTRNN(BaseNN):
         """
         Base RNN constructor
         Keyword Arguments:
-            @kwarg use_dale: use dale's law or not
-            @kwarg new_synapses: use new_synapses or not
+            @kwarg positivity_constraint: whether to enforce positivity constraint
+            @kwarg sparsity_constraint: use sparsity_constraint or not
             @kwarg hidden_size: number of hidden neurons
             @kwarg output_dim: output dimension
-            @kwarg allow_negative: allow negative weights or not
             @kwarg layer_masks: masks for each layer, a list of 3 masks
             @kwarg layer_distributions: distribution of weights for each layer, a list of 3 strings
             @kwarg layer_biases: use bias or not for each layer, a list of 3 boolean values
@@ -33,15 +32,24 @@ class CTRNN(BaseNN):
         self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'normal', 'uniform'])
         self.layer_biases = kwargs.pop("layer_biases", [True, True, True])
         # dynamics parameters
-        self.use_dale = kwargs.pop("use_dale", False)
-        self.new_synapses = kwargs.pop("new_synapses", True)
-        self.allow_negative = kwargs.pop("allow_negative", True)
+        self.positivity_constraint = kwargs.pop("positivity_constraint", [False, False, False])
+        self.sparsity_constraint = kwargs.pop("sparsity_constraint", [False, False, False])
+        print(self.positivity_constraint, self.sparsity_constraint)
         self.layer_masks = kwargs.pop("layer_masks", [None, None, None])
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
 
+        # TODO: add auto-compatibility
         if 'ei_balance' in kwargs:
             print("WARNING: ei_balance is deprecated. No ei_balance specification is needed.")
+        if 'allow_negative' in kwargs:
+            print("WARNING: allow_negative is deprecated. No allow_negative specification is needed.")
+        if 'use_dale' in kwargs:
+            print("WARNING: use_dale is deprecated. Use positivity_constraint instead.")
+            self.positivity_constraint = kwargs.pop("use_dale")
+        if 'new_synapses' in kwargs:
+            print("WARNING: new_synapses is deprecated. Use sparsity_constraint instead.")
+            self.sparsity_constraint = kwargs.pop("new_synapses")
 
         # check if all parameters meet the requirements
         self._check_parameters()
@@ -49,9 +57,8 @@ class CTRNN(BaseNN):
         # layers
         self.recurrent_layer = RecurrentLayer(
             hidden_size=self.hidden_size,
-            use_dale=self.use_dale,
-            new_synapses=self.new_synapses,
-            allow_negative=self.allow_negative,
+            positivity_constraint=self.positivity_constraint,
+            sparsity_constraint=self.sparsity_constraint,
             layer_distributions=self.layer_distributions,
             layer_biases=self.layer_biases,
             layer_masks=self.layer_masks,
@@ -61,66 +68,57 @@ class CTRNN(BaseNN):
         )
         self.readout_layer = LinearLayer(
             input_dim=self.hidden_size,
-            use_dale=self.use_dale,
+            positivity_constraint=self.positivity_constraint[2],
             output_dim=kwargs.pop("output_dim", 1),
             dist=self.layer_distributions[2],
             use_bias=self.layer_biases[2],
             mask=self.layer_masks[2],
-            new_synapses=self.new_synapses[2],
-            allow_negative=self.allow_negative[2],
+            sparsity_constraint=self.sparsity_constraint[2]
         )
 
         # # if using dale's law, check if ei_list of hidden layer and readout layer are the same
-        # if self.use_dale:
+        # if self.positivity_constraint:
         #     hidden_ei_list = self.recurrent_layer.hidden_layer.ei_list
         #     readout_ei_list = self.readout_layer.ei_list
         #     nonzero_idx = torch.nonzero(readout_ei_list).squeeze()
         #     assert torch.all(hidden_ei_list[nonzero_idx] == readout_ei_list[nonzero_idx]), \
-        #         "ei_list of hidden layer and readout layer must be the same when use_dale is True"
+        #         "ei_list of hidden layer and readout layer must be the same when positivity_constraint is True"
 
     def _check_parameters(self):
         """ Check parameters """
-        # check use_dale
-        assert type(self.use_dale) == bool, "use_dale must be a boolean"
+        # check positivity_constraint
+        if type(self.positivity_constraint) == bool:
+            self.positivity_constraint = [self.positivity_constraint] * 3
+        elif type(self.positivity_constraint) == list:
+            assert len(self.positivity_constraint) == 3, "positivity_constraint must be a list of length 3"
+            for i in self.positivity_constraint:
+                assert type(i) == bool, "positivity_constraint must be a list of booleans"
+        else:
+            raise ValueError("positivity_constraint must be a boolean or a list of booleans")
 
         # check hidden_size
         assert type(self.hidden_size) == int, "hidden_size must be an integer"
         assert self.hidden_size > 0, "hidden_size must be a positive integer"
 
-        # check new_synapses
-        assert type(self.new_synapses) == bool, "new_synapses must be a boolean"
-
-        # check allow_negative
-        if type(self.allow_negative) == bool:
-            self.allow_negative = [self.allow_negative] * 3
-        elif type(self.allow_negative) == list:
-            assert len(self.allow_negative) == 3, "allow_negative must be a list of length 3"
-            for i in self.allow_negative:
-                assert type(i) == bool, "allow_negative must be a list of booleans"
+        # check sparsity_constraint
+        if type(self.sparsity_constraint) == bool:
+            self.sparsity_constraint = [self.sparsity_constraint] * 3
+        elif type(self.sparsity_constraint) == list:
+            assert len(self.sparsity_constraint) == 3, "sparsity_constraint must be a list of length 3"
+            for i in self.sparsity_constraint:
+                assert type(i) == bool, "sparsity_constraint must be a list of booleans"
         else:
-            raise ValueError("allow_negative must be a boolean or a list of booleans")
-        if self.use_dale and self.allow_negative != [False, False, False]:
-            print("WARNING: allow_negative is ignored because use_dale is set to True")
-            self.allow_negative = [False, False, False]
-
-        # check new_synapses
-        if type(self.new_synapses) == bool:
-            self.new_synapses = [self.new_synapses] * 3
-        elif type(self.new_synapses) == list:
-            assert len(self.new_synapses) == 3, "new_synapses must be a list of length 3"
-            for i in self.new_synapses:
-                assert type(i) == bool, "new_synapses must be a list of booleans"
-        else:
-            raise ValueError("new_synapses must be a boolean or a list of booleans")
+            raise ValueError("sparsity_constraint must be a boolean or a list of booleans")
         
         # if layer_masks is not None, check if it is a list of 3 masks
         if self.layer_masks is not None:
             assert type(self.layer_masks) == list, "layer_masks must be a list of 3 masks"
             assert len(self.layer_masks) == 3, "layer_masks must be a list of 3 masks"
-            # check if either use_dale or any of the new_synapses is False
-            if not (self.use_dale or not all(self.new_synapses)):
-                print("WARNING: layer_masks is ignored because use_dale and new_synapses are both set to False")
-                self.layer_masks = [None, None, None]
+            # TODO: re-write this part
+            # check if either positivity_constraint or any of the sparsity_constraint is False
+            # if not (self.positivity_constraint or not all(self.sparsity_constraint)):
+            #     print("WARNING: layer_masks is ignored because positivity_constraint and sparsity_constraint are both set to False")
+            #     self.layer_masks = [None, None, None]
     # ======================================================================================
 
     # FORWARD

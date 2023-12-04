@@ -46,7 +46,7 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     fig, ax = plt.subplots(figsize=(img_width, hist_height))
     ax.set_title(f'{title} distribution')
     if ignore_zeros:
-        ax.hist(w[w != 0].flatten(), bins=50)
+        ax.hist(w[np.abs(w) < np.mean(np.abs(w))*0.1].flatten(), bins=50)
     else:
         ax.hist(w.flatten(), bins=50)
     plt.tight_layout()
