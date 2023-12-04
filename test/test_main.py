@@ -165,7 +165,7 @@
 #     struct = MultiArea(**_struct_pm)
 #     # construct model parameters
 #     _model_pm = MODEL_PARAMS.copy()
-#     _model_pm['new_synapses'] = False
+#     _model_pm['sparsity_constraint'] = False
 #     _model_pm['layer_masks'] = struct.masks()
 #     # intialize model
 #     rnn = CTRNN(**_model_pm)

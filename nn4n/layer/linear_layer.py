@@ -13,9 +13,8 @@ class LinearLayer(nn.Module):
             dist,
             use_bias,
             mask,
-            use_dale,
-            new_synapses,
-            allow_negative,
+            positivity_constraint,
+            sparsity_constraint,
             learnable=True,
             ) -> None:
         """
@@ -27,25 +26,23 @@ class LinearLayer(nn.Module):
             @param dist: distribution of weights
             @param input_dim: input dimension
             @param output_dim: output dimension
-            @param use_dale: whether to use Dale's law
-            @param new_synapses: whether to use new_synapses
-            @param allow_negative: whether to allow negative weights, a boolean value
+            @param positivity_constraint: whether to use Dale's law
+            @param sparsity_constraint: whether to use sparsity_constraint
         """
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dist = dist
         self.use_bias = use_bias
-        self.use_dale = use_dale
-        self.new_synapses = new_synapses
-        self.allow_negative = allow_negative
+        self.positivity_constraint = positivity_constraint
+        self.sparsity_constraint = sparsity_constraint
 
         # generate weights
         self.weight = self._generate_weight()
         self.bias = self._generate_bias()
 
         # enfore constraints
-        self.dale_mask, self.sparse_mask = None, None
+        self.positivity_mask, self.sparsity_mask = None, None
         self._init_constraints(mask)
 
         # convert weight and bias to torch tensor
@@ -56,78 +53,77 @@ class LinearLayer(nn.Module):
     # ======================================================================================
     def _init_constraints(self, mask):
         """
-        Initialize constraints (because _enforce_dale will clip the weights, but we don't want that during initialization)
+        Initialize constraints (because _enforce_positivity will clip the weights, but we don't want that during initialization)
         It will also balance excitatory and inhibitory neurons
         """
         if mask is not None:
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
-            if self.use_dale:
-                self._init_dale_mask(mask)
-            if not self.new_synapses:
-                # TODO: re-write this part
-                self.sparse_mask = (mask != 0).float()
+            if self.positivity_constraint:
+                self._init_positivity_mask(mask)
+            if self.sparsity_constraint:
+                self.sparsity_mask = (mask != 0).float()
 
-        if self.dale_mask is not None:
-            self.weight *= self.dale_mask
+        if self.positivity_constraint:
+            self.weight *= self.positivity_mask
             # self._balance_excitatory_inhibitory()
-        if self.sparse_mask is not None:
-            self.weight *= self.sparse_mask
+        if self.sparsity_constraint:
+            self.weight *= self.sparsity_mask
             self.weight = self._rescale_weight_bias(self.weight)
             # self.bias = self._rescale_weight_bias(self.bias)
 
     def _balance_excitatory_inhibitory(self):
         """ Balance excitatory and inhibitory weights """
         scale_mat = torch.ones_like(self.weight)
-        ext_sum = self.weight[self.dale_mask == 1].sum()
-        inh_sum = self.weight[self.dale_mask == -1].sum()
+        ext_sum = self.weight[self.positivity_mask == 1].sum()
+        inh_sum = self.weight[self.positivity_mask == -1].sum()
         if ext_sum > abs(inh_sum):
-            scale_mat[self.dale_mask == 1] = abs(inh_sum) / ext_sum
+            scale_mat[self.positivity_mask == 1] = abs(inh_sum) / ext_sum
         elif ext_sum < abs(inh_sum):
-            scale_mat[self.dale_mask == -1] = ext_sum / abs(inh_sum)
+            scale_mat[self.positivity_mask == -1] = ext_sum / abs(inh_sum)
         self.weight *= scale_mat
 
-    def _init_dale_mask(self, mask):
+    def _init_positivity_mask(self, mask):
         """ initialize settings required for Dale's law """
-        # Dale's law only applies to output edges
-        # create a ei_list to store whether a neuron's output edges are all positive or all negative
-        ei_list = torch.zeros(mask.shape[1])
-        all_neg = torch.all(mask <= 0, axis=0)
-        all_pos = torch.all(mask >= 0, axis=0)
-        all_zero = torch.all(mask == 0, axis=0)  # readout layer may be sparse
+        # # Dale's law only applies to output edges
+        # # create a ei_list to store whether a neuron's output edges are all positive or all negative
+        # ei_list = torch.zeros(mask.shape[1])
+        # all_neg = torch.all(mask <= 0, axis=0)
+        # all_pos = torch.all(mask >= 0, axis=0)
+        # all_zero = torch.all(mask == 0, axis=0)  # readout layer may be sparse
 
-        # check if all neurons are either all negative or all positive
-        for i in range(mask.shape[1]):
-            # if this neuron has all negative or all positive output edges, set it to -1 or 1
-            if all_neg[i]:
-                ei_list[i] = -1
-            elif all_pos[i]:
-                ei_list[i] = 1
-            else:
-                assert False, "a neuron's output edges must be either all positive or all negative"
+        # # check if all neurons are either all negative or all positive
+        # for i in range(mask.shape[1]):
+        #     # if this neuron has all negative or all positive output edges, set it to -1 or 1
+        #     if all_neg[i]:
+        #         ei_list[i] = -1
+        #     elif all_pos[i]:
+        #         ei_list[i] = 1
+        #     else:
+        #         assert False, "a neuron's output edges must be either all positive or all negative"
 
-            # if this neuron has no output edges, set it to 0 too
-            if all_zero[i]:
-                ei_list[i] = 0
-        self.ei_list = ei_list
+        #     # if this neuron has no output edges, set it to 0 too
+        #     if all_zero[i]:
+        #         ei_list[i] = 0
+        # self.ei_list = ei_list
 
-        # create a mask for Dale's law
-        self.dale_mask = torch.ones(mask.shape, dtype=int)
-        self.dale_mask[:, self.ei_list == -1] = -1
+        # # create a mask for Dale's law
+        # self.positivity_mask = torch.ones(mask.shape, dtype=int)
+        # self.positivity_mask[:, self.ei_list == -1] = -1
+        """ initialize settings required for sparsity_constraint """
+        self.positivity_mask = torch.ones(mask.shape, dtype=int)
+        self.positivity_mask[mask < 0] = -1
+        self.positivity_mask[mask > 0] = 1
 
     def _generate_weight(self):
         """ Generate random weight """
         if self.dist == 'uniform':
             # if uniform, let w be uniform in [-sqrt(k), sqrt(k)]
             sqrt_k = torch.sqrt(torch.tensor(1/self.input_dim))
-            if self.allow_negative:
-                w = torch.rand(self.output_dim, self.input_dim) * 2 * sqrt_k - sqrt_k
-            else:
-                w = torch.rand(self.output_dim, self.input_dim) * sqrt_k
+            w = torch.rand(self.output_dim, self.input_dim) * sqrt_k
+            w = w * 2 - sqrt_k
         elif self.dist == 'normal':
             w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(torch.tensor(self.input_dim))
-            if not self.allow_negative:
-                w = (w + torch.abs(w.min())) / 2
         elif self.dist == 'zero':
             w = torch.zeros((self.output_dim, self.input_dim))
         else:
@@ -138,14 +134,13 @@ class LinearLayer(nn.Module):
     def _generate_bias(self):
         """ Generate random bias """
         b = torch.zeros(self.output_dim)
-
         return b.float()
 
     def _rescale_weight_bias(self, mat):
         """ Rescale weight or bias due to sparsity """
         # if the layer is sparse in input dimension, scale the weight
-        if self.sparse_mask is not None:
-            scale = self.sparse_mask.sum(axis=1).max() / self.input_dim
+        if self.sparsity_mask is not None:
+            scale = self.sparsity_mask.sum(axis=1).max() / self.input_dim
         else:
             scale = 1
         return mat / scale
@@ -155,21 +150,21 @@ class LinearLayer(nn.Module):
     # ======================================================================================
     def enforce_constraints(self):
         """ Enforce mask """
-        if self.sparse_mask is not None:
+        if self.sparsity_mask is not None:
             self._enforce_sparsity()
-        if self.dale_mask is not None:
-            self._enforce_dale()
+        if self.positivity_mask is not None:
+            self._enforce_positivity()
 
     def _enforce_sparsity(self):
         """ Enforce sparsity """
-        w = self.weight.detach().clone() * self.sparse_mask
+        w = self.weight.detach().clone() * self.sparsity_mask
         self.weight.data.copy_(torch.nn.Parameter(w))
 
-    def _enforce_dale(self):
+    def _enforce_positivity(self):
         """ Enforce Dale's law """
         w = self.weight.detach().clone()
-        w[self.dale_mask == 1] = torch.clamp(w[self.dale_mask == 1], min=0)
-        w[self.dale_mask == -1] = torch.clamp(w[self.dale_mask == -1], max=0)
+        w[self.positivity_mask == 1] = torch.clamp(w[self.positivity_mask == 1], min=0)
+        w[self.positivity_mask == -1] = torch.clamp(w[self.positivity_mask == -1], max=0)
         self.weight.data.copy_(torch.nn.Parameter(w))
 
     def forward(self, x):
@@ -184,10 +179,10 @@ class LinearLayer(nn.Module):
         Move the network to the device (cpu/gpu)
         """
         super().to(device)
-        if self.sparse_mask is not None:
-            self.sparse_mask = self.sparse_mask.to(device)
-        if self.dale_mask is not None:
-            self.dale_mask = self.dale_mask.to(device)
+        if self.sparsity_mask is not None:
+            self.sparsity_mask = self.sparsity_mask.to(device)
+        if self.positivity_mask is not None:
+            self.positivity_mask = self.positivity_mask.to(device)
         if not self.use_bias:
             self.bias = self.bias.to(device)
 
@@ -195,9 +190,9 @@ class LinearLayer(nn.Module):
         # plot weight matrix
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, not self.new_synapses)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, self.sparsity_constraint)
         else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, not self.new_synapses)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, self.sparsity_constraint)
         
     def print_layers(self):
         param_dict = {
@@ -205,7 +200,7 @@ class LinearLayer(nn.Module):
             "output_dim": self.output_dim,
             "dist": self.dist,
             "shape": self.weight.shape,
-            "new_synapses": self.new_synapses,
+            "sparsity_constraint": self.sparsity_constraint,
             "learnable": self.weight.requires_grad,
             "weight_min": self.weight.min().item(),
             "weight_max": self.weight.max().item(),
