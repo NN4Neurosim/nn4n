@@ -36,8 +36,8 @@ class MLP(BaseNN):
             dist=self.layer_distributions[0],
             use_bias=self.layer_biases[0],
             mask=self.layer_masks[0],
-            positivity_constraint=False,
-            sparsity_constraint=True if self.layer_masks[0] is None else False,
+            positivity_constraints=False,
+            sparsity_constraints=True if self.layer_masks[0] is None else False,
             learnable=self.learnable[0],
         )
 
@@ -47,8 +47,8 @@ class MLP(BaseNN):
             dist=self.layer_distributions[1],
             use_bias=self.layer_biases[1],
             mask=self.layer_masks[0],
-            positivity_constraint=False,
-            sparsity_constraint=True if self.layer_masks[1] is None else False,
+            positivity_constraints=False,
+            sparsity_constraints=True if self.layer_masks[1] is None else False,
             learnable=self.learnable[1],
         )
 

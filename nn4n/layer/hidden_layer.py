@@ -13,9 +13,10 @@ class HiddenLayer(nn.Module):
             use_bias,
             scaling,
             mask,
-            positivity_constraint,
-            sparsity_constraint,
+            positivity_constraints,
+            sparsity_constraints,
             self_connections,
+            learnable=True,
             ) -> None:
         """
         Hidden layer of the RNN
@@ -23,10 +24,10 @@ class HiddenLayer(nn.Module):
             @param hidden_size: number of hidden units
             @param dist: distribution of hidden weights
             @param use_bias: use bias or not
-            @param sparsity_constraint: use sparsity_constraint or not
+            @param sparsity_constraints: use sparsity_constraints or not
             @param scaling: scaling of hidden weights
-            @param mask: mask for hidden weights, used to enforce sparsity_constraint and/or dale's law
-            @param positivity_constraint: whether to enforce positivity constraint
+            @param mask: mask for hidden weights, used to enforce sparsity_constraints and/or dale's law
+            @param positivity_constraints: whether to enforce positivity constraint
             @param self_connections: allow self connections or not
         """
         super().__init__()
@@ -35,19 +36,19 @@ class HiddenLayer(nn.Module):
         self.dist = dist
         self.use_bias = use_bias
         self.scaling = scaling
-        self.positivity_constraint = positivity_constraint
-        self.sparsity_constraint = sparsity_constraint
+        self.positivity_constraints = positivity_constraints
+        self.sparsity_constraints = sparsity_constraints
         self.self_connections = self_connections
         # generate weights and bias
         self.weight = self._generate_weight()
         self.bias = self._generate_bias()
-        # init sparsity_constraint, positivity_constraint and scaling
+        # init sparsity_constraints, positivity_constraints and scaling
         self.sparsity_mask, self.positivity_mask = None, None
         self._init_constraints(mask)
         self._enforce_scaling()
         # parameterize the weights and bias
-        self.weight = nn.Parameter(self.weight)
-        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias)
+        self.weight = nn.Parameter(self.weight, requires_grad=learnable)
+        self.bias = nn.Parameter(self.bias, requires_grad=self.use_bias and learnable)
 
     # INITIALIZATION
     # ======================================================================================
@@ -74,13 +75,13 @@ class HiddenLayer(nn.Module):
         Initialize constraints
         It will also balance excitatory and inhibitory neurons
         """
-        # Initialize dale's law and sparsity_constraint masks
+        # Initialize dale's law and sparsity_constraints masks
         if mask is not None:
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
-            if self.positivity_constraint:
+            if self.positivity_constraints:
                 self._init_positivity_mask(mask)  # initialize dale's mask
-            if self.sparsity_constraint:
+            if self.sparsity_constraints:
                 self.sparsity_mask = (mask != 0).int()  # convert to a binary mask
         
         # Whether to delete self connections
@@ -90,35 +91,16 @@ class HiddenLayer(nn.Module):
                 self.sparsity_mask = torch.ones((self.hidden_size, self.hidden_size))
             self.sparsity_mask = torch.where(torch.eye(self.hidden_size) == 1, 0, self.sparsity_mask)
         
-        # Apply dale's law and sparsity_constraint
-        if self.sparsity_constraint:
+        # Apply dale's law and sparsity_constraints
+        if self.sparsity_constraints or not self.self_connections:
             self.weight *= self.sparsity_mask
-        if self.positivity_constraint:
+        if self.positivity_constraints:
             self.weight[self.positivity_mask == 1] = torch.clamp(self.weight[self.positivity_mask == 1], min=0)
             self.weight[self.positivity_mask == -1] = torch.clamp(self.weight[self.positivity_mask == -1], max=0)
             self._balance_excitatory_inhibitory()
 
     def _init_positivity_mask(self, mask):
-        # """ initialize settings required for Dale's law """
-        # # Dale's law only applies to output edges
-        # # create a ei_list to store whether a neuron's output edges are all positive or all negative
-        # ei_list = torch.zeros(mask.shape[1])
-        # all_neg = torch.all(mask <= 0, dim=0)  # whether all output edges are negative
-        # all_pos = torch.all(mask >= 0, axis=0)  # whether all output edges are positive
-        # # check whether a neuron's output edges are all positive or all negative
-        # for i in range(mask.shape[1]):
-        #     if all_neg[i]:
-        #         ei_list[i] = -1
-        #     elif all_pos[i]:
-        #         ei_list[i] = 1
-        #     else:
-        #         assert False, "a neuron's output edges must be either all positive or all negative"
-        # self.ei_list = ei_list
-        # # create a mask for Dale's law
-        # self.dale_mask = torch.ones(mask.shape, dtype=int)
-        # self.dale_mask[:, self.ei_list == -1] = -1
-        
-        """ initialize settings required for sparsity_constraint """
+        """ initialize settings required for sparsity_constraints """
         self.positivity_mask = torch.zeros(mask.shape, dtype=int)
         self.positivity_mask[mask < 0] = -1
         self.positivity_mask[mask > 0] = 1
@@ -154,11 +136,6 @@ class HiddenLayer(nn.Module):
         """ Enforce spectral radius """
         # Calculate scale
         print('WARNING: spectral radius not applied, the feature is deprecated, use scaling instead')
-        # scale = self.spec_rad / torch.abs(torch.linalg.eig(self.weight)[0]).max()
-        # # Scale bias and weight
-        # if self.use_bias:
-        #     self.bias.data *= scale
-        # self.weight.data *= scale
 
     def _enforce_scaling(self):
         """ Enforce scaling """
@@ -202,7 +179,7 @@ class HiddenLayer(nn.Module):
     def plot_layers(self):
         """ Plot weight """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
-        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, self.sparsity_constraint)
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, self.sparsity_constraints)
     
     def print_layers(self):
         # plot weight matrix
@@ -211,7 +188,7 @@ class HiddenLayer(nn.Module):
             "input/output_dim": self.hidden_size,
             "distribution": self.dist,
             "use_bias": self.use_bias,
-            "positivity_constraint": self.positivity_constraint,
+            "positivity_constraints": self.positivity_constraints,
             "shape": self.weight.shape,
             "weight_min": self.weight.min().item(),
             "weight_max": self.weight.max().item(),
@@ -220,7 +197,7 @@ class HiddenLayer(nn.Module):
             "bias_max": self.bias.max().item(),
             "sparsity": self.sparsity_mask.sum() / self.sparsity_mask.numel() if self.sparsity_mask is not None else 1,
             "scaling": self.scaling,
-            "sparsity_constraint": self.sparsity_constraint,
+            "sparsity_constraints": self.sparsity_constraints,
             # "spectral_radius": torch.abs(torch.linalg.eig(self.weight)[0]).max().item(),
         }
         utils.print_dict("Hidden Layer", param_dict)
