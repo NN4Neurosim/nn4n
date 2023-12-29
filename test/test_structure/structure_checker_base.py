@@ -18,8 +18,8 @@ def check_model_params(model, pm):
         AssertionError(f'Scaling should be {pm["scaling"]}')
     assert model.recurrent_layer.hidden_layer.self_connections == pm["self_connections"], \
         AssertionError(f'Self connections should be {pm["self_connections"]}')
-    assert model.recurrent_layer.hidden_layer.positivity_constraint == pm["positivity_constraint"], \
-        AssertionError(f'Positivity contraint should be {pm["positivity_constraint"]}')
+    assert model.recurrent_layer.hidden_layer.positivity_constraints == pm["positivity_constraints"], \
+        AssertionError(f'Positivity contraint should be {pm["positivity_constraints"]}')
 
     input_info = get_weight_info(model.recurrent_layer.input_layer.weight)
     hidden_info = get_weight_info(model.recurrent_layer.hidden_layer.weight)

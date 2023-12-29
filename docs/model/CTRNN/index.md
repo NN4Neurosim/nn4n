@@ -70,7 +70,7 @@ fr^{t+1} = f((1-\alpha) v^t + \alpha( W_{hid}^T f(v^t) + W_{in}^T u^t + b_{hid} 
 ## Excitatory-Inhibitory constrained continuous-time RNN
 The implementation of CTRNN also supports Excitatory-Inhibitory constrained continuous-time RNN (EIRNN). EIRNN is proposed by H. Francis Song, Guangyu R. Yang, and Xiao-Jing Wang in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792)
 
-The original [code](https://github.com/frsong/pycog) is implemented in [Theano](https://pypi.org/project/Theano/) and may be deprecated due to the unsupported Python version. Theano is no longer maintained after Jul 2020. In this repo, the PyTorch version of EIRNN is implemented. It is implicitly included in the CTRNN class and can be enabled by setting `positivity_constraint` to `True` and use appropriate masks.
+The original [code](https://github.com/frsong/pycog) is implemented in [Theano](https://pypi.org/project/Theano/) and may be deprecated due to the unsupported Python version. Theano is no longer maintained after Jul 2020. In this repo, the PyTorch version of EIRNN is implemented. It is implicitly included in the CTRNN class and can be enabled by setting `positivity_constraints` to `True` and use appropriate masks.
 
 A visual illustration of the EIRNN is shown below.
 
@@ -119,9 +119,9 @@ These parameters primarily determine the training process of the network. The `t
 These parameters primarily determine the constraints of the network. By default, the network is initialized using the most lenient constraints, i.e., no constraints being enforced.
 | Parameter                | Default       | Type                       | Description                                |	
 |:-------------------------|:-------------:|:--------------------------:|:-------------------------------------------|
-| sign                 | False         | `boolean`/`list`           | Whether to enforce Dale's law. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, corresponds to the InputLayer, HiddenLayer, and ReadoutLayer, respectively. |
-| sparsity_constraint  | True         | `boolean`/`list`            | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If it's a list, it must have precisely three elements. Note: this must be checked even if your mask is sparse, otherwise the new connection will still be generated                  |
-| layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `sparsity_constraint/positivity_constraint is set to true. From the first to the last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Readout weights, respectively. Each mask must have the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.                   |
+| positivity_constraints    | False         | `boolean`/`list`           | Whether to enforce Dale's law. Either a `boolean` or a `list` of three `boolean`s. If the given value is a list, from the first element to the last element, corresponds to the InputLayer, HiddenLayer, and ReadoutLayer, respectively. |
+| sparsity_constraints  | True         | `boolean`/`list`            | Whether a neuron can grow new connections. See [constraints and masks](#constraints-and-masks). If it's a list, it must have precisely three elements. Note: this must be checked even if your mask is sparse, otherwise the new connection will still be generated                  |
+| layer_masks              | `None` or `list` | `list` of `np.ndarray`               | Layer masks if `sparsity_constraints/positivity_constraints is set to true. From the first to the last, the list elements correspond to the mask for Input-Hidden, Hidden-Hidden, and Hidden-Readout weights, respectively. Each mask must have the same dimension as the corresponding weight matrix. See [constraints and masks](#constraints-and-masks) for details.                   |
 
 
 ## Parameter Specifications
@@ -147,15 +147,15 @@ then add noise for $t+2$
 ### Constraints and masks
 Constraints are enforced before each forward pass
 #### Dale's law:
-Masks (input, hidden, and output) cannot be `None` if `positivity_constraint` is `True`.<br>
+Masks (input, hidden, and output) cannot be `None` if `positivity_constraints` is `True`.<br>
 Only entry signs matter for the enforcement of Dale's law. All edges from the same neuron must be all excitatory or all inhibitory. This is enforced across training using the `relu()` and `-relu()` functions.<br>
-When `positivity_constraint` is set to true, it will automatically balance the excitatory/inhibitory such that all synaptic strengths add up to zero.
+When `positivity_constraints` is set to true, it will automatically balance the excitatory/inhibitory such that all synaptic strengths add up to zero.
 #### New synapse:
-`sparsity_constraint` defines whether a neuron can 'grow' new connections.<br>
-If plasticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `sparsity_constraint` is set to False.<br>
+`sparsity_constraints` defines whether a neuron can 'grow' new connections.<br>
+If plasticity is set to False, neurons cannot 'grow' new connections. A mask must be provided if `sparsity_constraints` is set to False.<br>
 Only zeros entries matter. All entries that correspond to a zero value in the mask will remain zero across all time.
 #### Self connections:
-Whether a neuron can connect to itself. This feature is enforced along with the `sparsity_constraint` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
+Whether a neuron can connect to itself. This feature is enforced along with the `sparsity_constraints` mask. If mask is not specified but `self_connections` is set, a mask that only has zero entires on the diagonal will be generated automatically.
 
 ## Methods
 | Method                                        | Description                                |
@@ -171,8 +171,8 @@ Whether a neuron can connect to itself. This feature is enforced along with the 
 - [x] Test different activation functions
 - [x] Bias when using Dale's law?
 - [ ] If the masks are not set, there need default values.
-- [x] Potentially user can choose to enforce `sparsity_constraint` or not for a specific layer
-- [x] Re-write Dale's law such that it can still work when `sparsity_constraint` is not enforced.
+- [x] Potentially user can choose to enforce `sparsity_constraints` or not for a specific layer
+- [x] Re-write Dale's law such that it can still work when `sparsity_constraints` is not enforced.
 - [x] Can InputLayer and ReadoutLayer weights be negative when Dale's law is enforced?
 - [x] Check if bias does not change when use_bias = False
 - [x] Merge hidden_bias, input_bias, readout_bias to a single parameter

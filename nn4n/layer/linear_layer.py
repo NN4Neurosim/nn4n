@@ -13,8 +13,8 @@ class LinearLayer(nn.Module):
             dist,
             use_bias,
             mask,
-            positivity_constraint,
-            sparsity_constraint,
+            positivity_constraints,
+            sparsity_constraints,
             learnable=True,
             ) -> None:
         """
@@ -26,16 +26,16 @@ class LinearLayer(nn.Module):
             @param dist: distribution of weights
             @param input_dim: input dimension
             @param output_dim: output dimension
-            @param positivity_constraint: whether to use Dale's law
-            @param sparsity_constraint: whether to use sparsity_constraint
+            @param positivity_constraints: whether to use Dale's law
+            @param sparsity_constraints: whether to use sparsity_constraints
         """
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dist = dist
         self.use_bias = use_bias
-        self.positivity_constraint = positivity_constraint
-        self.sparsity_constraint = sparsity_constraint
+        self.positivity_constraints = positivity_constraints
+        self.sparsity_constraints = sparsity_constraints
 
         # generate weights
         self.weight = self._generate_weight()
@@ -59,15 +59,15 @@ class LinearLayer(nn.Module):
         if mask is not None:
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).int()  # convert to torch.Tensor
-            if self.positivity_constraint:
+            if self.positivity_constraints:
                 self._init_positivity_mask(mask)
-            if self.sparsity_constraint:
+            if self.sparsity_constraints:
                 self.sparsity_mask = (mask != 0).float()
 
-        if self.positivity_constraint:
+        if self.positivity_constraints:
             self.weight *= self.positivity_mask
             # self._balance_excitatory_inhibitory()
-        if self.sparsity_constraint:
+        if self.sparsity_constraints:
             self.weight *= self.sparsity_mask
             self.weight = self._rescale_weight_bias(self.weight)
             # self.bias = self._rescale_weight_bias(self.bias)
@@ -110,7 +110,7 @@ class LinearLayer(nn.Module):
         # # create a mask for Dale's law
         # self.positivity_mask = torch.ones(mask.shape, dtype=int)
         # self.positivity_mask[:, self.ei_list == -1] = -1
-        """ initialize settings required for sparsity_constraint """
+        """ initialize settings required for sparsity_constraints """
         self.positivity_mask = torch.ones(mask.shape, dtype=int)
         self.positivity_mask[mask < 0] = -1
         self.positivity_mask[mask > 0] = 1
@@ -190,9 +190,9 @@ class LinearLayer(nn.Module):
         # plot weight matrix
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, self.sparsity_constraint)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, self.sparsity_constraints)
         else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, self.sparsity_constraint)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, self.sparsity_constraints)
         
     def print_layers(self):
         param_dict = {
@@ -200,7 +200,7 @@ class LinearLayer(nn.Module):
             "output_dim": self.output_dim,
             "dist": self.dist,
             "shape": self.weight.shape,
-            "sparsity_constraint": self.sparsity_constraint,
+            "sparsity_constraints": self.sparsity_constraints,
             "learnable": self.weight.requires_grad,
             "weight_min": self.weight.min().item(),
             "weight_max": self.weight.max().item(),

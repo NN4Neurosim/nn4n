@@ -15,7 +15,7 @@ MODEL_BASE_PM = {
     "scaling": 1.0,
     "dt": 10,
     "self_connections": False,
-    "positivity_constraint": False,
+    "positivity_constraints": False,
     "layer_distributions": ["uniform", "normal", "uniform"],
     "layer_biases": [True, True, True],
     "self-connections": False,

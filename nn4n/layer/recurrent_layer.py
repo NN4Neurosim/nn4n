@@ -10,21 +10,22 @@ class RecurrentLayer(nn.Module):
     def __init__(
             self,
             hidden_size,
-            positivity_constraint,
-            sparsity_constraint,
+            positivity_constraints,
+            sparsity_constraints,
             layer_distributions,
             layer_biases,
             layer_masks,
             preact_noise,
             postact_noise,
+            learnable=True,
             **kwargs
             ):
         """
         Hidden layer of the RNN
         Parameters:
             @param hidden_size: number of hidden neurons
-            @param positivity_constraint: whether to enforce positivity constraint
-            @param sparsity_constraint: use sparsity_constraint or not
+            @param positivity_constraints: whether to enforce positivity constraint
+            @param sparsity_constraints: use sparsity_constraints or not
             @param layer_distributions: distribution of weights for each layer, a list of 3 strings
             @param layer_biases: use bias or not for each layer, a list of 3 boolean values
 
@@ -44,7 +45,6 @@ class RecurrentLayer(nn.Module):
         super().__init__()
 
         self.hidden_size = hidden_size
-        self.positivity_constraint = positivity_constraint
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
         self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
@@ -58,23 +58,25 @@ class RecurrentLayer(nn.Module):
         self._set_hidden_state()
 
         self.input_layer = LinearLayer(
-            positivity_constraint=self.positivity_constraint[0],
-            sparsity_constraint=sparsity_constraint[0],
+            positivity_constraints=positivity_constraints[0],
+            sparsity_constraints=sparsity_constraints[0],
             output_dim=self.hidden_size,
             input_dim=kwargs.pop("input_dim", 1),
             use_bias=self.layer_biases[0],
             dist=self.layer_distributions[0],
             mask=self.layer_masks[0],
+            learnable=learnable[0],
         )
         self.hidden_layer = HiddenLayer(
             hidden_size=self.hidden_size,
-            sparsity_constraint=sparsity_constraint[1],
-            positivity_constraint=self.positivity_constraint[1],
+            sparsity_constraints=sparsity_constraints[1],
+            positivity_constraints=positivity_constraints[1],
             dist=self.layer_distributions[1],
             use_bias=self.layer_biases[1],
             scaling=kwargs.get("scaling", 1.0),
             mask=self.layer_masks[1],
             self_connections=kwargs.get("self_connections", False),
+            learnable=learnable[1],
         )
 
     # INITIALIZATION
