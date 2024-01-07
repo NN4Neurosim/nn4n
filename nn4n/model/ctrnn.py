@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
 from nn4n.model import BaseNN
 from nn4n.layer import RecurrentLayer
@@ -60,8 +61,8 @@ class CTRNN(BaseNN):
         # parameters that used in all layers
         # base parameters
         self.dims = kwargs.pop("dims", [1, 100, 1])
-        self.biases = kwargs.pop("biases", [None, None, None])
-        self.weights = kwargs.pop("weights", ['uniform', 'uniform', 'uniform'])
+        self.biases = kwargs.pop("biases", None)
+        self.weights = kwargs.pop("weights", 'uniform')
 
         # network dynamics parameters
         self.sparsity_masks = kwargs.pop("sparsity_masks", None)
@@ -135,10 +136,10 @@ class CTRNN(BaseNN):
  
         # Handle None cases
         if param is None:
-            if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks"]:
+            if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks", "biases"]:
                 param = [None] * 3
             else: raise ValueError(f"{param_type} cannot be None when param_type is {param_type}")
-        elif param is not None and type(param) != list and param_type in ["weights", "biases"]:
+        elif param is not None and type(param) != list and param_type in ["weights"]:
             param = [param] * 3
 
         if type(param) != list:
@@ -146,26 +147,49 @@ class CTRNN(BaseNN):
         if len(param) != 3:
             raise ValueError(f"{param_type} is/can not be broadcasted to a list of length 3")
 
-        for i in range(3):
-            if param[i] is not None:
-                if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks"]:
-                    param[i] = self._check_array(param[i], target_dim[i], param_type, i)
-                    if param_type == "ei_masks":
-                        param[i] = np.where(param[i] > 0, 1, -1)
-                    elif param_type == "sparsity_masks":
-                        param[i] = np.where(param[i] == 0, 0, 1)
-                    elif param_type == "plasticity_masks":
-                        # Normalize plasticity_masks
-                        min_val, max_val = param[i].min(), param[i].max()
-                        param[i] = (param[i] - min_val) / (max_val - min_val)
-                elif param_type in ["weights", "biases"]:
-                    self._check_distribution_or_array(param[i], target_dim_biases[i] if param_type == "biases" else target_dim[i], param_type, i)
+        # param_type are all legal because it is passed by non-user code
+        if param_type == "plasticity_masks": param = self._reformat_plas_masks(param, target_dim)
+        else:
+            # if its not plasticity_masks, then it must be a list of 3 values
+            for i in range(3):
+                if param[i] is not None:
+                    if param_type in ["ei_masks", "sparsity_masks"]:
+                        param[i] = self._check_array(param[i], param_type, target_dim[i], i)
+                        if param_type == "ei_masks":
+                            param[i] = torch.where(param[i] > 0, torch.tensor(1), torch.tensor(-1))
+                        elif param_type == "sparsity_masks":
+                            param[i] = torch.where(param[i] == 0, torch.tensor(0), torch.tensor(1))
+                    elif param_type in ["weights", "biases"]:
+                        self._check_distribution_or_array(param[i], param_type, target_dim_biases[i] if param_type == "biases" else target_dim[i], i)
         return param
 
+    def _reformat_plas_masks(self, masks, target_dim):
+        if any(mask is not None for mask in masks):
+            min_plas, max_plas = [], []
+            for mask in masks:
+                if mask is not None:
+                    min_plas.append(mask.min())
+                    max_plas.append(mask.max())
+            min_plas, max_plas = min(min_plas), max(max_plas)
+            if min_plas != max_plas:
+                params = []
+                for i in range(3):
+                    if masks[i] is None: params.append(torch.ones(target_dim[i]))
+                    else:
+                        _temp_mask = (masks[i] - min_plas) / (max_plas - min_plas)
+                        params.append(self._check_array(_temp_mask, "plasticity_masks", target_dim[i], i))
+                # check the total number of unique plasticity values
+                plasticity_scales = torch.unique(torch.cat([param.flatten() for param in params]))
+                if len(plasticity_scales) > 5:
+                    raise ValueError("The number of unique plasticity values cannot be larger than 5")
+                return params
+        return [torch.ones(target_dim[i]) for i in range(3)]
+
     def _check_array(self, param, param_type, dim, index):
-        if type(param) != np.ndarray:
-            if type(param) == torch.Tensor: return param.numpy()
-            else: raise ValueError(f"{param_type}[{index}] must be a numpy array")
+        if type(param) != torch.Tensor:
+            if type(param) == np.ndarray:
+                param = torch.from_numpy(param)
+            else: raise ValueError(f"{param_type}[{index}] must be a numpy array or torch tensor")
         if param.shape != dim:
             raise ValueError(f"{param_type}[{index}] must be a numpy array of shape {dim}")
         return param
@@ -174,8 +198,8 @@ class CTRNN(BaseNN):
         if type(param) == str:
             if param not in ['uniform', 'normal']:
                 raise ValueError(f"{param_type}[{index}] must be a string of 'uniform' or 'normal'")
-        elif type(param) == np.ndarray:
-            # its already being converted to numpy array if it is a torch tensor, so no need to check
+        elif type(param) == torch.Tensor:
+            # its already being converted to torch.Tensor, so no need to check np.ndarray case
             if param.shape != dim:
                 raise ValueError(f"{param_type}[{index}] must be a numpy array of shape {dim}")
         else:
@@ -268,6 +292,13 @@ class CTRNN(BaseNN):
         hidden_states = self.recurrent_layer(x)
         output = self.readout_layer(hidden_states.float())
         return output, hidden_states
+
+    def adjust_gradients(self):
+        """ Update weights in the custom speed """
+        # no need to consider the case where plasticity_mask is None as 
+        # it will be automatically converted to a tensor of ones in parameter initialization
+        self.recurrent_layer.adjust_gradients()
+        self.readout_layer.adjust_gradients()
 
     def _enforce_constraints(self):
         self.recurrent_layer.enforce_constraints()

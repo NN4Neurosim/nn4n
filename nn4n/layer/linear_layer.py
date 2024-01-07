@@ -21,9 +21,10 @@ class LinearLayer(nn.Module):
         super().__init__()
         self.input_dim = layer_struct['input_dim']
         self.output_dim = layer_struct['output_dim']
-        self.ei_mask = layer_struct['ei_mask']
-        self.sparsity_mask = layer_struct['sparsity_mask']
-        self.plasticity_mask = layer_struct['plasticity_mask']
+        self.ei_mask = layer_struct['ei_mask'].T if layer_struct['ei_mask'] is not None else None
+        self.sparsity_mask = layer_struct['sparsity_mask'].T if layer_struct['sparsity_mask'] is not None else None
+        self.plasticity_mask = layer_struct['plasticity_mask'].T if layer_struct['plasticity_mask'] is not None else None
+        self.plasticity_scales = torch.unique(self.plasticity_mask) # all unique plasticity values in the plasticity mask
 
         # generate weights
         self.weight = self._generate_weight(layer_struct['weights'])
@@ -148,6 +149,12 @@ class LinearLayer(nn.Module):
     def forward(self, x):
         """ Forward Pass """
         return x.float() @ self.weight.T + self.bias
+
+    def adjust_gradients(self):
+        with torch.no_grad():
+            # assume the plasticity mask are all valid and being checked in ctrnn class
+            for scale in self.plasticity_scales:
+                self.weight.grad[self.plasticity_mask == scale] *= scale
     # ======================================================================================
 
     # HELPER FUNCTIONS
@@ -161,6 +168,8 @@ class LinearLayer(nn.Module):
             self.sparsity_mask = self.sparsity_mask.to(device)
         if self.ei_mask is not None:
             self.ei_mask = self.ei_mask.to(device)
+        if self.bias.requires_grad:
+            self.bias = self.bias.to(device)
 
     def plot_layers(self):
         # plot weight matrix

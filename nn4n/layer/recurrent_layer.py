@@ -104,6 +104,11 @@ class RecurrentLayer(nn.Module):
             self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
 
         return torch.stack(stacked_states, dim=0)
+
+
+    def adjust_gradients(self):
+        self.input_layer.adjust_gradients()
+        self.hidden_layer.adjust_gradients()
     # ==================================================================================================
 
     # HELPER FUNCTIONS

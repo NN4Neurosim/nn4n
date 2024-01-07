@@ -33,7 +33,7 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
 
     fig, ax = plt.subplots(figsize=(img_width, plt_height))
     ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r)
-    ax.set_title(f'{title}')
+    ax.set_title(f'{title}' if not ignore_zeros else f'{title} (nonzero)')
     if colorbar:
         fig.colorbar(ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r), ax=ax)
     if w.shape[1] < 5:
@@ -46,9 +46,10 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     fig, ax = plt.subplots(figsize=(img_width, hist_height))
     ax.set_title(f'{title} distribution')
     if ignore_zeros:
-        ax.hist(w[np.abs(w) < np.mean(np.abs(w))*0.1].flatten(), bins=50)
+        mean_nonzero = np.mean(np.abs(w)[np.abs(w) != 0])
+        ax.hist(w[np.abs(w) > mean_nonzero*0.001].flatten(), bins=100)
     else:
-        ax.hist(w.flatten(), bins=50)
+        ax.hist(w.flatten(), bins=100)
     plt.tight_layout()
     plt.show()
 
