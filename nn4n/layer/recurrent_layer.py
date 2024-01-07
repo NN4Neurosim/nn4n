@@ -7,77 +7,34 @@ from nn4n.layer import LinearLayer
 
 
 class RecurrentLayer(nn.Module):
-    def __init__(
-            self,
-            hidden_size,
-            positivity_constraints,
-            sparsity_constraints,
-            layer_distributions,
-            layer_biases,
-            layer_masks,
-            learnable=True,
-            **kwargs
-            ):
+    def __init__(self, layer_struct, **kwargs):
         """
         Hidden layer of the RNN
         Parameters:
-            @param hidden_size: number of hidden neurons
-            @param positivity_constraints: whether to enforce positivity constraint
-            @param sparsity_constraints: use sparsity_constraints or not
-            @param layer_distributions: distribution of weights for each layer, a list of 3 strings
-            @param layer_biases: use bias or not for each layer, a list of 3 boolean values
 
-        Keyword Arguments:
+        Keyword Arguments in layer_struct:
             @kwarg activation: activation function, default: "relu"
             @kwarg preact_noise: noise added to pre-activation, default: 0
             @kwarg postact_noise: noise added to post-activation, default: 0
             @kwarg dt: time step, default: 1
             @kwarg tau: time constant, default: 1
-
-            @kwarg preact_noise: noise added to pre-activation, default: 0
-            @kwarg postact_noise: noise added to post-activation, default: 0
-            @kwarg input_dim: input dimension, default: 1
-
-            @kwarg hidden_dist: distribution of hidden layer weights, default: "normal"
-            @kwarg self_connections: allow self connections or not, default: False
             @kwarg init_state: initial state of the network, 'zero', 'keep', or 'learn'
+            @kwarg in_struct: input layer layer_struct
+            @kwarg hid_struct: hidden layer layer_struct
         """
         super().__init__()
-
-        self.hidden_size = hidden_size
-        self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
-        self.layer_distributions = layer_distributions
-        self.layer_biases = layer_biases
-        self.layer_masks = layer_masks
+        self.alpha = layer_struct['dt']/layer_struct['tau']
+        self.hidden_size = layer_struct['hid_struct']['input_dim']
         self.hidden_state = torch.zeros(self.hidden_size)
-        self.init_state = kwargs.get("init_state", 'zero')
-        self.act = kwargs.get("activation", "relu")
+        self.init_state = layer_struct['init_state']
+        self.act = layer_struct['activation']
+        self.activation = get_activation(self.act)
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
-        self.activation = get_activation(self.act)
         self._set_hidden_state()
 
-        self.input_layer = LinearLayer(
-            positivity_constraints=positivity_constraints[0],
-            sparsity_constraints=sparsity_constraints[0],
-            output_dim=self.hidden_size,
-            input_dim=kwargs.pop("input_dim", 1),
-            use_bias=self.layer_biases[0],
-            dist=self.layer_distributions[0],
-            mask=self.layer_masks[0],
-            learnable=learnable[0],
-        )
-        self.hidden_layer = HiddenLayer(
-            hidden_size=self.hidden_size,
-            sparsity_constraints=sparsity_constraints[1],
-            positivity_constraints=positivity_constraints[1],
-            dist=self.layer_distributions[1],
-            use_bias=self.layer_biases[1],
-            scaling=kwargs.get("scaling", 1.0),
-            mask=self.layer_masks[1],
-            self_connections=kwargs.get("self_connections", False),
-            learnable=learnable[1],
-        )
+        self.input_layer = LinearLayer(layer_struct=layer_struct['in_struct'])
+        self.hidden_layer = HiddenLayer(layer_struct=layer_struct['hid_struct'])
 
     # INITIALIZATION
     # ==================================================================================================
@@ -162,9 +119,8 @@ class RecurrentLayer(nn.Module):
 
     def print_layers(self):
         param_dict = {
-            "hidden_min": self.hidden_state.min(),
-            "hidden_max": self.hidden_state.max(),
-            "hidden_mean": self.hidden_state.mean(),
+            "init_hidden_min": self.hidden_state.min(),
+            "init_hidden_max": self.hidden_state.max(),
             "preact_noise": self.preact_noise,
             "postact_noise": self.postact_noise,
             "activation": self.act,
