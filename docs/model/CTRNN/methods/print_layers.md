@@ -25,12 +25,7 @@ Linear Layer:
    | bias_min:   0.0
    | bias_max:   0.0
    | sparsity:   1
-```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_input.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_input_dist.png" width="500"></br>
-
-```
 Recurrence: 
    | hidden_min:    0.0
    | hidden_max:    0.0
@@ -54,13 +49,7 @@ Hidden Layer:
    | bias_max:         0.0
    | sparsity:         0.9900000095367432
    | scaling:          1.0
-```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_hidden.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_hidden_dist.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs//images/model/ctrnn_hidden_eig.png" width="300"></br>
-
-```
 Linear Layer: 
    | input_dim:  100
    | output_dim: 1
@@ -74,5 +63,4 @@ Linear Layer:
    | sparsity:   1
 ```
 
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_readout.png" width="500"></br>
-<img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/model/ctrnn_readout_dist.png" width="500"></br>
+see also: [plot_layers()](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/methods/plot_layers.md)

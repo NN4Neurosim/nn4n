@@ -15,8 +15,6 @@ class RecurrentLayer(nn.Module):
             layer_distributions,
             layer_biases,
             layer_masks,
-            preact_noise,
-            postact_noise,
             learnable=True,
             **kwargs
             ):
@@ -36,6 +34,8 @@ class RecurrentLayer(nn.Module):
             @kwarg dt: time step, default: 1
             @kwarg tau: time constant, default: 1
 
+            @kwarg preact_noise: noise added to pre-activation, default: 0
+            @kwarg postact_noise: noise added to post-activation, default: 0
             @kwarg input_dim: input dimension, default: 1
 
             @kwarg hidden_dist: distribution of hidden layer weights, default: "normal"
@@ -45,8 +45,6 @@ class RecurrentLayer(nn.Module):
         super().__init__()
 
         self.hidden_size = hidden_size
-        self.preact_noise = preact_noise
-        self.postact_noise = postact_noise
         self.alpha = kwargs.get("dt", 10) / kwargs.get("tau", 100)
         self.layer_distributions = layer_distributions
         self.layer_biases = layer_biases
@@ -54,6 +52,8 @@ class RecurrentLayer(nn.Module):
         self.hidden_state = torch.zeros(self.hidden_size)
         self.init_state = kwargs.get("init_state", 'zero')
         self.act = kwargs.get("activation", "relu")
+        self.preact_noise = kwargs.pop("preact_noise", 0)
+        self.postact_noise = kwargs.pop("postact_noise", 0)
         self.activation = get_activation(self.act)
         self._set_hidden_state()
 

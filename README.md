@@ -22,6 +22,7 @@ Some of the most commonly used neural networks in neuroscience research are incl
     - [Multi-Area](#multi-area)
     - [Multi-Area with E/I constraints](#multi-area-with-ei-constraints)
     - [Random Input](#random-input)
+    - [Blocked CTRNN](#blocked-ctrnn)
 - [Criterion](#criterion)
     - [RNNLoss](#rnnloss)
 - [Others](#others)
@@ -58,7 +59,6 @@ The implementation of standard continuous-time RNN (CTRNN). This implementation 
 - [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/CTRNN.ipynb)
 <p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/EIRNN_structure.png" width="400"></p>
 
-
 ## Structure
 In CTRNN implementation, the hidden layer structure can be easily controlled by specifying sparsity masks and E/I masks. We put all RNN update logic in the `model` module and all structure-related logic in the `structure` module to streamline the implementation process. <br>
 We also emphasize on the structure more as it is often more informative to the underlying biological mechanisms. For instance, we might require different module sizes, or we require a multi-module network with E/I constraints; the implementation might be verbose and error-prone. Our following implementation will allow you to easily achieve these goals by simply specifying a few parameters. <br>
@@ -74,6 +74,12 @@ On top of modeling brain with multi-area hidden layer, another critical constrai
 Additionally, how different E/I regions connect to each other could also be tricky; we parameterized this process such that it can be controlled with only two lines of code. <br>
 - [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb)
 <p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/Multi_Area_EI.png" width="400"></p>
+
+#### Blocked CTRNN
+The hidden layer is a large connectivity matrix that can potentially be used to represent more than a single brain regions. Under the case when we want to model multiple brain regions and consider them altogether as a single dynamical system, different regions might require different initialization and different update speed. The `BlockedCTRNN` class is designed to support such a case. <br>
+The `BlockedCTRNN` class is temporally implemented as a parallel version of `CTRNN` class. It will potentially be merged into the `CTRNN` class in the future. <br>
+<!-- - [Documentation](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/BlockedCTRNN/index.md) -->
+<p align="center"><img src="./docs/images/basics/Blocked_Hidden.png" width="400"></p>
 
 #### Random Input
 Neurons' dynamic receiving input will be heavily driven by the inputting signal. Injecting signals to only part of the neuron will result in more versatile and hierarchical dynamics. See [A Versatile Hub Model For Efficient Information Propagation And Feature Selection](https://arxiv.org/abs/2307.02398). This is supported by `RandomInput` class <br>
