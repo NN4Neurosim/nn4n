@@ -106,9 +106,9 @@ class RecurrentLayer(nn.Module):
         return torch.stack(stacked_states, dim=0)
 
 
-    def adjust_gradients(self):
-        self.input_layer.adjust_gradients()
-        self.hidden_layer.adjust_gradients()
+    def apply_plasticity(self):
+        self.input_layer.apply_plasticity()
+        self.hidden_layer.apply_plasticity()
     # ==================================================================================================
 
     # HELPER FUNCTIONS

@@ -1,4 +1,4 @@
-# Continuous-Time RNN
+# Continuous-Time RNN (`nn4n.model.CTRNN`)
 [Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md)
 
 ## Table of Contents

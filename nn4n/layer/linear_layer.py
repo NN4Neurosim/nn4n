@@ -150,11 +150,14 @@ class LinearLayer(nn.Module):
         """ Forward Pass """
         return x.float() @ self.weight.T + self.bias
 
-    def adjust_gradients(self):
+    def apply_plasticity(self):
         with torch.no_grad():
             # assume the plasticity mask are all valid and being checked in ctrnn class
             for scale in self.plasticity_scales:
-                self.weight.grad[self.plasticity_mask == scale] *= scale
+                if self.weight.grad is not None:
+                    self.weight.grad[self.plasticity_mask == scale] *= scale
+                else:
+                    raise RuntimeError("Weight gradient is None, possibly because the forward loop is non-differentiable")
     # ======================================================================================
 
     # HELPER FUNCTIONS

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import warnings
 
 from nn4n.model import BaseNN
 from nn4n.layer import RecurrentLayer
@@ -84,50 +85,52 @@ class CTRNN(BaseNN):
 
     def _handle_deprecated(self, kwargs):
         """ Handle deprecated parameters """
+        slevel = 5 # output the warning at the level where kwargs is passed
         # check if there is any deprecated parameter
         if 'input_dim' in kwargs or 'output_dim' in kwargs or 'hidden_size' in kwargs:
             if 'dims' not in kwargs:
                 self.dims = [kwargs.pop("input_dim", 1), kwargs.pop("hidden_size", 100), kwargs.pop("output_dim", 1)]
-            print("WARNING: input_dim, output_dim, hidden_size are deprecated. Use dims instead.")
+            warnings.warn("input_dim, output_dim, hidden_size are deprecated. Use dims instead.", UserWarning, stacklevel=slevel)
         if 'ei_balance' in kwargs:
-            print("WARNING: ei_balance is deprecated. No ei_balance specification is needed.")
+            warnings.warn("ei_balance is deprecated. No ei_balance specification is needed.", UserWarning, stacklevel=slevel)
         if 'allow_negative' in kwargs:
-            print("WARNING: allow_negative is deprecated. No allow_negative specification is needed.")
+            warnings.warn("allow_negative is deprecated. No allow_negative specification is needed.", UserWarning, stacklevel=slevel)
         if 'use_dale' in kwargs:
-            print("WARNING: use_dale is deprecated. Use ei_masks instead. No Dale's law is applied.")
+            warnings.warn("use_dale is deprecated. Use ei_masks instead. No Dale's law is applied.", UserWarning, stacklevel=slevel)
         if 'new_synapses' in kwargs:
-            print("WARNING: new_synapses is deprecated. Use sparsity_masks instead. No synapse constraint is applied.")
+            warnings.warn("new_synapses is deprecated. Use sparsity_masks instead. No synapse constraint is applied.", UserWarning, stacklevel=slevel)
         if 'learnable' in kwargs:
-            print("WARNING: learnable is deprecated. Use `plasticity_masks` instead.\n"
+            warnings.warn("learnable is deprecated. Use `plasticity_masks` instead.\n"
                 "   If you wish to define the learning behavior of the weights, generate a matrix "
-                "with the desired learning rate and pass it to the model via `plasticity_masks`.")
+                "with the desired learning rate and pass it to the model via `plasticity_masks`.", UserWarning, stacklevel=slevel)
         if 'positivity_constraints' in kwargs:
-            print("WARNING: positivity_constraints is deprecated. Use `ei_masks` instead.\n"
+            warnings.warn("positivity_constraints is deprecated. Use `ei_masks` instead.\n"
                 "   If you wish to constraint the positivity of the weights, generate a matrix with the "
-                "desired positivity/netagivity and pass it to the model via `ei_masks`.")
+                "desired positivity/netagivity and pass it to the model via `ei_masks`.", UserWarning, stacklevel=slevel)
         if 'sparsity_constraints' in kwargs:
-            print("WARNING: sparsity_constraints is deprecated. Use sparsity_masks instead.\n"
+            warnings.warn("sparsity_constraints is deprecated. Use sparsity_masks instead.\n"
                 "   If you wish to constraint the sparsity of the weights, mask the element that you wish "
-                "to constrain to zero and pass the mask to the model via `sparsity_masks`.")
+                "to constrain to zero and pass the mask to the model via `sparsity_masks`.", UserWarning, stacklevel=slevel)
         if 'scaling' in kwargs:
-            print("WARNING: scaling is deprecated. Use `weights` instead\n"
+            warnings.warn("scaling is deprecated. Use `weights` instead.\n"
                 "   If you wish to scale the weights, generate the weights with the desired "
-                "scaling and pass them to the model via `weights`.")
+                "scaling and pass them to the model via `weights`.", UserWarning, stacklevel=slevel)
         if 'self_connections' in kwargs:
-            print("WARNING: self_connections is deprecated. Use sparsity_masks instead.\n"
+            warnings.warn("self_connections is deprecated. Use sparsity_masks instead.\n"
                 "   If you wish to constraint the sparsity of the weights, mask the element that you wish, "
-                "i.e. the diagonal elements, to constrain to zero and pass the mask to the model via `sparsity_masks`.")
+                "i.e. the diagonal elements, to constrain to zero and pass the mask to the model via `sparsity_masks`.", UserWarning, stacklevel=slevel)
         if 'layer_distributions' in kwargs:
-            print("WARNING: layer_distributions is deprecated. Use `weights` instead.\n"
+            warnings.warn("layer_distributions is deprecated. Use `weights` instead.\n"
                 "   The parameter `weights` inherits the functionality of `layer_distributions`."
-                "Simply pass a list of distributions to `weights` and the model will generate the weights accordingly.")
+                "Simply pass a list of distributions to `weights` and the model will generate the weights accordingly.", UserWarning, stacklevel=slevel)
         if 'layer_biases' in kwargs:
-            print("WARNING: layer_biases is deprecated. Use `biases` instead.\n"
+            warnings.warn("layer_biases is deprecated. Use `biases` instead.\n"
                 "   The parameter `biases` inherits the functionality of `layer_biases`."
-                "Simply pass a list of biases to `biases` and the model will generate the biases accordingly.")
+                "Simply pass a list of biases to `biases` and the model will generate the biases accordingly.", UserWarning, stacklevel=slevel)
         if 'layer_masks' in kwargs:
-            print("WARNING: layer_masks is deprecated.\n   The old parameter `layer_masks` is now "
-                "splitted into `sparsity_masks`, `ei_masks`, and `plasticity_masks`.")
+            warnings.warn("layer_masks is deprecated. Use `sparsity_masks`, `ei_masks`, and `plasticity_masks` instead.\n"
+                "   The parameter `sparsity_masks`, `ei_masks`, and `plasticity_masks` inherits the functionality of `layer_masks`."
+                "Simply pass a list of masks to `sparsity_masks`, `ei_masks`, and `plasticity_masks` and the model will generate the masks accordingly.", UserWarning, stacklevel=slevel)
 
     def _check_masks(self, param, param_type, dims):
         """ General function to check different parameter types. """
@@ -293,12 +296,12 @@ class CTRNN(BaseNN):
         output = self.readout_layer(hidden_states.float())
         return output, hidden_states
 
-    def adjust_gradients(self):
+    def apply_plasticity(self):
         """ Update weights in the custom speed """
         # no need to consider the case where plasticity_mask is None as 
         # it will be automatically converted to a tensor of ones in parameter initialization
-        self.recurrent_layer.adjust_gradients()
-        self.readout_layer.adjust_gradients()
+        self.recurrent_layer.apply_plasticity()
+        self.readout_layer.apply_plasticity()
 
     def _enforce_constraints(self):
         self.recurrent_layer.enforce_constraints()

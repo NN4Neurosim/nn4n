@@ -15,7 +15,7 @@ class BaseNN(nn.Module):
     def save(self, path):
         """ save model and kwargs to the same file """
         assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth", "path must end with .pth"
+        assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
         torch.save({
             "model_state_dict": self.state_dict(),
             "kwargs": self.kwargs_checkpoint

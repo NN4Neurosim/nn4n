@@ -10,10 +10,10 @@ class BaseStuct():
         @kwarg input_dim: input dimension, default: 1
         @kwarg output_dim: output dimension, default: 1
         """
-        print("WARNING: `CTRNN structure` will stop being supported in the future. Please use `mask` class instead")
-        self.hidden_size = kwargs.get("hidden_size", None)
-        self.input_dim = kwargs.get("input_dim", None)
-        self.output_dim = kwargs.get("output_dim", None)
+        self.dims = kwargs.get("dims", [1, 100, 1])
+        self.hidden_size = self.dims[1]
+        self.input_dim = self.dims[0]
+        self.output_dim = self.dims[2]
 
         # cannot be run as a child class
         assert self.__class__.__name__ != "BaseStruct", "BaseStruct cannot be run as a child class"

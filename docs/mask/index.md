@@ -1,12 +1,11 @@
-# RNN structure(s) (`nn4n.structure`)
-[Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md) <br>
-<span style="color:red">**NOTE:** This module will not be maintained in future versions. Everything is now inherited by `mask`.</span> <br>
+# RNN mask(s) (`nn4n.mask`)
+[Back to Home](https://github.com/zhaozewang/NN4Neurosci/blob/main/README.md)
 ## Table of Contents
 - [Introduction](#introduction)
-- [Structures](#structures)
-    - [BaseStruct](#basestruct)
-        - [Parameters](#basestruct-parameters)
-        - [Methods](#basestruct-methods)
+- [Masks](#masks)
+    - [BaseMask](#basemask)
+        - [Parameters](#basemask-parameters)
+        - [Methods](#basemask-methods)
     - [Multi Area](#multiarea)
         - [Parameters](#multiarea-parameters)
         - [Forward Backward Specifications](#forward-backward-specifications)
@@ -17,34 +16,32 @@
         - [Parameters](#randominput-parameters)
 
 ## Introduction
-This module defines structures for any RNN in the standard 3-layer architectures (as shown below). The structures of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and readout_mask that are used in the `model` module<br>
+This module defines masks for any RNN in the standard 3-layer architectures (as shown below). The masks of the hidden layer in this project are defined using masks. Therefore, classes in this module will generate input_mask, hidden_mask, and readout_mask that are used in the `model` module<br>
 
 <p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/RNN_structure.png" width="400"></p>
 
 Where yellow nodes are in the InputLayer, green nodes are in the HiddenLayer, and purple nodes are in the ReadoutLayer.
 
-## Structures
-### BaseStruct
-Base class for all structures. It defines the basic structure of a RNN. It serves as a boilerplate for other structures. It is not meant to be used directly.
+## Masks
+### BaseMask
+Base class for all masks. It defines the basic mask of a RNN. It serves as a boilerplate for other masks. It is not meant to be used directly.
 
-#### BaseStruct Parameters
+#### BaseMask Parameters
 | Parameter            | Default       | Required      | Type             | Description                                |
 |:---------------------|:-------------:|:-------------:|:----------------:|:-------------------------------------------|
-| input_dim            | `None`        | True          |`int`              | Input dimension. Used to generate the input layer mask. |
-| hidden_size          | `None`        | True          | `int`              | HiddenLayer size. Used to generate the hidden layer mask. |
-| output_dim           | `None`        | True          | `int`              | Output dimension. Used to generate the readout layer mask. |
+| dims                 | [1, 100, 1]   | True          |`list`            | Dimensions of the RNN. It should be a list of three elements, where the first element is the input dimension, the second element is the hidden size, and the third element is the output dimension. |
 
-#### BaseStruct Methods
-Methods that are shared by all structures. <br>
+#### BaseMask Methods
+Methods that are shared by all masks. <br>
 | Method                                               | Description                                         |
 |:-----------------------------------------------------|:----------------------------------------------------|
-| [`get_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_input_idx.md)      | Get indices of neurons that receive input.          |
-| [`get_readout_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_readout_idx.md)  | Get indices of neurons that readout from.           |
-| [`get_non_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_non_input_idx.md) | Get indices of neurons that don't receive input. |
-| [`visualize()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/visualize.md)              | Visualize the generated masks.                      |
-| [`masks()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/masks.md)                      | Return a list of np.ndarray masks. It will be of length 3, where the first element is the input mask, the second element is the hidden mask, and the third element is the readout mask. For those structures that do not have specification for a certain mask, it will be an all-one matrix. |
-| [`get_areas()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_areas.md)              | Get a list of areas names.                 | 
-| [`get_area_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/methods/get_area_idx.md)        | Get indices of neurons in a specific area. The parameter `area` could be either a string from the `get_areas()` or a index of the area. |
+| [`get_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/get_input_idx.md)      | Get indices of neurons that receive input.          |
+| [`get_readout_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/get_readout_idx.md)  | Get indices of neurons that readout from.           |
+| [`get_non_input_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/get_non_input_idx.md) | Get indices of neurons that don't receive input. |
+| [`visualize()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/visualize.md)              | Visualize the generated masks.                      |
+| [`masks()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/masks.md)                      | Return a list of np.ndarray masks. It will be of length 3, where the first element is the input mask, the second element is the hidden mask, and the third element is the readout mask. For those masks that do not have specification for a certain mask, it will be an all-one matrix. |
+| [`get_areas()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/get_areas.md)              | Get a list of areas names.                 | 
+| [`get_area_idx()`](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/mask/methods/get_area_idx.md)        | Get indices of neurons in a specific area. The parameter `area` could be either a string from the `get_areas()` or a index of the area. |
 
 
 ### MultiArea
