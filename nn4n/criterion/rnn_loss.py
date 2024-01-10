@@ -1,11 +1,33 @@
 import torch
 import torch.nn as nn
 
+from nn4n.model import CTRNN
 
 class RNNLoss(nn.Module):
+    """
+    Loss function for RNN
+
+    Inputs:
+        - model: the model, must be an nn4n.model.CTRNN
+
+    Keyword Arguments:
+        - lambda_mse: coefficient for the MSE loss, default: 1
+        - lambda_in: coefficient for the input layer loss, default: 0
+        - lambda_hid: coefficient for the hidden layer loss, default: 0
+        - lambda_out: coefficient for the readout layer loss, default: 0
+        - lambda_fr: coefficient for the overall firing rate loss, default: 0
+        - lambda_fr_sd: coefficient for the standard deviation of firing rate 
+            loss (to evenly distribute firing rate across neurons), default: 0
+        - lambda_fr_cv: coefficient for the coefficient of variation of firing
+            rate loss (to evenly distribute firing rate across neurons), default: 0
+    
+    Note that these firing rate does not automatically normalized to a similar magnitude
+    """
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
+        if type(self.model) != CTRNN:
+            raise TypeError("model must be CTRNN")
         self._init_losses(**kwargs)
 
     def _init_losses(self, **kwargs):
@@ -71,21 +93,15 @@ class RNNLoss(nn.Module):
         avg_fr = torch.sqrt(torch.square(states)).mean(dim=0)
         return avg_fr.std()/avg_fr.mean()
 
-    def _loss_met(self, states, **kwargs):
-        # """
-        # Compute the loss for metabolic states
-        # """
-        # # return torch.square(states).mean()
-        # l1_loss_per_timestep = torch.norm(states, p=1, dim=1)
-        # return l1_loss_per_timestep.mean()
-        raise NotImplementedError
-
     def forward(self, pred, label, **kwargs):
         """
         Compute the loss
-        @param pred: size=(-1, batch_size, 2), predicted labels
-        @param label: size=(-1, batch_size, 2), labels
-        @param dur: duration of the trial
+
+        Inputs:
+            - pred: size=(-1, batch_size, 2), predicted labels
+            - label: size=(-1, batch_size, 2), labels
+        
+        where -1 is the sequence length
         """
         loss = [self.lambda_mse * torch.square(pred-label).mean()]
         for i in range(len(self.loss_list)):

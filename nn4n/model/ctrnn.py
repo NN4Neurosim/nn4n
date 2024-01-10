@@ -17,42 +17,42 @@ dep_param_list = ['input_dim', 'output_dim', 'hidden_size', 'ei_balance',
               'layer_masks', 'scaling', 'self_connections']
 
 class CTRNN(BaseNN):
-    """ Recurrent network model """
-    def __init__(self, **kwargs):
-        """
-        Base RNN constructor
-        @kwarg dims: dimensions of the network, default: [1, 100, 1]
-        @kwarg preact_noise: noise added to pre-activation, default: 0
-        @kwarg postact_noise: noise added to post-activation, default: 0
+    """
+    Recurrent network model
 
-        @kwarg biases: use bias or not for each layer, a list of 3 values or a single value
+    Keyword Arguments:
+        - dims: dimensions of the network, default: [1, 100, 1]
+        - preact_noise: noise added to pre-activation, default: 0
+        - postact_noise: noise added to post-activation, default: 0
+        - biases: use bias or not for each layer, a list of 3 values or a single value
             if a single value is passed, it will be broadcasted to a list of 3 values, it can be:
-                - None: no bias
-                - 'zero' or 0: bias initialized to 0
-                - 'normal': bias initialized from a normal distribution
-                - 'uniform': bias initialized from a uniform distribution
-            if a list of 3 values is passed, each value can be either the same as above or 
+            - None: no bias
+            - 'zero' or 0: bias initialized to 0
+            - 'normal': bias initialized from a normal distribution
+            - 'uniform': bias initialized from a uniform distribution
+            if a list of 3 values is passed, each value can be either the same as above or
             a numpy array/torch tensor that directly specifies the bias
-        @kwarg weights: distribution of weights for each layer, a list of 3 strings or 
+        - weights: distribution of weights for each layer, a list of 3 strings or
             a single string, if a single string is passed, it will be broadcasted to a list of 3 strings
             it can be:
-                - 'normal': weights initialized from a normal distribution
-                - 'uniform': weights initialized from a uniform distribution
-            if a list of 3 values is passed, each string can be either the same as above or 
+            - 'normal': weights initialized from a normal distribution
+            - 'uniform': weights initialized from a uniform distribution
+            if a list of 3 values is passed, each string can be either the same as above or
             a numpy array/torch tensor that directly specifies the weights
-        @kwarg sparsity_masks: use sparsity_masks or not, a list of 3 values or a single None
+        - sparsity_masks: use sparsity_masks or not, a list of 3 values or a single None
             if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor 
+            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
             that directly specifies the sparsity_masks
-        @kwarg ei_masks: use ei_masks or not, a list of 3 values or a single None
+        - ei_masks: use ei_masks or not, a list of 3 values or a single None
             if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor 
+            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
             that directly specifies the ei_masks
-        @kwarg plasticity_masks: use plasticity_masks or not, a list of 3 values or a single None
+        - plasticity_masks: use plasticity_masks or not, a list of 3 values or a single None
             if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor 
+            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
             that directly specifies the plasticity_masks
-        """
+    """
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     # INITIALIZATION
@@ -240,8 +240,8 @@ class CTRNN(BaseNN):
         rc_struct = {
             "init_state": kwargs.pop("init_state", 'zero'),
             "activation": kwargs.pop("activation", "relu"),
-            "dt": kwargs.pop("dt", 1),
-            "tau": kwargs.pop("tau", 1),
+            "dt": kwargs.pop("dt", 10),
+            "tau": kwargs.pop("tau", 100),
             "preact_noise": self.preact_noise,
             "postact_noise": self.postact_noise,
             "in_struct": {
@@ -276,19 +276,20 @@ class CTRNN(BaseNN):
     # ======================================================================================
 
     # FORWARD
-    # ======================================================================================
-    def train(self):
-        self.recurrent_layer.preact_noise = self.preact_noise
-        self.recurrent_layer.postact_noise = self.postact_noise
-        self.training = True
-
-    def eval(self):
-        self.recurrent_layer.preact_noise = 0
-        self.recurrent_layer.postact_noise = 0
-        self.training = False
+    # ======================================================================================    
+    def to(self, device):
+        """ Move the network to device """
+        super().to(device)
+        self.recurrent_layer.to(device)
+        self.readout_layer.to(device)
 
     def forward(self, x):
-        """ Forwardly update network W_in -> n x W_rc -> W_out """
+        """ 
+        Forwardly update network
+
+        Inputs:
+            - x: input, shape: (n_timesteps, batch_size, input_dim)
+        """
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
@@ -296,8 +297,36 @@ class CTRNN(BaseNN):
         output = self.readout_layer(hidden_states.float())
         return output, hidden_states
 
+    def train(self):
+        """
+        Set pre-activation and post-activation noise to the specified value
+        and resume enforcing constraints
+        """
+        self.recurrent_layer.preact_noise = self.preact_noise
+        self.recurrent_layer.postact_noise = self.postact_noise
+        self.training = True
+
+    def eval(self):
+        """ 
+        Set pre-activation and post-activation noise to zero 
+        and pause enforcing constraints
+        """
+        self.recurrent_layer.preact_noise = 0
+        self.recurrent_layer.postact_noise = 0
+        self.training = False
+
     def apply_plasticity(self):
-        """ Update weights in the custom speed """
+        """
+        Apply plasticity to the weight gradient such that the weights representing the synapses
+        will update at different rates according to the plasticity mask.
+
+        Usage:
+        # assume the model is a CTRNN
+        loss = criterion(model, ...)
+        loss.backward()
+        model.apply_plasticity()
+        optimizer.step()
+        """
         # no need to consider the case where plasticity_mask is None as 
         # it will be automatically converted to a tensor of ones in parameter initialization
         self.recurrent_layer.apply_plasticity()
@@ -309,19 +338,13 @@ class CTRNN(BaseNN):
 
     # HELPER FUNCTIONS
     # ======================================================================================
-    def to(self, device):
-        """ Move the network to device """
-        super().to(device)
-        self.recurrent_layer.to(device)
-        self.readout_layer.to(device)
-
     def print_layers(self):
-        """ Print the parameters of each layer """
+        """ Print the specs of each layer """
         self.recurrent_layer.print_layers()
         self.readout_layer.print_layers()
 
-    def plot_layers(self, **kwargs):
-        """ Plot the network """
-        self.recurrent_layer.plot_layers(**kwargs)
-        self.readout_layer.plot_layers(**kwargs)
+    def plot_layers(self):
+        """ Plot the weights matrix and distribution of each layer """
+        self.recurrent_layer.plot_layers()
+        self.readout_layer.plot_layers()
     # ======================================================================================

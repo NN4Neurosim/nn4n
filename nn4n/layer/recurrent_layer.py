@@ -7,21 +7,23 @@ from nn4n.layer import LinearLayer
 
 
 class RecurrentLayer(nn.Module):
+    """
+    Recurrent layer of the RNN. The layer is initialized by passing specs in layer_struct.
+    
+    Required keywords in layer_struct:
+        - activation: activation function, default: "relu"
+        - preact_noise: noise added to pre-activation
+        - postact_noise: noise added to post-activation
+        - dt: time step, default: 10
+        - tau: time constant, default: 100
+        - init_state: initial state of the network. It defines the hidden state at t=0.
+            - 'zero': all zeros
+            - 'keep': keep the last state
+            - 'learn': learn the initial state
+        - in_struct: input layer layer_struct
+        - hid_struct: hidden layer layer_struct
+    """
     def __init__(self, layer_struct, **kwargs):
-        """
-        Hidden layer of the RNN
-        Parameters:
-
-        Keyword Arguments in layer_struct:
-            @kwarg activation: activation function, default: "relu"
-            @kwarg preact_noise: noise added to pre-activation, default: 0
-            @kwarg postact_noise: noise added to post-activation, default: 0
-            @kwarg dt: time step, default: 1
-            @kwarg tau: time constant, default: 1
-            @kwarg init_state: initial state of the network, 'zero', 'keep', or 'learn'
-            @kwarg in_struct: input layer layer_struct
-            @kwarg hid_struct: hidden layer layer_struct
-        """
         super().__init__()
         self.alpha = layer_struct['dt']/layer_struct['tau']
         self.hidden_size = layer_struct['hid_struct']['input_dim']
@@ -50,17 +52,59 @@ class RecurrentLayer(nn.Module):
 
     # FORWARD
     # ==================================================================================================
+    def to(self, device):
+        """ Move the network to the device (cpu/gpu) """
+        super().to(device)
+        self.input_layer.to(device)
+        self.hidden_layer.to(device)
+        self.hidden_state = self.hidden_state.to(device)
+
+    def forward(self, input):
+        """ 
+        Forwardly update network
+
+        Inputs:
+            - x: input, shape: (n_timesteps, batch_size, input_dim)
+
+        Returns:
+            - states: shape: (n_timesteps, batch_size, hidden_size)
+        """
+        v_t = self._reset_state().to(input.device)
+        fr_t = self.activation(v_t)
+        # update hidden state and append to stacked_states
+        stacked_states = []
+        for i in range(input.size(0)):
+            fr_t, v_t = self._recurrence(fr_t, v_t, input[i])
+            # append to stacked_states
+            stacked_states.append(fr_t)
+
+        # if keeping the last state, save it to hidden_state
+        if self.init_state == 'keep':
+            self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
+
+        return torch.stack(stacked_states, dim=0)
+
     def _reset_state(self):
         if self.init_state == 'learn' or self.init_state == 'keep':
             return self.hidden_state
         else:
             return torch.zeros(self.hidden_size)
 
+    def apply_plasticity(self):
+        """ Apply plasticity masks to the weight gradients """
+        self.input_layer.apply_plasticity()
+        self.hidden_layer.apply_plasticity()
+
     def enforce_constraints(self):
+        """ 
+        Enforce sparsity and excitatory/inhibitory constraints if applicable.
+        This is by default automatically called after each forward pass,
+        but can be called manually if needed
+        """
         self.input_layer.enforce_constraints()
         self.hidden_layer.enforce_constraints()
 
-    def recurrence(self, fr_t, v_t, u_t):
+    def _recurrence(self, fr_t, v_t, u_t):
         """ Recurrence function """
         # through input layer
         v_in_u_t = self.input_layer(u_t)  # u_t @ W_in
@@ -83,46 +127,17 @@ class RecurrentLayer(nn.Module):
             fr_t = fr_t + postact_epsilon
         
         return fr_t, v_t
-
-    def forward(self, input):
-        """
-        Propogate input through the network.
-        @param input: shape=(seq_len, batch, input_dim), network input
-        @return stacked_states: shape=(seq_len, batch, hidden_size), stack of hidden layer status
-        """
-        v_t = self._reset_state().to(input.device)
-        fr_t = self.activation(v_t)
-        # update hidden state and append to stacked_states
-        stacked_states = []
-        for i in range(input.size(0)):
-            fr_t, v_t = self.recurrence(fr_t, v_t, input[i])
-            # append to stacked_states
-            stacked_states.append(fr_t)
-
-        # if keeping the last state, save it to hidden_state
-        if self.init_state == 'keep':
-            self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
-
-        return torch.stack(stacked_states, dim=0)
-
-
-    def apply_plasticity(self):
-        self.input_layer.apply_plasticity()
-        self.hidden_layer.apply_plasticity()
     # ==================================================================================================
 
     # HELPER FUNCTIONS
     # ==================================================================================================
-    def to(self, device):
-        """
-        Move the network to the device (cpu/gpu)
-        """
-        super().to(device)
-        self.input_layer.to(device)
-        self.hidden_layer.to(device)
-        self.hidden_state = self.hidden_state.to(device)
+    def plot_layers(self, **kwargs):
+        """ Plot the weights matrix and distribution of each layer """
+        self.input_layer.plot_layers()
+        self.hidden_layer.plot_layers()
 
     def print_layers(self):
+        """ Print the weights matrix and distribution of each layer """
         param_dict = {
             "init_hidden_min": self.hidden_state.min(),
             "init_hidden_max": self.hidden_state.max(),
@@ -134,8 +149,4 @@ class RecurrentLayer(nn.Module):
         self.input_layer.print_layers()
         print_dict("Recurrence", param_dict)
         self.hidden_layer.print_layers()
-
-    def plot_layers(self, **kwargs):
-        self.input_layer.plot_layers()
-        self.hidden_layer.plot_layers()
     # ==================================================================================================

@@ -7,6 +7,7 @@ from nn4n.utils import get_activation
 
 class MLP(BaseNN):
     def __init__(self, **kwargs):
+        assert False, "MLP is deprecated for now"
         super().__init__(**kwargs)
 
     def _initialize(self, **kwargs):

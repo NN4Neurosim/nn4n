@@ -1,5 +1,7 @@
 ############# CUSTOM GITIGNORE #############
 .DS_Store
+test.ipynb
+/docs_markdown
 
 ############# DEFAULT GITIGNORE #############
 # Byte-compiled / optimized / DLL files

@@ -6,18 +6,20 @@ import nn4n.utils as utils
 
 
 class LinearLayer(nn.Module):
+    """
+    Linear Layer with optional sparsity, excitatory/inhibitory, and plasticity constraints.
+    The layer is initialized by passing specs in layer_struct.
+    
+    Required keywords in layer_struct:
+        - input_dim: input dimension
+        - output_dim: output dimension
+        - weights: weight matrix init method/init weight matrix
+        - biases: bias vector init method/init bias vector
+        - sparsity_mask: mask for sparse connectivity
+        - ei_mask: mask for Dale's law
+        - plasticity_mask: mask for plasticity
+    """
     def __init__(self, layer_struct):
-        """
-        Sparse Linear Layer
-        Keyword Arguments in layer_struct:
-            @kwarg input_dim: input dimension
-            @kwarg output_dim: output dimension
-            @kwarg weights: weight matrix
-            @kwarg biases: bias vector
-            @kwarg sparsity_mask: mask for sparse connectivity
-            @kwarg ei_mask: mask for Dale's law
-            @kwarg plasticity_mask: mask for plasticity
-        """
         super().__init__()
         self.input_dim = layer_struct['input_dim']
         self.output_dim = layer_struct['output_dim']
@@ -105,7 +107,10 @@ class LinearLayer(nn.Module):
         return b.float()
 
     def auto_rescale(self, param_type):
-        """ Rescale weight or bias due to sparsity """
+        """ 
+        Rescale weight or bias. This is useful when the layer is sparse 
+        and insufficent/over-sufficient in driving the next layer dynamics
+        """
         if param_type == 'weight':
             mat = self.weight.detach().clone()
         elif param_type == 'bias':
@@ -127,8 +132,48 @@ class LinearLayer(nn.Module):
 
     # FORWARD
     # ======================================================================================
+    def to(self, device):
+        """
+        Move the network to the device (cpu/gpu)
+        """
+        super().to(device)
+        if self.sparsity_mask is not None:
+            self.sparsity_mask = self.sparsity_mask.to(device)
+        if self.ei_mask is not None:
+            self.ei_mask = self.ei_mask.to(device)
+        if self.bias.requires_grad:
+            self.bias = self.bias.to(device)
+
+    def forward(self, x):
+        """ 
+        Forwardly update network
+
+        Inputs:
+            - x: input, shape: (batch_size, input_dim)
+
+        Returns:
+            - state: shape: (batch_size, hidden_size)
+        """
+        return x.float() @ self.weight.T + self.bias
+
+    def apply_plasticity(self):
+        """
+        Apply plasticity mask to the weight gradient
+        """
+        with torch.no_grad():
+            # assume the plasticity mask are all valid and being checked in ctrnn class
+            for scale in self.plasticity_scales:
+                if self.weight.grad is not None:
+                    self.weight.grad[self.plasticity_mask == scale] *= scale
+                else:
+                    raise RuntimeError("Weight gradient is None, possibly because the forward loop is non-differentiable")
+
     def enforce_constraints(self):
-        """ Enforce mask """
+        """ 
+        Enforce sparsity and excitatory/inhibitory constraints if applicable.
+        This is by default automatically called after each forward pass,
+        but can be called manually if needed
+        """
         if self.sparsity_mask is not None:
             self._enforce_sparsity()
         if self.ei_mask is not None:
@@ -145,37 +190,12 @@ class LinearLayer(nn.Module):
         w[self.ei_mask == 1] = torch.clamp(w[self.ei_mask == 1], min=0)
         w[self.ei_mask == -1] = torch.clamp(w[self.ei_mask == -1], max=0)
         self.weight.data.copy_(torch.nn.Parameter(w))
-
-    def forward(self, x):
-        """ Forward Pass """
-        return x.float() @ self.weight.T + self.bias
-
-    def apply_plasticity(self):
-        with torch.no_grad():
-            # assume the plasticity mask are all valid and being checked in ctrnn class
-            for scale in self.plasticity_scales:
-                if self.weight.grad is not None:
-                    self.weight.grad[self.plasticity_mask == scale] *= scale
-                else:
-                    raise RuntimeError("Weight gradient is None, possibly because the forward loop is non-differentiable")
     # ======================================================================================
 
     # HELPER FUNCTIONS
     # ======================================================================================
-    def to(self, device):
-        """
-        Move the network to the device (cpu/gpu)
-        """
-        super().to(device)
-        if self.sparsity_mask is not None:
-            self.sparsity_mask = self.sparsity_mask.to(device)
-        if self.ei_mask is not None:
-            self.ei_mask = self.ei_mask.to(device)
-        if self.bias.requires_grad:
-            self.bias = self.bias.to(device)
-
     def plot_layers(self):
-        # plot weight matrix
+        """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         if weight.size(0) < weight.size(1):
             utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, self.sparsity_mask is not None)
@@ -183,6 +203,7 @@ class LinearLayer(nn.Module):
             utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, self.sparsity_mask is not None)
         
     def print_layers(self):
+        """ Print the specs of each layer """
         param_dict = {
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,

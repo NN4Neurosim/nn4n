@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 
 
 def print_dict(title, params):
+    """
+    Print a dictionary in key-value pairs with a nice format
+
+    Inputs:
+        - title: title of the dictionary
+        - params: dictionary to be printed
+    """
     print(f"{title}: ")
     maxlen = max([len(s) for s in params.keys()])
     for k in params.keys():
@@ -12,6 +19,14 @@ def print_dict(title, params):
 
 
 def get_activation(act):
+    """
+    Return the activation function given the name
+
+    Inputs:
+        - act: name of the activation function (supported values: "relu", "tanh", "sigmoid", "retanh")
+    Returns:
+        - activation function
+    """
     if act == "relu":
         return torch.relu
     elif act == "tanh":
@@ -25,6 +40,18 @@ def get_activation(act):
 
 
 def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
+    """
+    Plot the distribution of a connectivity matrix
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+        - colorbar: whether to show the colorbar (default: True)
+        - ignore_zeros: whether to ignore zeros in the distribution (needed for sparse matrices) (default: False)
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+    
     r = np.max(np.abs(w))
 
     img_width, hist_height = 6, 2
@@ -55,6 +82,17 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
 
 
 def plot_connectivity_matrix(w, title, colorbar=True):
+    """
+    Plot a connectivity matrix
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+        - colorbar: whether to show the colorbar (default: True)
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+
     r = np.max(np.abs(w))
 
     fig, ax = plt.subplots(figsize=(6, 6*w.shape[0]/w.shape[1]))
@@ -68,6 +106,16 @@ def plot_connectivity_matrix(w, title, colorbar=True):
 
 
 def plot_eigenvalues(w, title):
+    """
+    Plot the eigenvalues of a connectivity matrix in the complex plane
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+
     eigvals = np.linalg.eigvals(w)
     plt.figure(figsize=(4, 4))
     plt.plot(eigvals.real, eigvals.imag, 'o')

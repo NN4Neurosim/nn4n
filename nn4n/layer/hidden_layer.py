@@ -6,18 +6,19 @@ import nn4n.utils as utils
 
 
 class HiddenLayer(nn.Module):
+    """
+    Hidden layer of the RNN. The layer is initialized by passing specs in layer_struct.
+    
+    Required keywords in layer_struct:
+        - input_dim: input dimension
+        - output_dim: output dimension
+        - weights: weight matrix init method/init weight matrix
+        - biases: bias vector init method/init bias vector
+        - sparsity_mask: mask for sparse connectivity
+        - ei_mask: mask for Dale's law
+        - plasticity_mask: mask for plasticity
+    """
     def __init__(self, layer_struct, **kwargs):
-        """
-        Hidden layer of the RNN
-        Keyword Arguments in layer_struct:
-            @kwarg input_dim: input dimension
-            @kwarg output_dim: output dimension
-            @kwarg weights: weight matrix
-            @kwarg biases: bias vector
-            @kwarg sparsity_mask: mask for sparse connectivity
-            @kwarg ei_mask: mask for Dale's law
-            @kwarg plasticity_mask: mask for plasticity
-        """
         super().__init__()
         # some params are for verbose printing
         self.input_dim = layer_struct['input_dim']
@@ -108,11 +109,32 @@ class HiddenLayer(nn.Module):
 
     # FORWARD
     # ======================================================================================
+    def to(self, device):
+        """ Move the network to the device (cpu/gpu) """
+        super().to(device)
+        if self.sparsity_mask is not None:
+            self.sparsity_mask = self.sparsity_mask.to(device)
+        if self.ei_mask is not None:
+            self.ei_mask = self.ei_mask.to(device)
+        if self.bias.requires_grad:
+            self.bias = self.bias.to(device)
+
     def forward(self, x):
-        """ Forward """
+        """ 
+        Forwardly update network
+
+        Inputs:
+            - x: input, shape: (batch_size, input_dim)
+
+        Returns:
+            - state: shape: (batch_size, hidden_size)
+        """
         return x.float() @ self.weight.T + self.bias
 
     def apply_plasticity(self):
+        """
+        Apply plasticity mask to the weight gradient
+        """
         with torch.no_grad():
             # assume the plasticity mask are all valid and being checked in ctrnn class
             for scale in self.plasticity_scales:
@@ -123,11 +145,14 @@ class HiddenLayer(nn.Module):
 
     def _enforce_spec_rad(self):
         """ Enforce spectral radius """
-        # Calculate scale
         print('WARNING: spectral radius not applied, the feature is deprecated, use scaling instead')
 
     def enforce_constraints(self):
-        """ Enforce constraints """
+        """ 
+        Enforce sparsity and excitatory/inhibitory constraints if applicable.
+        This is by default automatically called after each forward pass,
+        but can be called manually if needed
+        """
         if self.sparsity_mask is not None:
             self._enforce_sparsity()
         if self.ei_mask is not None:
@@ -148,25 +173,13 @@ class HiddenLayer(nn.Module):
 
     # HELPER FUNCTIONS
     # ======================================================================================
-    def to(self, device):
-        """
-        Move the network to the device (cpu/gpu)
-        """
-        super().to(device)
-        if self.sparsity_mask is not None:
-            self.sparsity_mask = self.sparsity_mask.to(device)
-        if self.ei_mask is not None:
-            self.ei_mask = self.ei_mask.to(device)
-        if self.bias.requires_grad:
-            self.bias = self.bias.to(device)
-
     def plot_layers(self):
-        """ Plot weight """
+        """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, self.sparsity_mask is not None)
     
     def print_layers(self):
-        # plot weight matrix
+        """ Print the specs of each layer """
         param_dict = {
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
