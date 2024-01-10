@@ -28,7 +28,7 @@ for modeling brains. It is designed to be easy to use and flexible for neuroscie
 
 .. image:: _static/basics/RNN_structure.png
    :alt: An example RNN
-   :width: 400
+   :width: 400px
    :align: center
 
 Acknowledgements
@@ -41,7 +41,7 @@ Contents
 ^^^^^^^^
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
    Get Started <get_started>
    User Guides <user_guides>

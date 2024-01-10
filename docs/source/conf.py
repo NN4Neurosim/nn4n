@@ -17,7 +17,7 @@ release = 'v1.1.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax']
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -34,6 +34,8 @@ html_theme_options = {
     'github_user': 'zhaozewang',
     'github_repo': 'NN4Neurosci',
     'sidebar_collapse': False,
+    'sidebar_width': '260px',
+    'page_width': '1000px',
 }
 
 autodoc_member_order = 'bysource'

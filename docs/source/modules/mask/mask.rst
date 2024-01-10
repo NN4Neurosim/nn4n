@@ -7,21 +7,9 @@ templates that are commonly in describing biological neural networks structures.
 .. automodule:: nn4n.mask
    :members:
 
-Contents
---------
-- :ref:`nn4n.mask.MultiArea <section-multiarea>`
+.. toctree::
+   :maxdepth: 1
 
-Classes
--------
-.. _section-multiarea:
-.. autoclass:: nn4n.mask.MultiArea
-   :members:
-
-.. _section-multiareaei:
-.. autoclass:: nn4n.mask.MultiAreaEI
-   :members:
-   :inherited-members:
-
-.. _section-randominput:
-.. autoclass:: nn4n.mask.RandomInput
-   :members:
+   multi_area
+   multi_area_ei
+   random_input

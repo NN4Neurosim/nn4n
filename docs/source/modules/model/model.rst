@@ -7,12 +7,7 @@ complex behaviors that are hard to achieve with simplistic feed-forward models.
 .. automodule:: nn4n.model
    :members:
 
-Contents
---------
-- :ref:`nn4n.model.ctrnn <section-ctrnn>`
-
-Classes
--------
-.. _section-ctrnn:
-.. autoclass:: nn4n.model.CTRNN
-   :members:
+.. toctree::
+   :maxdepth: 1
+   
+   ctrnn

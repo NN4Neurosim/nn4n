@@ -319,13 +319,6 @@ class CTRNN(BaseNN):
         """
         Apply plasticity to the weight gradient such that the weights representing the synapses
         will update at different rates according to the plasticity mask.
-
-        Usage:
-        # assume the model is a CTRNN
-        loss = criterion(model, ...)
-        loss.backward()
-        model.apply_plasticity()
-        optimizer.step()
         """
         # no need to consider the case where plasticity_mask is None as 
         # it will be automatically converted to a tensor of ones in parameter initialization
