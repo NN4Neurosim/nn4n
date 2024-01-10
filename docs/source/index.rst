@@ -34,7 +34,7 @@ for modeling brains. It is designed to be easy to use and flexible for neuroscie
 Acknowledgements
 ^^^^^^^^^^^^^^^^
 
-Immense thanks to `Christopher J. Cueva <https://www.metaconscious.org/author/chris-cueva/>`_ 
+Immense thanks to `Dr. Christopher J. Cueva <https://www.metaconscious.org/author/chris-cueva/>`_ 
 for his mentorship in developing this project. This project can't be done without his invaluable help.
 
 Contents
