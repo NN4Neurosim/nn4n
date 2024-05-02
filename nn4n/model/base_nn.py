@@ -21,12 +21,17 @@ class BaseNN(nn.Module):
             "kwargs": self.kwargs_checkpoint
         }, path)
 
-    def load(self, path):
+    def load(self, path, map_location=None):
         """ load model and kwargs from the same file """
         assert type(path) == str, "path must be a string"
         assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
-        checkpoint = torch.load(path)
+        if map_location is None:
+            checkpoint = torch.load(path)
+        else:
+            checkpoint = torch.load(path, map_location=map_location)
         self.kwargs_checkpoint = checkpoint["kwargs"]
+        # add suppress_warnings to kwargs
+        self.kwargs_checkpoint["suppress_warnings"] = True
         self._initialize(**self.kwargs_checkpoint)
         self.load_state_dict(checkpoint["model_state_dict"])
 

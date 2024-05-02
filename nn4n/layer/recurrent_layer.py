@@ -145,6 +145,8 @@ class RecurrentLayer(nn.Module):
             "postact_noise": self.postact_noise,
             "activation": self.act,
             "alpha": self.alpha,
+            "init_state": self.init_state,
+            "init_state_learnable": self.hidden_state.requires_grad,
         }
         self.input_layer.print_layers()
         print_dict("Recurrence", param_dict)

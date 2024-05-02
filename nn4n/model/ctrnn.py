@@ -7,11 +7,11 @@ from nn4n.model import BaseNN
 from nn4n.layer import RecurrentLayer
 from nn4n.layer import LinearLayer
 
-param_list = ['dims', 'preact_noise', 'postact_noise', 'learnable', 
+param_list = ['dims', 'preact_noise', 'postact_noise', 
               'init_state', 'activation', 'tau', 'dt', 'weights',
               'biases', 'sparsity_masks', 'ei_masks', 'plasticity_masks']
 
-dep_param_list = ['input_dim', 'output_dim', 'hidden_size', 'ei_balance', 
+dep_param_list = ['input_dim', 'output_dim', 'hidden_size', 'ei_balance', 'learnable',
               'allow_negative', 'use_dale', 'new_synapses', 'positivity_constraints', 
               'sparsity_constraints', 'layer_distributions', 'layer_biases', 
               'layer_masks', 'scaling', 'self_connections']
@@ -24,6 +24,10 @@ class CTRNN(BaseNN):
         - dims: dimensions of the network, default: [1, 100, 1]
         - preact_noise: noise added to pre-activation, default: 0
         - postact_noise: noise added to post-activation, default: 0
+        - init_state: initial state of the network. It defines the hidden state at t=0.
+        - activation: activation function, default: "relu", can be "relu", "sigmoid", "tanh", "retanh"
+        - dt: time step, default: 10
+        - tau: time constant, default: 100
         - biases: use bias or not for each layer, a list of 3 values or a single value
             if a single value is passed, it will be broadcasted to a list of 3 values, it can be:
             - None: no bias
@@ -51,6 +55,10 @@ class CTRNN(BaseNN):
             if a single None is passed, it will be broadcasted to a list of 3 None
             if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
             that directly specifies the plasticity_masks
+        - synapse_growth_masks: use synapse_growth_masks or not, a list of 3 values or a single None
+            if a single None is passed, it will be broadcasted to a list of 3 None
+            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
+            that directly specifies the probability of growing a synapse at the selected location if there is no synapse.
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,6 +67,7 @@ class CTRNN(BaseNN):
     # ======================================================================================
     def _initialize(self, **kwargs):
         """ Initialize/Reinitialize the network """
+        super()._initialize(**kwargs)
         # parameters that used in all layers
         # base parameters
         self.dims = kwargs.pop("dims", [1, 100, 1])
@@ -74,16 +83,20 @@ class CTRNN(BaseNN):
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
 
+        # suppress warnings
+        self.suppress_warnings = kwargs.pop("suppress_warnings", False)
+
         # check if all parameters meet the requirements
-        self._handle_deprecated(kwargs)
+        if not self.suppress_warnings:
+            self._handle_warnings(kwargs)
         self._check_parameters(kwargs)
-        ctrnn_structs = self._build_structures(kwargs)
+        rc_struct, out_struct = self._build_structures(kwargs)
 
         # layers
-        self.recurrent_layer = RecurrentLayer(layer_struct=ctrnn_structs[0])
-        self.readout_layer = LinearLayer(layer_struct=ctrnn_structs[1])
+        self.recurrent_layer = RecurrentLayer(layer_struct=rc_struct)
+        self.readout_layer = LinearLayer(layer_struct=out_struct)
 
-    def _handle_deprecated(self, kwargs):
+    def _handle_warnings(self, kwargs):
         """ Handle deprecated parameters """
         slevel = 5 # output the warning at the level where kwargs is passed
         # check if there is any deprecated parameter
@@ -131,6 +144,10 @@ class CTRNN(BaseNN):
             warnings.warn("layer_masks is deprecated. Use `sparsity_masks`, `ei_masks`, and `plasticity_masks` instead.\n"
                 "   The parameter `sparsity_masks`, `ei_masks`, and `plasticity_masks` inherits the functionality of `layer_masks`."
                 "Simply pass a list of masks to `sparsity_masks`, `ei_masks`, and `plasticity_masks` and the model will generate the masks accordingly.", UserWarning, stacklevel=slevel)
+        
+        for key in kwargs:
+            if not key in param_list and not key in dep_param_list:
+                print("unrecognized parameter: {}".format(key))
 
     def _check_masks(self, param, param_type, dims):
         """ General function to check different parameter types. """
@@ -141,12 +158,15 @@ class CTRNN(BaseNN):
         if param is None:
             if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks", "biases"]:
                 param = [None] * 3
-            else: raise ValueError(f"{param_type} cannot be None when param_type is {param_type}")
+            else: raise ValueError(f"{param_type} cannot be None when param_type is {param_type}") # weights
         elif param is not None and type(param) != list and param_type in ["weights"]:
             param = [param] * 3
 
         if type(param) != list:
-            raise ValueError(f"{param_type} is/can not be broadcasted to a list")
+            if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks"]:
+                raise ValueError(f"{param_type} must be a list of 3 values")
+            else:
+                param = [param] * 3
         if len(param) != 3:
             raise ValueError(f"{param_type} is/can not be broadcasted to a list of length 3")
 
@@ -199,7 +219,7 @@ class CTRNN(BaseNN):
 
     def _check_distribution_or_array(self, param, param_type, dim, index):
         if type(param) == str:
-            if param not in ['uniform', 'normal']:
+            if param not in ['uniform', 'normal', 'zero']:
                 raise ValueError(f"{param_type}[{index}] must be a string of 'uniform' or 'normal'")
         elif type(param) == torch.Tensor:
             # its already being converted to torch.Tensor, so no need to check np.ndarray case
@@ -228,11 +248,6 @@ class CTRNN(BaseNN):
         self.sparsity_masks = self._check_masks(self.sparsity_masks, "sparsity_masks", self.dims)
         # check plasticity_masks
         self.plasticity_masks = self._check_masks(self.plasticity_masks, "plasticity_masks", self.dims)
-        
-        # check all key in kwargs
-        for key in kwargs:
-            if not key in param_list and not key in dep_param_list:
-                print("unrecognized parameter: {}".format(key))
 
     def _build_structures(self, kwargs):
         """ Build structures """
