@@ -59,7 +59,7 @@ class RecurrentLayer(nn.Module):
         self.hidden_layer.to(device)
         self.hidden_state = self.hidden_state.to(device)
 
-    def forward(self, input):
+    def forward(self, x):
         """ 
         Forwardly update network
 
@@ -69,12 +69,12 @@ class RecurrentLayer(nn.Module):
         Returns:
             - states: shape: (n_timesteps, batch_size, hidden_size)
         """
-        v_t = self._reset_state().to(input.device)
+        v_t = self._reset_state().to(x.device)
         fr_t = self.activation(v_t)
         # update hidden state and append to stacked_states
         stacked_states = []
-        for i in range(input.size(0)):
-            fr_t, v_t = self._recurrence(fr_t, v_t, input[i])
+        for i in range(x.size(0)):
+            fr_t, v_t = self._recurrence(fr_t, v_t, x[i])
             # append to stacked_states
             stacked_states.append(fr_t)
 

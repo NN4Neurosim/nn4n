@@ -89,7 +89,7 @@ class CTRNN(BaseNN):
         # check if all parameters meet the requirements
         if not self.suppress_warnings:
             self._handle_warnings(kwargs)
-        self._check_parameters(kwargs)
+        self._check_parameters()
         rc_struct, out_struct = self._build_structures(kwargs)
 
         # layers
@@ -171,7 +171,7 @@ class CTRNN(BaseNN):
             raise ValueError(f"{param_type} is/can not be broadcasted to a list of length 3")
 
         # param_type are all legal because it is passed by non-user code
-        if param_type == "plasticity_masks": param = self._reformat_plas_masks(param, target_dim)
+        if param_type == "plasticity_masks": param = self._regularize_plas_masks(param, target_dim)
         else:
             # if its not plasticity_masks, then it must be a list of 3 values
             for i in range(3):
@@ -186,7 +186,7 @@ class CTRNN(BaseNN):
                         self._check_distribution_or_array(param[i], param_type, target_dim_biases[i] if param_type == "biases" else target_dim[i], i)
         return param
 
-    def _reformat_plas_masks(self, masks, target_dim):
+    def _regularize_plas_masks(self, masks, target_dim):
         if any(mask is not None for mask in masks):
             min_plas, max_plas = [], []
             for mask in masks:
@@ -229,7 +229,7 @@ class CTRNN(BaseNN):
             raise ValueError(f"{param_type}[{index}] must be a string of 'uniform' or 'normal' \
                 or a numpy array/torch tensor with shape {dim}")
 
-    def _check_parameters(self, kwargs):
+    def _check_parameters(self):
         """ Check parameters """
         # check dims
         assert type(self.dims) == list, "dims must be a list"
@@ -310,7 +310,7 @@ class CTRNN(BaseNN):
             self._enforce_constraints()
         hidden_states = self.recurrent_layer(x)
         output = self.readout_layer(hidden_states.float())
-        return output, hidden_states
+        return output, [hidden_states]
 
     def train(self):
         """

@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from nn4n.model import BaseNN
 from nn4n.layer import LinearLayer
@@ -43,7 +44,6 @@ class MLP(BaseNN):
             that directly specifies the plasticity_masks
     """
     def __init__(self, **kwargs):
-        assert False, "MLP is deprecated for now"
         super().__init__(**kwargs)
 
     def _initialize(self, **kwargs):
@@ -51,16 +51,17 @@ class MLP(BaseNN):
         super()._initialize(**kwargs)
         # parameters that used in all layers
         # base parameters
-        self.dims = kwargs.pop("dims", [1, 100, 1])
+        self.dims = kwargs.pop("dims", [10, 10])
         self.biases = kwargs.pop("biases", None)
         self.weights = kwargs.pop("weights", 'uniform')
+        self.activation = get_activation(kwargs.pop("activation", "relu"))
 
         # network dynamics parameters
         self.sparsity_masks = kwargs.pop("sparsity_masks", None)
         self.ei_masks = kwargs.pop("ei_masks", None)
         self.plasticity_masks = kwargs.pop("plasticity_masks", None)
 
-        # temp storage
+        # noise parameters
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
 
@@ -70,75 +71,126 @@ class MLP(BaseNN):
         # check if all parameters meet the requirements
         if not self.suppress_warnings:
             self._handle_warnings(kwargs)
-        self._check_parameters(kwargs)
-        ctrnn_structs = self._build_structures(kwargs)
+        self._check_parameters()
 
-        # layers
-        self.recurrent_layer = RecurrentLayer(layer_struct=ctrnn_structs[0])
-        self.readout_layer = LinearLayer(layer_struct=ctrnn_structs[1])
-        # self.input_dim = kwargs.pop("input_dim", 1)
-        # self.output_dim = kwargs.pop("output_dim", 1)
-        # self.hidden_size = kwargs.pop("hidden_size", 100)
-        # self.dims = kwargs.pop("dims", [self.input_dim, self.hidden_size, self.output_dim])
-        # self.learnable = kwargs.pop("learnable", [True, True])
-        # self.layer_distributions = kwargs.pop("layer_distributions", ['uniform', 'uniform'])
-        # self.layer_biases = kwargs.pop("layer_biases", [True, True])
-        # # dynamics parameters
-        # self.preact_noise = kwargs.pop("preact_noise", 0)
-        # self.postact_noise = kwargs.pop("postact_noise", 0)
-        # self.layer_masks = kwargs.pop("layer_masks", [None, None])
+        self._init_layers()
 
-        # if len(self.layer_distributions) == 3:
-        #     self.layer_distributions.pop(1)
-        # if len(self.layer_biases) == 3:
-        #     self.layer_biases.pop(1)
-
-        # self.act = kwargs.pop("act", "relu")
-        # self.activation = get_activation(self.act)
-
-        self.input_layer = LinearLayer(
-            input_dim=self.input_dim,
-            output_dim=self.hidden_size,
-            dist=self.layer_distributions[0],
-            use_bias=self.layer_biases[0],
-            mask=self.layer_masks[0],
-            positivity_constraints=False,
-            sparsity_constraints=True if self.layer_masks[0] is None else False,
-            learnable=self.learnable[0],
-        )
-
-        self.readout_layer = LinearLayer(
-            input_dim=self.hidden_size,
-            output_dim=self.output_dim,
-            dist=self.layer_distributions[1],
-            use_bias=self.layer_biases[1],
-            mask=self.layer_masks[0],
-            positivity_constraints=False,
-            sparsity_constraints=True if self.layer_masks[1] is None else False,
-            learnable=self.learnable[1],
-        )
+    def _init_layers(self):
+        self.layers = nn.ModuleList()
+        for i in range(len(self.dims)-1):
+            layer_struct = {
+                "input_dim": self.dims[i],
+                "output_dim": self.dims[i+1],
+                "weights": self.weights[i],
+                "biases": self.biases[i],
+                "sparsity_mask": self.sparsity_masks[i],
+                "ei_mask": self.ei_masks[i],
+                "plasticity_mask": self.plasticity_masks[i],
+            }
+            l = LinearLayer(layer_struct=layer_struct)
+            self.layers.append(l)
 
     def _handle_warnings(self, kwargs):
         """ Handle deprecated parameters """
+        pass
 
+    def _check_parameters(self):
+        """ Check if the parameters meet the requirements """
+        # check if dims is a list
+        if not isinstance(self.dims, list):
+            raise ValueError("dims must be a list of integers")
+        n_weights = len(self.dims)
 
-    def forward(self, input):
+        self.biases = self._broadcast_values(self.biases, n_weights)
+        self.weights = self._broadcast_values(self.weights, n_weights)
+        self.sparsity_masks = self._broadcast_values(self.sparsity_masks, n_weights, is_mask=True)
+        self.ei_masks = self._broadcast_values(self.ei_masks, n_weights, is_mask=True)
+        self.plasticity_masks = self._broadcast_values(self.plasticity_masks, n_weights, is_mask=True)
+        self.plasticity_masks = self._regularize_plas_masks(self.plasticity_masks, self.dims)
+        self.preact_noise = self._broadcast_values(self.preact_noise, n_weights-1)  # no noise for the readout & input layer
+        self.postact_noise = self._broadcast_values(self.postact_noise, n_weights-1)  # no noise for the readout & input layer
+
+    def _regularize_plas_masks(self, masks, target_dim):
+        if any(mask is not None for mask in masks):
+            min_plas, max_plas = [], []
+            for mask in masks:
+                if mask is not None:
+                    min_plas.append(mask.min())
+                    max_plas.append(mask.max())
+            min_plas, max_plas = min(min_plas), max(max_plas)
+            if min_plas != max_plas:
+                params = []
+                for i in range(3):
+                    if masks[i] is None: params.append(torch.ones(target_dim[i]))
+                    else:
+                        _temp_mask = (masks[i] - min_plas) / (max_plas - min_plas)
+                        params.append(self._check_array(_temp_mask, "plasticity_masks", target_dim[i], i))
+                # check the total number of unique plasticity values
+                plasticity_scales = torch.unique(torch.cat([param.flatten() for param in params]))
+                if len(plasticity_scales) > 5:
+                    raise ValueError("The number of unique plasticity values cannot be larger than 5")
+                return params
+        return [torch.ones(target_dim[i]) for i in range(3)]
+
+    def _standardize_masks(self, masks):
+        assert masks is not None, "Masks cannot be None"
+        if len(masks) != len(self.dims):
+            raise ValueError("The length of the mask must be the same as the length of dims")
+
+        for i in range(len(masks)):
+            if masks[i] is None:
+                continue
+            if isinstance(masks[i], np.ndarray):
+                masks[i] = torch.tensor(masks[i], dtype=torch.float32)
+            if isinstance(masks[i], torch.Tensor):
+                masks[i] = masks[i].float()
+                # check shape is the same as dims
+                if masks[i].shape != (self.dims[i], self.dims[i+1]):
+                    raise ValueError(f"Mask shape mismatch, expected: {(self.dims[i], self.dims[i+1])}, got: {masks[i].shape}")
+    
+    def apply_plasticity(self):
+        pass
+
+    @staticmethod
+    def _broadcast_values(value, length, is_mask=False):
+        """ Broadcast a single value to a list if it's not already a list """
+        if not isinstance(value, list):
+            if is_mask and value != None:
+                raise ValueError("Mask value cannot be auto-broadcasted")
+            return [value] * length
+        else:
+            # check if the length of the list is correct
+            if len(value) != length:
+                raise ValueError(f"Expected a list of length {length}, got a list of length {len(value)}")
+            return value
+
+    def forward(self, x):
         """
         Inputs:
             - x: size=(batch_size, input_dim)
         """
-        v = self.input_layer(input)
-        if self.preact_noise > 0:
-            v = v + torch.randn_like(v) * self.preact_noise
-        fr = self.activation(v)
-        if self.postact_noise > 0:
-            fr = fr + torch.randn_like(fr) * self.postact_noise
-        v = self.readout_layer(fr)
-        return v, fr
+        hidden_states = []
+        for i, layer in enumerate(self.layers):
+            if i == len(self.layers)-1:
+                x = layer(x)
+                break
+            x = layer(x)
+            x += torch.randn_like(x) * self.preact_noise[i]
+            x = self.activation(x) + torch.randn_like(x) * self.postact_noise[i]
+            hidden_states.append(x)
+        
+        return x, hidden_states
 
     def print_layers(self):
         """
         Print the layer information
         """
-        self.input_layer.print_layers()
-        self.readout_layer.print_layers()
+        for i, layer in enumerate(self.layers):
+            layer.print_layers()
+
+    def plot_layers(self):
+        """
+        Plot the layer information
+        """
+        for i, layer in enumerate(self.layers):
+            layer.plot_layers()
