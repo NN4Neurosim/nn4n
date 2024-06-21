@@ -1,8 +1,7 @@
 import numpy as np
-from nn4n.structure.base_struct import BaseStuct
+from nn4n.mask.base_mask import BaseMask
 
-
-class MultiArea(BaseStuct):
+class MultiArea(BaseMask):
     def __init__(self, **kwargs):
         """
         Generate the multi-area network mask

@@ -1,89 +1,29 @@
-# NN4N: Neural Networks for Neuroscience
+# NN4N: Neural Networks for Neurosimulations
+
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://badge.fury.io/py/nn4n.svg)](https://badge.fury.io/py/nn4n)
-[![Python Package using Conda](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/zhaozewang/NN4Neurosci/actions/workflows/python-package-conda.yml)
 [![Downloads](https://static.pepy.tech/badge/nn4n)](https://pepy.tech/project/nn4n)
 [![Downloads](https://static.pepy.tech/badge/nn4n/month)](https://pepy.tech/project/nn4n)<br>
-Some of the most commonly used neural networks in neuroscience research are included in this project to ease the implementation process.
 
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/RNN_structure.png" width="400"></p>
+<div align="center">
+  <video autoplay loop muted playsinline style="width: 50%; min-width: 350px; max-width: 500px;">
+    <source src="https://nn4n.org/assets/logo.mp4" type="video/mp4">
+  </video>
+</div>
 
-[GitHub](https://github.com/zhaozewang/NN4Neurosci.git)
+## About
 
-## Table of contents
-- [Acknowledgements](#acknowledgements)
-- [Change Logs](#change-logs)
-- [Install](#install)
-    - [Install Using pip](#install-using-pip)
-    - [Install From GitHub](#install-from-github)
-- [Model](#model)
-    - [CTRNN (Continuous-Time RNN)](#ctrnn)
-- [Structure](#structure)
-    - [Multi-Area](#multi-area)
-    - [Multi-Area with E/I constraints](#multi-area-with-ei-constraints)
-    - [Random Input](#random-input)
-- [Criterion](#criterion)
-    - [RNNLoss](#rnnloss)
-- [Others](#others)
+Artificial Neural Networks (ANNs) trained with backpropagation, despite being biologically unrealistic, are exceptionally straightforward to configure, train, and evaluate, while allowing for exact examination of each neuron and weight. A growing trend within computational neuroscience is thus to train ANNs on simulated tasks to 'connect the dots', and then to compare their neuronal traits with those of biological brains to derive the underlying mechanisms of the brain.
 
-## Acknowledgements
-Immense thanks to [Christopher J. Cueva](https://www.metaconscious.org/author/chris-cueva/) for his mentorship in developing this project. This project can't be done without his invaluable help.
+This project implements Recurrent Neural Networks (RNNs) and Multilayer Perceptrons (MLPs) designed for a parametrized and granular control over network modularity, synaptic plasticity, and other constraints to enable biologically feasible modeling of brain regions.
 
-## Change Logs
-- [v1.0.3 [stable]](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/change_logs/v1.0.3.md)
-- [v1.1.0 [newest]](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/change_logs/v1.1.0.md)
+## Documentation
+Documentation is available at [here](https://nn4n.org/).
+- [Installation](https://nn4n.org/install/installation/)
+- [Quickstart](https://nn4n.org/install/quickstart/)
 
-## Install
-### Install using pip
-```
-pip install nn4n
-```
+## Acknowledgement
+Immense thanks to [Dr. Christopher J. Cueva](https://www.metaconscious.org/author/chris-cueva/) for his mentorship in developing this project. This project can't be done without his invaluable help.
 
-### Install from GitHub
-#### Clone the repository
-```
-git clone https://github.com/zhaozewang/NN4Neurosci.git
-```
-#### Navigate to the NN4Neurosci directory
-```
-cd NN4Neurosci/
-pip install -e .
-```
-
-
-## Model
-### CTRNN
-The implementation of standard continuous-time RNN (CTRNN). This implementation supports enforcing sparsity constraints (i.e., preventing new synapses from being created) and E/I constraints (i.e., enforcing Dale's law). This ensures that the gradient descent will update synapses with biological plausible constraints. <br>
-- [Documentation](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/model/CTRNN/index.md)
-- [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/CTRNN.ipynb)
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/EIRNN_structure.png" width="400"></p>
-
-
-## Structure
-In CTRNN implementation, the hidden layer structure can be easily controlled by specifying sparsity masks and E/I masks. We put all RNN update logic in the `model` module and all structure-related logic in the `structure` module to streamline the implementation process. <br>
-We also emphasize on the structure more as it is often more informative to the underlying biological mechanisms. For instance, we might require different module sizes, or we require a multi-module network with E/I constraints; the implementation might be verbose and error-prone. Our following implementation will allow you to easily achieve these goals by simply specifying a few parameters. <br>
-- [Documentation](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/structure/index.md)
-
-#### Multi-Area
-The following implementation groups neurons into areas depending on your specification. Areas can have different sizes and different connectivities to other areas. <br>
-- [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb)
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/Multi_Area.png" width="400"></p>
-
-#### Multi-Area with E/I constraints
-On top of modeling brain with multi-area hidden layer, another critical constraint would be Dale's law, as proposed in the paper [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792) by Song et al. 2016. The `MultiAreaEI` class in the `structure` module is designed to implement such a connectivity matrix. <br>
-Additionally, how different E/I regions connect to each other could also be tricky; we parameterized this process such that it can be controlled with only two lines of code. <br>
-- [Examples](https://github.com/zhaozewang/NN4Neurosci/blob/main/examples/MultiArea.ipynb)
-<p align="center"><img src="https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/images/basics/Multi_Area_EI.png" width="400"></p>
-
-#### Random Input
-Neurons' dynamic receiving input will be heavily driven by the inputting signal. Injecting signals to only part of the neuron will result in more versatile and hierarchical dynamics. See [A Versatile Hub Model For Efficient Information Propagation And Feature Selection](https://arxiv.org/abs/2307.02398). This is supported by `RandomInput` class <br>
-- Example to be added
-
-## Criterion
-#### RNNLoss
-The loss function is modularized. The `RNNLoss` class is designed in a modular fashion and includes the most commonly used loss functions, such as Frobenius norm on connectivity, metabolic cost, reconstruction loss, etc. <br>
-- [Documentation](https://github.com/zhaozewang/NN4Neurosci/blob/main/docs/criterion/index.md)
-
-## Others
-For similar projects:
-- [nn-brain](https://github.com/gyyang/nn-brain)
+## License
+This project is licensed under the terms of the MIT license. See the [LICENSE](https://opensource.mit.edu/license) file for details.

@@ -1,8 +1,7 @@
 import numpy as np
-from nn4n.structure.base_struct import BaseStuct
+from nn4n.mask.base_mask import BaseMask
 
-
-class RandomInput(BaseStuct):
+class RandomInput(BaseMask):
     def __init__(self, **kwargs):
         """
         Generate a network with randomly injected input and readout neurons

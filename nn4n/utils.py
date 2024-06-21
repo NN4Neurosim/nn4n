@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 
 
 def print_dict(title, params):
+    """
+    Print a dictionary in key-value pairs with a nice format
+
+    Inputs:
+        - title: title of the dictionary
+        - params: dictionary to be printed
+    """
     print(f"{title}: ")
     maxlen = max([len(s) for s in params.keys()])
     for k in params.keys():
@@ -12,6 +19,14 @@ def print_dict(title, params):
 
 
 def get_activation(act):
+    """
+    Return the activation function given the name
+
+    Inputs:
+        - act: name of the activation function (supported values: "relu", "tanh", "sigmoid", "retanh")
+    Returns:
+        - activation function
+    """
     if act == "relu":
         return torch.relu
     elif act == "tanh":
@@ -25,6 +40,18 @@ def get_activation(act):
 
 
 def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
+    """
+    Plot the distribution of a connectivity matrix
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+        - colorbar: whether to show the colorbar (default: True)
+        - ignore_zeros: whether to ignore zeros in the distribution (needed for sparse matrices) (default: False)
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+    
     r = np.max(np.abs(w))
 
     img_width, hist_height = 6, 2
@@ -33,7 +60,7 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
 
     fig, ax = plt.subplots(figsize=(img_width, plt_height))
     ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r)
-    ax.set_title(f'{title}')
+    ax.set_title(f'{title}' if not ignore_zeros else f'{title} (nonzero)')
     if colorbar:
         fig.colorbar(ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r), ax=ax)
     if w.shape[1] < 5:
@@ -46,14 +73,26 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     fig, ax = plt.subplots(figsize=(img_width, hist_height))
     ax.set_title(f'{title} distribution')
     if ignore_zeros:
-        ax.hist(w[np.abs(w) < np.mean(np.abs(w))*0.1].flatten(), bins=50)
+        mean_nonzero = np.mean(np.abs(w)[np.abs(w) != 0])
+        ax.hist(w[np.abs(w) > mean_nonzero*0.001].flatten(), bins=100)
     else:
-        ax.hist(w.flatten(), bins=50)
+        ax.hist(w.flatten(), bins=100)
     plt.tight_layout()
     plt.show()
 
 
 def plot_connectivity_matrix(w, title, colorbar=True):
+    """
+    Plot a connectivity matrix
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+        - colorbar: whether to show the colorbar (default: True)
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+
     r = np.max(np.abs(w))
 
     fig, ax = plt.subplots(figsize=(6, 6*w.shape[0]/w.shape[1]))
@@ -67,6 +106,16 @@ def plot_connectivity_matrix(w, title, colorbar=True):
 
 
 def plot_eigenvalues(w, title):
+    """
+    Plot the eigenvalues of a connectivity matrix in the complex plane
+
+    Inputs:
+        - w: connectivity matrix, must be a numpy array or a torch tensor
+        - title: title of the plot
+    """
+    if type(w) == torch.Tensor:
+        w = w.detach().numpy()
+
     eigvals = np.linalg.eigvals(w)
     plt.figure(figsize=(4, 4))
     plt.plot(eigvals.real, eigvals.imag, 'o')
