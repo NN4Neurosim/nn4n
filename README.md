@@ -5,11 +5,9 @@
 [![Downloads](https://static.pepy.tech/badge/nn4n)](https://pepy.tech/project/nn4n)
 [![Downloads](https://static.pepy.tech/badge/nn4n/month)](https://pepy.tech/project/nn4n)<br>
 
-<div align="center">
-  <video autoplay loop muted playsinline style="width: 50%; min-width: 350px; max-width: 500px;">
-    <source src="https://nn4n.org/assets/logo.mp4" type="video/mp4">
-  </video>
-</div>
+<p align="center">
+<img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/attractor.png" width="300">
+</p>
 
 ## About
 
