@@ -173,6 +173,16 @@ class HiddenLayer(nn.Module):
 
     # HELPER FUNCTIONS
     # ======================================================================================
+    def get_weight(self):
+        """ Get the value of weight """ 
+        
+
+    def set_weight(self, weight):
+        """ Set the value of weight """
+        assert weight.shape == self.weight.shape, f"Weight shape mismatch, expected {self.weight.shape}, got {weight.shape}"
+        with torch.no_grad():
+            self.weight.copy_(weight)
+
     def plot_layers(self):
         """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight

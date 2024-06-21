@@ -1,11 +1,10 @@
 import numpy as np
 import nn4n.utils as utils
 
-
-class BaseStuct():
+class BaseMask():
+    """ Base class for all masks """
     def __init__(self, **kwargs):
         """
-        Base class for all structures
         @kwarg hidden_size: number of hidden neurons in total, must be defined
         @kwarg input_dim: input dimension, default: 1
         @kwarg output_dim: output dimension, default: 1
@@ -16,7 +15,7 @@ class BaseStuct():
         self.output_dim = self.dims[2]
 
         # cannot be run as a child class
-        assert self.__class__.__name__ != "BaseStruct", "BaseStruct cannot be run as a child class"
+        assert self.__class__.__name__ != "BaseMask", "BaseMask cannot be run as a child class"
 
     def _check_parameters(self):
         """
@@ -95,7 +94,7 @@ class BaseStuct():
         mask = np.random.rand(n, m) < p
         return mask.astype(int)
 
-    def visualize(self):
+    def plot_masks(self):
         if self.input_mask is not None:
             input_mask_ = self.input_mask if self.input_mask.shape[1] > self.input_mask.shape[0] else self.input_mask.T
             utils.plot_connectivity_matrix(input_mask_, "Input Layer Mask", False)
@@ -107,8 +106,9 @@ class BaseStuct():
             readout_mask_ = self.readout_mask if self.readout_mask.shape[1] > self.readout_mask.shape[0] else self.readout_mask.T
             utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Mask", False)
 
-    def masks(self):
+    def get_masks(self):
+        """ Return the masks """
         assert self.input_mask is not None, "input_mask is not generated"
         assert self.hidden_mask is not None, "hidden_mask is not generated"
         assert self.readout_mask is not None, "readout_mask is not generated"
-        return [self.input_mask, self.hidden_mask, self.readout_mask]
+        return [self.input_mask.T, self.hidden_mask.T, self.readout_mask.T]

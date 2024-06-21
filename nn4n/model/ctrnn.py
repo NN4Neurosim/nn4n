@@ -96,6 +96,15 @@ class CTRNN(BaseNN):
         self.recurrent_layer = RecurrentLayer(layer_struct=rc_struct)
         self.readout_layer = LinearLayer(layer_struct=out_struct)
 
+    @property
+    def layers(self):
+        layer_list = [
+            self.recurrent_layer.input_layer, 
+            self.recurrent_layer.hidden_layer, 
+            self.readout_layer
+        ]
+        return layer_list
+
     def _handle_warnings(self, kwargs):
         """ Handle deprecated parameters """
         slevel = 5 # output the warning at the level where kwargs is passed

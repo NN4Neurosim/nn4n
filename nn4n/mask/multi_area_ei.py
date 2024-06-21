@@ -1,11 +1,10 @@
 import numpy as np
 from .multi_area import MultiArea
 
-
 class MultiAreaEI(MultiArea):
+    """ Multi-area network with ei constraints mask """
     def __init__(self, **kwargs):
         """
-        Generate the multi-area network with ei constraints mask
         NOTE: On top of the keywards required for MultiArea:
         @kwarg exc_pct: percentage of excitatory neurons, default: 0.8
         @kwarg inter_area_connections: list of boolean, whether to have inter-area connections
