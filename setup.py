@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='nn4n',
-    version='1.1.0',
+    version='1.1.1',
     description='Neural Networks for Neuroscience Research',
     long_description=long_description,
     long_description_content_type='text/markdown',
