@@ -36,7 +36,7 @@ class BaseMask():
         assert isinstance(self.output_dim, int), "output_dim must be int"
         assert self.output_dim > 0, "output_dim must be positive"
 
-    def _generate_mask(self):
+    def _generate_masks(self):
         """
         Generate the mask for the multi-area network
         """

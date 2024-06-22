@@ -18,7 +18,7 @@ class RandomInput(BaseMask):
         # run if it is not a child class
         if self.__class__.__name__ == "RandomInput":
             self._check_parameters()
-            self._generate_mask()
+            self._generate_masks()
 
     def _check_parameters(self):
         """

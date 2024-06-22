@@ -19,7 +19,7 @@ class MultiAreaEI(MultiArea):
         self.inh_readout = kwargs.get("inh_readout", True)
         # check parameters and generate mask
         self._check_parameters()
-        self._generate_mask()
+        self._generate_masks()
 
     def _check_parameters(self):
         super()._check_parameters()
@@ -35,7 +35,7 @@ class MultiAreaEI(MultiArea):
         """
         Generate the mask for the multi-area network
         """
-        super()._generate_mask()
+        super()._generate_masks()
         self._generate_ei_assigment()
         self._masks_to_ei()
 

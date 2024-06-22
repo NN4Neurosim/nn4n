@@ -17,7 +17,7 @@ class MultiArea(BaseMask):
         # run if it is not a child class
         if self.__class__.__name__ == "MultiArea":
             self._check_parameters()
-            self._generate_mask()
+            self._generate_masks()
 
     def _check_parameters(self):
         """ Check if parameters are valid """
