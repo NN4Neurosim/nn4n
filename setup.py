@@ -6,8 +6,8 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='nn4n',
-    version='1.1.0',
-    description='Neural Networks for Neuroscience Research',
+    version='1.1.2',
+    description='Neural Networks for Neurosimulation',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Zhaoze Wang',
@@ -21,5 +21,5 @@ setup(
         'IPython',
         'scipy',
     ],
-    python_requires='>=3.10',
+    python_requires='>=3.9',
 )

@@ -118,6 +118,7 @@ class HiddenLayer(nn.Module):
             self.ei_mask = self.ei_mask.to(device)
         if self.bias.requires_grad:
             self.bias = self.bias.to(device)
+        return self
 
     def forward(self, x):
         """ 

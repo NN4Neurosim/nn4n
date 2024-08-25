@@ -15,8 +15,9 @@ Artificial Neural Networks (ANNs) trained with backpropagation, despite being bi
 
 This project implements Recurrent Neural Networks (RNNs) and Multilayer Perceptrons (MLPs) designed for a parametrized and granular control over network modularity, synaptic plasticity, and other constraints to enable biologically feasible modeling of brain regions.
 
-## Documentation
-Documentation is available at [here](https://nn4n.org/).
+## [GitHub](https://github.com/NN4Neurosim/nn4n)
+
+## [Documentation](https://nn4n.org/)
 - [Installation](https://nn4n.org/install/installation/)
 - [Quickstart](https://nn4n.org/install/quickstart/)
 

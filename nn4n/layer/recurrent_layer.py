@@ -58,23 +58,24 @@ class RecurrentLayer(nn.Module):
         self.input_layer.to(device)
         self.hidden_layer.to(device)
         self.hidden_state = self.hidden_state.to(device)
+        return self
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """ 
         Forwardly update network
 
         Inputs:
-            - x: input, shape: (n_timesteps, batch_size, input_dim)
+            - x: input, shape: (batch_size, n_timesteps, input_dim)
 
         Returns:
-            - states: shape: (n_timesteps, batch_size, hidden_size)
+            - stacked_states: hidden states of the network, shape: (batch_size, n_timesteps, hidden_size)
         """
         v_t = self._reset_state().to(x.device)
         fr_t = self.activation(v_t)
         # update hidden state and append to stacked_states
         stacked_states = []
-        for i in range(x.size(0)):
-            fr_t, v_t = self._recurrence(fr_t, v_t, x[i])
+        for i in range(x.size(1)):
+            fr_t, v_t = self._recurrence(fr_t, v_t, x[:,i])
             # append to stacked_states
             stacked_states.append(fr_t)
 
@@ -82,7 +83,7 @@ class RecurrentLayer(nn.Module):
         if self.init_state == 'keep':
             self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
 
-        return torch.stack(stacked_states, dim=0)
+        return torch.stack(stacked_states, dim=1)
 
     def _reset_state(self):
         if self.init_state == 'learn' or self.init_state == 'keep':

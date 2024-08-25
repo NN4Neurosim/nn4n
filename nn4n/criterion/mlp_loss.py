@@ -63,3 +63,4 @@ class MLPLoss(nn.Module):
         """ Move to device """
         super().to(device)
         self.lambda_list = self.lambda_list.to(device)
+        return self

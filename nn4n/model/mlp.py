@@ -164,11 +164,13 @@ class MLP(BaseNN):
                 raise ValueError(f"Expected a list of length {length}, got a list of length {len(value)}")
             return value
 
-    def forward(self, x):
+    def forward(self, x, batch_first=True):
         """
         Inputs:
-            - x: size=(batch_size, input_dim)
+            - x: size=(batch_size, n_timesteps, input_dim)
         """
+        if not batch_first:
+            x = x.transpose(0, 1)
         hidden_states = []
         for i, layer in enumerate(self.layers):
             if i == len(self.layers)-1:

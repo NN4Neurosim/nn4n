@@ -1,3 +1,10 @@
+"""
+TODO: Refactor this implementation. Let this module to be initialized with a list of dicts,
+with each dict contains the parameters for each type of loss. This will make the code more
+readable and easier to maintain.
+Loss function for RNN
+"""
+
 import torch
 import torch.nn as nn
 
@@ -26,6 +33,7 @@ class RNNLoss(nn.Module):
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
+        self.batch_first = model.batch_first
         if type(self.model) != CTRNN:
             raise TypeError("model must be CTRNN")
         self._init_losses(**kwargs)
@@ -79,23 +87,48 @@ class RNNLoss(nn.Module):
         return torch.norm(self.model.readout_layer.weight, p='fro')**2/self.n_out_dividend
 
     def _loss_fr(self, states, **kwargs):
-        """ Compute the loss for firing rate """
-        return torch.pow(torch.mean(states, dim=(0, 1)), 2).mean()
+        """
+        Compute the loss for firing rate
+        This compute the L2 norm (for now) of the hidden states across all timesteps and batch_size
+        Then take the square of the mean of the norm
+        """
+        if not self.batch_first: states = states.transpose(0, 1)
+        mean_fr = torch.mean(states, dim=(0, 1))
+        # return torch.pow(torch.mean(states, dim=(0, 1)), 2).mean() # this might not be correct
+        # return torch.norm(states, p='fro')**2/states.numel() # this might not be correct
+        return torch.norm(mean_fr, p=2)**2/mean_fr.numel()
 
     def _loss_fr_sd(self, states, **kwargs):
-        """ Compute the loss for firing rate for each neuron in terms of SD """
-        return torch.pow(torch.mean(states, dim=(0, 1)), 2).std()
+        """ 
+        Compute the loss for firing rate for each neuron in terms of SD
+        This will take the average firing rate of each neuron across all timesteps and batch_size
+        and compute the standard deviation of the firing rate across all neurons
+
+        Parameters:
+        - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
+        """
+        if not self.batch_first: states = states.transpose(0, 1)
+        avg_fr = torch.mean(states, dim=(0, 1))
+        return avg_fr.std()
 
     def _loss_fr_cv(self, states, **kwargs):
-        """ Compute the loss for firing rate for each neuron in terms of coefficient of variation """
-        avg_fr = torch.sqrt(torch.square(states)).mean(dim=0)
+        """
+        Compute the loss for firing rate for each neuron in terms of coefficient of variation
+        This will take the average firing rate of each neuron across all timesteps and batch_size
+        and compute the coefficient of variation of the firing rate across all neurons
+
+        Parameters:
+        - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
+        """
+        if not self.batch_first: states = states.transpose(0, 1)
+        avg_fr = torch.mean(torch.sqrt(torch.square(states)), dim=(0, 1))
         return avg_fr.std()/avg_fr.mean()
 
     def forward(self, pred, label, **kwargs):
         """
         Compute the loss
 
-        Inputs:
+        Parameters:
             - pred: size=(-1, batch_size, 2), predicted labels
             - label: size=(-1, batch_size, 2), labels
         

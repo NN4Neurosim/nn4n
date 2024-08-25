@@ -28,6 +28,7 @@ class CTRNN(BaseNN):
         - activation: activation function, default: "relu", can be "relu", "sigmoid", "tanh", "retanh"
         - dt: time step, default: 10
         - tau: time constant, default: 100
+        - batch_first: whether the input is batch first or not, default: True
         - biases: use bias or not for each layer, a list of 3 values or a single value
             if a single value is passed, it will be broadcasted to a list of 3 values, it can be:
             - None: no bias
@@ -73,6 +74,7 @@ class CTRNN(BaseNN):
         self.dims = kwargs.pop("dims", [1, 100, 1])
         self.biases = kwargs.pop("biases", None)
         self.weights = kwargs.pop("weights", 'uniform')
+        self.batch_first = kwargs.pop("batch_first", True)
 
         # network dynamics parameters
         self.sparsity_masks = kwargs.pop("sparsity_masks", None)
@@ -306,19 +308,27 @@ class CTRNN(BaseNN):
         super().to(device)
         self.recurrent_layer.to(device)
         self.readout_layer.to(device)
+        return self
 
     def forward(self, x):
         """ 
         Forwardly update network
 
         Inputs:
-            - x: input, shape: (n_timesteps, batch_size, input_dim)
+            - x: input, shape: (batch_size, n_timesteps, input_dim)
         """
+        if not self.batch_first:
+            x = x.transpose(0, 1)
+
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
         hidden_states = self.recurrent_layer(x)
         output = self.readout_layer(hidden_states.float())
+
+        if not self.batch_first:
+            output = output.transpose(0, 1)
+            hidden_states = hidden_states.transpose(0, 1)
         return output, [hidden_states]
 
     def train(self):

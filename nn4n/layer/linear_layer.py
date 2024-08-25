@@ -143,6 +143,7 @@ class LinearLayer(nn.Module):
             self.ei_mask = self.ei_mask.to(device)
         if self.bias.requires_grad:
             self.bias = self.bias.to(device)
+        return self
 
     def forward(self, x):
         """ 
@@ -204,9 +205,9 @@ class LinearLayer(nn.Module):
         """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix (Transposed)", False, self.sparsity_mask is not None)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, self.sparsity_mask is not None)
         else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix", False, self.sparsity_mask is not None)
+            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix (Transposed)", False, self.sparsity_mask is not None)
         
     def print_layers(self):
         """ Print the specs of each layer """
