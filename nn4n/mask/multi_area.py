@@ -25,7 +25,7 @@ class MultiArea(BaseMask):
 
         # check n_areas
         if isinstance(self.n_areas, int):
-            assert self.hidden_size % self.n_areas == 0, "hidden_size must be devideable by n_areas"
+            assert self.hidden_size % self.n_areas == 0, "hidden_size must be devideable by n_areas if n_areas is an int"
             # create a node assignment list
             node_assigment = np.zeros(self.n_areas, dtype=np.ndarray)
             for i in range(self.n_areas):
@@ -41,7 +41,7 @@ class MultiArea(BaseMask):
             self.node_assigment = node_assigment
             self.n_areas = len(self.n_areas)
         else:
-            assert False, "n_areas must be int or list"
+            assert False, f"n_areas must be int or list, but got {type(self.n_areas)}"
 
         if self.n_areas == 1:
             self.input_areas = np.array([0])

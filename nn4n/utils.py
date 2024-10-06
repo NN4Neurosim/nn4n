@@ -56,9 +56,16 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
 
     img_width, hist_height = 6, 2
     hw_ratio = w.shape[0] / w.shape[1]
-    plt_height = img_width * hw_ratio + hist_height
+    if hw_ratio > 1:
+        # height > width
+        mat_h = img_width / hw_ratio + hist_height
+        mat_w = img_width
+    else:
+        # width > height
+        mat_h = img_width
+        mat_w = img_width * hw_ratio + hist_height
 
-    fig, ax = plt.subplots(figsize=(img_width, plt_height))
+    fig, ax = plt.subplots(figsize=(mat_w, mat_h))
     ax.imshow(-w, cmap='bwr', vmin=-r, vmax=r)
     ax.set_title(f'{title}' if not ignore_zeros else f'{title} (nonzero)')
     if colorbar:

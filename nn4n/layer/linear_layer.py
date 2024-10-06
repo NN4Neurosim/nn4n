@@ -204,10 +204,13 @@ class LinearLayer(nn.Module):
     def plot_layers(self):
         """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
-        if weight.size(0) < weight.size(1):
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, self.sparsity_mask is not None)
-        else:
-            utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix (Transposed)", False, self.sparsity_mask is not None)
+        # if weight.size(0) < weight.size(1):
+        #     utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, self.sparsity_mask is not None)
+        # else:
+        #     utils.plot_connectivity_matrix_dist(weight.detach().numpy().T, "Weight Matrix (Transposed)", False, self.sparsity_mask is not None)
+        
+        # Disable the transpose as it sometimes causes confusion
+        utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Weight Matrix", False, self.sparsity_mask is not None)
         
     def print_layers(self):
         """ Print the specs of each layer """

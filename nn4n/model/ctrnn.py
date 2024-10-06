@@ -310,7 +310,7 @@ class CTRNN(BaseNN):
         self.readout_layer.to(device)
         return self
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, init_state: torch.Tensor = None) -> torch.Tensor:
         """ 
         Forwardly update network
 
@@ -323,7 +323,7 @@ class CTRNN(BaseNN):
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
-        hidden_states = self.recurrent_layer(x)
+        hidden_states = self.recurrent_layer(x, init_state)
         output = self.readout_layer(hidden_states.float())
 
         if not self.batch_first:
