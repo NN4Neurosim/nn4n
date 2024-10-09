@@ -115,6 +115,14 @@ class MultiArea(BaseMask):
         """ Return the indices of neurons that send output """
         return np.where(self.readout_mask.sum(axis=0) != 0)[0]
 
+    def get_area_indices(self):
+        """ Get all area indices """
+        # Get all areas from node assignment
+        area_indices = []
+        for i in self.get_areas():
+            area_indices.append(self.get_area_idx(i))
+        return area_indices
+
     def get_area_idx(self, area):
         """ Return the indices of neurons in area """
         if isinstance(area, str):

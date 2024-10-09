@@ -72,6 +72,11 @@ class LinearLayer(nn.Module):
             # apply scaling
             self.weight *= scale_mat
 
+    def freeze_layer(self):
+        """ Freeze the layer """
+        self.weight.requires_grad = False
+        self.bias.requires_grad = False
+
     def _generate_weight(self, weight_init):
         """ Generate random weight """
         if weight_init == 'uniform':

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from .firing_rate_loss import *
+from .connectivity_loss import *
 
 class CompositeLoss(nn.Module):
     def __init__(self, loss_cfg):
@@ -22,7 +23,9 @@ class CompositeLoss(nn.Module):
         loss_types = {
             'fr': FiringRateLoss,
             'fr_dist': FiringRateDistLoss,
+            'rnn_conn': RNNConnectivityLoss,
             'state_pred': StatePredictionLoss,
+            'entropy': EntropyLoss,
             'mse': nn.MSELoss,
         }
         torch_losses = ['mse']
