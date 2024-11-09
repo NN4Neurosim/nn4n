@@ -25,7 +25,6 @@ class RecurrentLayer(nn.Module):
     """
     def __init__(self, layer_struct, **kwargs):
         super().__init__()
-        self.alpha = layer_struct['dt']/layer_struct['tau']
         self.hidden_size = layer_struct['hid_struct']['input_dim']
         self.hidden_state = torch.zeros(self.hidden_size)
         self.init_state = layer_struct['init_state']
@@ -33,6 +32,8 @@ class RecurrentLayer(nn.Module):
         self.activation = get_activation(self.act)
         self.preact_noise = kwargs.pop("preact_noise", 0)
         self.postact_noise = kwargs.pop("postact_noise", 0)
+        _alpha = torch.full((self.hidden_size,), layer_struct['dt']/layer_struct['tau'])
+        self.alpha = torch.nn.Parameter(_alpha, requires_grad=True) if layer_struct['learn_alpha'] else _alpha
         self._set_hidden_state()
 
         self.input_layer = LinearLayer(layer_struct=layer_struct['in_struct'])
@@ -78,17 +79,18 @@ class RecurrentLayer(nn.Module):
 
         fr_t = self.activation(v_t)
         # update hidden state and append to stacked_states
-        stacked_states = []
+        stacked_states, stacked_relax_states = [], []
         for i in range(x.size(1)):
-            fr_t, v_t = self._recurrence(fr_t, v_t, x[:,i])
+            fr_t, fr_r_t, v_t = self._recurrence(fr_t, v_t, x[:,i])
             # append to stacked_states
             stacked_states.append(fr_t)
+            stacked_relax_states.append(fr_r_t)
 
         # if keeping the last state, save it to hidden_state
         if self.init_state == 'keep':
             self.hidden_state = fr_t.detach().clone()  # TODO: haven't tested this yet
 
-        return torch.stack(stacked_states, dim=1)
+        return torch.stack(stacked_states, dim=1), torch.stack(stacked_relax_states, dim=1)
 
     def _reset_state(self):
         if self.init_state == 'learn' or self.init_state == 'keep':
@@ -118,21 +120,25 @@ class RecurrentLayer(nn.Module):
         v_hid_fr_t = self.hidden_layer(fr_t)  # fr_t @ W_hid + b
         # update hidden state
         v_t = (1-self.alpha)*v_t + self.alpha*(v_hid_fr_t+v_in_u_t)
+        v_t_r = (1-self.alpha)*v_t + self.alpha*(v_hid_fr_t)
 
         # add pre-activation noise
         if self.preact_noise > 0:
             preact_epsilon = torch.randn((u_t.size(0), self.hidden_size), device=u_t.device) * self.preact_noise
             v_t = v_t + self.alpha*preact_epsilon
+            v_t_r = v_t_r + self.alpha*preact_epsilon
     
         # apply activation function
         fr_t = self.activation(v_t)
+        fr_r_t = self.activation(v_t_r)
     
         # add post-activation noise
         if self.postact_noise > 0:
             postact_epsilon = torch.randn((u_t.size(0), self.hidden_size), device=u_t.device) * self.postact_noise
             fr_t = fr_t + postact_epsilon
+            fr_r_t = fr_r_t + postact_epsilon
         
-        return fr_t, v_t
+        return fr_t, fr_r_t, v_t
     # ==================================================================================================
 
     # HELPER FUNCTIONS

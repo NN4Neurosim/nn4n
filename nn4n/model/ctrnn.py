@@ -268,6 +268,7 @@ class CTRNN(BaseNN):
             "activation": kwargs.pop("activation", "relu"),
             "dt": kwargs.pop("dt", 10),
             "tau": kwargs.pop("tau", 100),
+            "learn_alpha": kwargs.pop("learn_alpha", False),
             "preact_noise": self.preact_noise,
             "postact_noise": self.postact_noise,
             "in_struct": {
@@ -323,13 +324,15 @@ class CTRNN(BaseNN):
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
-        hidden_states = self.recurrent_layer(x, init_state)
+        hidden_states, relaxed_states = self.recurrent_layer(x, init_state)
         output = self.readout_layer(hidden_states.float())
 
         if not self.batch_first:
             output = output.transpose(0, 1)
             hidden_states = hidden_states.transpose(0, 1)
-        return output, [hidden_states]
+            relaxed_states = relaxed_states.transpose(0, 1)
+
+        return output, {'h': hidden_states, 'r': relaxed_states}
 
     def train(self):
         """

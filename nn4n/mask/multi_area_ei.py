@@ -1,5 +1,6 @@
 import numpy as np
 from .multi_area import MultiArea
+from nn4n.utils.help_functions import print_dict
 
 class MultiAreaEI(MultiArea):
     """ Multi-area network with ei constraints mask """
@@ -92,3 +93,13 @@ class MultiAreaEI(MultiArea):
         if not self.inh_readout:
             for i in range(self.n_areas):
                 self.readout_mask[:, self.inhibitory_neurons[i]] = 0
+
+    def get_specs(self):
+        """
+        Return the specifications of the network
+        """
+        specs = super().get_specs()
+        specs["exc_pct"] = self.exc_pct
+        specs["inter_area_connections"] = self.inter_area_connections
+        specs["inh_readout"] = self.inh_readout
+        return specs

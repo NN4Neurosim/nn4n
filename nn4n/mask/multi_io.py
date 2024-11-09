@@ -1,5 +1,6 @@
 import numpy as np
 from nn4n.mask.base_mask import BaseMask
+from nn4n.utils.help_functions import print_dict
 
 class MultiIO(BaseMask):
     def __init__(self, **kwargs):
@@ -11,23 +12,23 @@ class MultiIO(BaseMask):
         @kwarg input_dims: a list denoting the dimensions of each group of input signals.
             E.g., if 1-dim olfactory signal + 100-dim visual signal will be two groups, then [1, 100], 
             must sum-up to dims[0]
-        @kwarg input_dims: a list denoting the dimensions of each group of output signals.
+        @kwarg input_dims: a list denoting the dimensions of each group of readout signals.
             E.g., if 1-dim olfactory signal + 100-dim visual signal will be two groups, then [1, 100], 
             must sum-up to dims[2]
         @kwarg input_table: a table denoting whether an input signal will be projected to a given 
             hidden layer node. Must be of a table of shape (n_input_groups, hidden_size) and containing 
             only 0s or 1s, default: all ones.
-        @kwarg output_table: a table denoting whether a hidden layer node will be used to generate a
-            specific output.  Must be of a table of shape (n_output_groups, hidden_size) and containing 
+        @kwarg readout_table: a table denoting whether a hidden layer node will be used to generate a
+            specific readout.  Must be of a table of shape (n_readout_groups, hidden_size) and containing 
             only 0s or 1s, default: all ones.
         """
         super().__init__(**kwargs)
         self.input_dims = kwargs.get("input_dims", [self.dims[0]])
-        self.output_dims = kwargs.get("output_dims", [self.dims[2]])
+        self.readout_dims = kwargs.get("readout_dims", [self.dims[2]])
         self.n_input_groups = len(self.input_dims)  # number of groups of input signals
-        self.n_output_groups = len(self.output_dims)  # number of groups of output signals
+        self.n_readout_groups = len(self.readout_dims)  # number of groups of readout signals
         self.input_table = kwargs.get("input_table", np.ones((self.n_input_groups, self.dims[1])))
-        self.output_table = kwargs.get("output_table", np.ones((self.n_output_groups, self.dims[1])))
+        self.readout_table = kwargs.get("readout_table", np.ones((self.n_readout_groups, self.dims[1])))
         
         # check parameters and generate masks 
         self._check_parameters()
@@ -37,19 +38,19 @@ class MultiIO(BaseMask):
         """ Check if parameters are valid """
         super()._check_parameters()
 
-        # The input/output dims must be a list
+        # The input/readout dims must be a list
         assert type(self.input_dims) == list and self._check_int_list(self.input_dims), "input_dims must be a list of integers"
-        assert type(self.output_dims) == list and self._check_int_list(self.output_dims), "output_dims must be a list of integers"
+        assert type(self.readout_dims) == list and self._check_int_list(self.readout_dims), "readout_dims must be a list of integers"
 
-        # Check if the input_dims and output_dims all sum up to self.dims[0] and self.dims[2]
+        # Check if the input_dims and readout_dims all sum up to self.dims[0] and self.dims[2]
         assert np.sum(self.input_dims) == self.dims[0], "input_dims must sum-up to the full input dimension specified in self.dims[0]"
-        assert np.sum(self.output_dims) == self.dims[2], "output_dims must sum-up to the full output dimension specified in self.dims[2]"
+        assert np.sum(self.readout_dims) == self.dims[2], "readout_dims must sum-up to the full readout dimension specified in self.dims[2]"
 
-        # Check if the input/output table dimension is valid
+        # Check if the input/readout table dimension is valid
         assert self.input_table.shape == (self.n_input_groups, self.dims[1])
-        assert self.output_table.shape == (self.n_output_groups, self.dims[1])
+        assert self.readout_table.shape == (self.n_readout_groups, self.dims[1])
 
-        # TODO: check if all input/output table are zero/one.
+        # TODO: check if all input/readout table are zero/one.
 
     @staticmethod
     def _check_int_list(el_list):
@@ -75,8 +76,16 @@ class MultiIO(BaseMask):
     def _generate_readout_mask(self):
         readout_mask = np.zeros((self.dims[1], self.dims[2]))
         dim_counter = 0
-        for i, d in enumerate(self.output_dims):
-            output_idx = self.output_table[i].reshape(-1, 1)
-            readout_mask[:,dim_counter:dim_counter+d] = np.tile(output_idx, d)
+        for i, d in enumerate(self.readout_dims):
+            readout_idx = self.readout_table[i].reshape(-1, 1)
+            readout_mask[:,dim_counter:dim_counter+d] = np.tile(readout_idx, d)
             dim_counter += d
         self.readout_mask = readout_mask.T  # TODO: remove this and flip other masks
+
+    def get_specs(self):
+        specs = super().get_specs()
+        specs["input_dims"] = self.input_dims
+        specs["readout_dims"] = self.readout_dims
+        specs["input_table_shape"] = self.input_table.shape
+        specs["readout_table_shape"] = self.readout_table.shape
+        return specs

@@ -1,5 +1,6 @@
 import numpy as np
 from nn4n.mask.base_mask import BaseMask
+from nn4n.utils.help_functions import print_dict
 
 class MultiArea(BaseMask):
     def __init__(self, **kwargs):
@@ -97,33 +98,33 @@ class MultiArea(BaseMask):
 
     def _generate_readout_mask(self):
         """ Generate the mask for the readout layer """
-        readout_mask = np.zeros((self.output_dim, self.hidden_size))
+        readout_mask = np.zeros((self.readout_dim, self.hidden_size))
         for i in self.readout_areas:
             area_i_size = len(self.node_assigment[i])
-            readout_mask[np.ix_(np.arange(self.output_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.output_dim, area_i_size, 1)
+            readout_mask[np.ix_(np.arange(self.readout_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.readout_dim, area_i_size, 1)
         self.readout_mask = readout_mask
 
-    def get_input_idx(self):
+    def get_input_indices(self):
         """ Return the indices of neurons that receive input """
         return np.where(self.input_mask.sum(axis=1) != 0)[0]
 
-    def get_non_input_idx(self):
+    def get_non_input_indices(self):
         """ Return the indices of neurons that do not receive input """
         return np.where(self.input_mask.sum(axis=1) == 0)[0]
 
-    def get_readout_idx(self):
-        """ Return the indices of neurons that send output """
+    def get_readout_indices(self):
+        """ Return the indices of neurons that send readout """
         return np.where(self.readout_mask.sum(axis=0) != 0)[0]
 
-    def get_area_indices(self):
+    def get_all_area_indices(self):
         """ Get all area indices """
         # Get all areas from node assignment
         area_indices = []
         for i in self.get_areas():
-            area_indices.append(self.get_area_idx(i))
+            area_indices.append(self.get_area_indices(i))
         return area_indices
 
-    def get_area_idx(self, area):
+    def get_area_indices(self, area):
         """ Return the indices of neurons in area """
         if isinstance(area, str):
             area = self.get_areas().index(area)
@@ -132,3 +133,11 @@ class MultiArea(BaseMask):
     def get_areas(self):
         """ Return the number of areas """
         return [f"area_{i+1}" for i in range(self.n_areas)]
+
+    def get_specs(self):
+        specs = super().get_specs()
+        specs["n_areas"] = self.n_areas
+        specs["area_connectivities"] = self.area_connectivities
+        specs["input_areas"] = self.input_areas
+        specs["readout_areas"] = self.readout_areas
+        return specs

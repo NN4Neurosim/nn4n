@@ -4,7 +4,12 @@
 - [ ] Make the model use `batch_first` by default.
 - [x] Refactor the RNNLoss part, let it take a dictionary instead of many separate `lambda_*` parameters. --> added the `CompositeLoss` instead.
 - [x] Added batch_first parameter. Adjusted to batch_first by default to follow PyTorch standard.
-- [ ] Varying alpha
+- [x] Varying `alpha`. Alpha is now learnable
+- [ ] Make `alpha` can be defined with a vector.
 - [ ] Need to adjust implementation for `apply_plasticity` as it won't support SSL framework.
-- [ ] Change output to readout.
-- [ ] Some quick methods to access firing rates of different values
+- [ ] Reconsider the `apply_plasticity`, Adam will not work with it.
+- [ ] Change output to readout. (Forgot what I meant by this).
+- [ ] Need some property functions to get the model parameters in a simpler way.
+- [ ] Need some kind of function or managing class to perform the forward pass. Like `model({"area_1": input_1, "area_2": input_2})`.
+- [ ] Remove the deprecation warnings.
+- [ ] The `get_area` related of functions in the mask module are a bit un-intuitive. Might be good to rename them.

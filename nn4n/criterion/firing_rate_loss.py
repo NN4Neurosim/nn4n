@@ -78,6 +78,26 @@ class StatePredictionLoss(CustomLoss):
         return F.mse_loss(states[:-self.tau], states[self.tau:], reduction='mean')
 
 
+class HebbianLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, states, weights):
+        # states shape: (batch_size, time_steps, num_neurons)
+        # weights shape: (num_neurons, num_neurons)
+        
+        # Compute correlations by averaging over time steps
+        correlations = torch.einsum('bti,btj->btij', states, states)
+        
+        # Apply weights to correlations and sum to get Hebbian loss for each batch
+        hebbian_loss = torch.sum(weights * correlations, dim=(-1, -2))
+        
+        # Compute the mean Hebbian loss across the batch
+        mean_hebbian_loss = torch.mean(hebbian_loss.abs())
+        
+        return mean_hebbian_loss
+
+
 class EntropyLoss(nn.Module):
     def __init__(self, reg=1e1, **kwargs):
         super().__init__(**kwargs)

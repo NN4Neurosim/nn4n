@@ -1,5 +1,6 @@
 import numpy as np
 from nn4n.mask.base_mask import BaseMask
+from nn4n.utils.help_functions import print_dict
 
 class RandomInput(BaseMask):
     def __init__(self, **kwargs):
@@ -64,25 +65,25 @@ class RandomInput(BaseMask):
         else:
             self.readout_idx = np.random.choice(self.non_input_idx, int(self.hidden_size * self.readout_spar), replace=False)
 
-        self.readout_mask = np.zeros((self.output_dim, self.hidden_size))
-        self.readout_mask[np.ix_(np.arange(self.output_dim), self.readout_idx)] = \
-            self._generate_sparse_matrix(self.output_dim, len(self.readout_idx), 1)
+        self.readout_mask = np.zeros((self.readout_dim, self.hidden_size))
+        self.readout_mask[np.ix_(np.arange(self.readout_dim), self.readout_idx)] = \
+            self._generate_sparse_matrix(self.readout_dim, len(self.readout_idx), 1)
 
-    def get_input_idx(self):
+    def get_input_indices(self):
         """
         Return the indices of neurons that receive input
         """
         return self.input_idx
 
-    def get_non_input_idx(self):
+    def get_non_input_indices(self):
         """
         Return the indices of neurons that do not receive input
         """
         return self.non_input_idx
 
-    def get_readout_idx(self):
+    def get_readout_indices(self):
         """
-        Return the indices of neurons that send output
+        Return the indices of neurons that send readout
         """
         return self.readout_idx
 
@@ -98,7 +99,7 @@ class RandomInput(BaseMask):
         """
         return ['area_input', 'area_readout']
 
-    def get_area_idx(self, area):
+    def get_area_indices(self, area):
         """
         Return the indices of neurons in each area
         """
@@ -106,3 +107,11 @@ class RandomInput(BaseMask):
         if isinstance(area, str):
             area = self.get_areas().index(area)
         return indicies[area]
+
+    def get_specs(self):
+        specs = super().get_specs()
+        specs["input_spar"] = self.input_spar
+        specs["readout_spar"] = self.readout_spar
+        specs["hidden_spar"] = self.hidden_spar
+        specs["overlap"] = self.overlap
+        return specs

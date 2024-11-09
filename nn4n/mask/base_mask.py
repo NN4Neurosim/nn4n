@@ -1,5 +1,6 @@
 import numpy as np
 import nn4n.utils as utils
+from nn4n.utils.help_functions import print_dict
 
 class BaseMask():
     """ Base class for all masks """
@@ -7,12 +8,12 @@ class BaseMask():
         """
         @kwarg hidden_size: number of hidden neurons in total, must be defined
         @kwarg input_dim: input dimension, default: 1
-        @kwarg output_dim: output dimension, default: 1
+        @kwarg readout_dim: readout dimension, default: 1
         """
         self.dims = kwargs.get("dims", [1, 100, 1])
         self.hidden_size = self.dims[1]
         self.input_dim = self.dims[0]
-        self.output_dim = self.dims[2]
+        self.readout_dim = self.dims[2]
 
         # cannot be run as a child class
         assert self.__class__.__name__ != "BaseMask", "BaseMask cannot be run as a child class"
@@ -31,10 +32,10 @@ class BaseMask():
         assert isinstance(self.input_dim, int), "input_dim must be int"
         assert self.input_dim > 0, "input_dim must be positive"
 
-        # check output_dim
-        assert self.output_dim is not None, "output_dim must be defined"
-        assert isinstance(self.output_dim, int), "output_dim must be int"
-        assert self.output_dim > 0, "output_dim must be positive"
+        # check readout_dim
+        assert self.readout_dim is not None, "readout_dim must be defined"
+        assert isinstance(self.readout_dim, int), "readout_dim must be int"
+        assert self.readout_dim > 0, "readout_dim must be positive"
 
     def _generate_masks(self):
         """
@@ -62,27 +63,27 @@ class BaseMask():
         """
         raise NotImplementedError
 
-    def get_input_idx(self):
+    def get_input_indices(self):
         """
         Return the indices of neurons that receive input
         """
         raise NotImplementedError
 
-    def get_non_input_idx(self):
+    def get_non_input_indices(self):
         """
         Return the indices of neurons that do not receive input
         """
         raise NotImplementedError
 
-    def get_readout_idx(self):
-        """ Return the indices of neurons that send output """
+    def get_readout_indices(self):
+        """ Return the indices of neurons that send readout """
         raise NotImplementedError
 
     def get_areas(self):
         """ Return the number of areas """
         raise NotImplementedError
 
-    def get_area_idx(self, area):
+    def get_area_indices(self, area):
         """ Return the indices of neurons in area """
         raise NotImplementedError
 
@@ -112,3 +113,14 @@ class BaseMask():
         assert self.hidden_mask is not None, "hidden_mask is not generated"
         assert self.readout_mask is not None, "readout_mask is not generated"
         return [self.input_mask.T, self.hidden_mask.T, self.readout_mask.T]
+
+    def get_specs(self):
+        return {
+            "dims": self.dims,
+            "hidden_size": self.hidden_size,
+            "input_dim": self.input_dim,
+            "readout_dim": self.readout_dim
+        }
+
+    def print_specs(self):
+        print_dict(f"{self.__class__.__name__} Specs", self.get_specs())

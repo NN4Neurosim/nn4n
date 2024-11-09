@@ -27,6 +27,7 @@ class CompositeLoss(nn.Module):
             'state_pred': StatePredictionLoss,
             'entropy': EntropyLoss,
             'mse': nn.MSELoss,
+            'hebbian': HebbianLoss,
         }
         torch_losses = ['mse']
         
