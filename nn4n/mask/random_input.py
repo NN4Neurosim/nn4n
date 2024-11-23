@@ -2,6 +2,7 @@ import numpy as np
 from nn4n.mask.base_mask import BaseMask
 from nn4n.utils.help_functions import print_dict
 
+
 class RandomInput(BaseMask):
     def __init__(self, **kwargs):
         """
@@ -32,18 +33,21 @@ class RandomInput(BaseMask):
         assert 0 <= self.input_spar <= 1, "input_spar must be between 0 and 1"
 
         # check readout_spar
-        assert isinstance(self.readout_spar, float), "readout_spar must be float"
+        assert isinstance(self.readout_spar,
+                          float), "readout_spar must be float"
         assert 0 <= self.readout_spar <= 1, "readout_spar must be between 0 and 1"
 
         # if not overlap, check if input_spar + readout_spar <= 1
         if not self.overlap:
-            assert self.input_spar + self.readout_spar <= 1, "input_spar + readout_spar must be less than 1 if overlap is True"
+            assert self.input_spar + \
+                self.readout_spar <= 1, "input_spar + readout_spar must be less than 1 if overlap is True"
 
     def _generate_hidden_mask(self):
         """
         Generate the mask for the hidden layer
         """
-        self.hidden_mask = np.random.uniform(0, 1, (self.hidden_size, self.hidden_size))
+        self.hidden_mask = np.random.uniform(
+            0, 1, (self.hidden_size, self.hidden_size))
         self.hidden_mask[self.hidden_mask > self.hidden_spar] = 0
         self.hidden_mask[self.hidden_mask > 0] = 1
 
@@ -51,23 +55,29 @@ class RandomInput(BaseMask):
         """
         Generate the mask for the input layer
         """
-        self.input_idx = np.random.choice(self.hidden_size, int(self.hidden_size * self.input_spar), replace=False)
-        self.non_input_idx = np.setdiff1d(np.arange(self.hidden_size), self.input_idx)
+        self.input_idx = np.random.choice(self.hidden_size, int(
+            self.hidden_size * self.input_spar), replace=False)
+        self.non_input_idx = np.setdiff1d(
+            np.arange(self.hidden_size), self.input_idx)
         self.input_mask = np.zeros((self.hidden_size, self.input_dim))
-        self.input_mask[np.ix_(self.input_idx, np.arange(self.input_dim))] = self._generate_sparse_matrix(len(self.input_idx), self.input_dim, 1)
+        self.input_mask[np.ix_(self.input_idx, np.arange(
+            self.input_dim))] = self._generate_sparse_matrix(len(self.input_idx), self.input_dim, 1)
 
     def _generate_readout_mask(self):
         """
         Generate the mask for the readout layer
         """
         if self.overlap:
-            self.readout_idx = np.random.choice(self.hidden_size, int(self.hidden_size * self.readout_spar), replace=False)
+            self.readout_idx = np.random.choice(self.hidden_size, int(
+                self.hidden_size * self.readout_spar), replace=False)
         else:
-            self.readout_idx = np.random.choice(self.non_input_idx, int(self.hidden_size * self.readout_spar), replace=False)
+            self.readout_idx = np.random.choice(self.non_input_idx, int(
+                self.hidden_size * self.readout_spar), replace=False)
 
         self.readout_mask = np.zeros((self.readout_dim, self.hidden_size))
         self.readout_mask[np.ix_(np.arange(self.readout_dim), self.readout_idx)] = \
-            self._generate_sparse_matrix(self.readout_dim, len(self.readout_idx), 1)
+            self._generate_sparse_matrix(
+                self.readout_dim, len(self.readout_idx), 1)
 
     def get_input_indices(self):
         """

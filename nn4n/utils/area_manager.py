@@ -1,11 +1,13 @@
 import numpy as np
 
+
 def check_init(func):
     def wrapper(self, *args, **kwargs):
         if self._area_indices is None:
             raise ValueError("Area indices are not initialized")
         return func(self, *args, **kwargs)
     return wrapper
+
 
 class AreaManager:
     def __init__(self, area_indices=None, batch_first=True):

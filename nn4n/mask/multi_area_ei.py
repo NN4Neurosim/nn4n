@@ -2,8 +2,10 @@ import numpy as np
 from .multi_area import MultiArea
 from nn4n.utils.help_functions import print_dict
 
+
 class MultiAreaEI(MultiArea):
     """ Multi-area network with ei constraints mask """
+
     def __init__(self, **kwargs):
         """
         NOTE: On top of the keywards required for MultiArea:
@@ -16,7 +18,8 @@ class MultiAreaEI(MultiArea):
         super().__init__(**kwargs)
         # initialize parameters
         self.exc_pct = kwargs.get("exc_pct", 0.8)
-        self.inter_area_connections = kwargs.get("inter_area_connections", [True, True, True, True])
+        self.inter_area_connections = kwargs.get(
+            "inter_area_connections", [True, True, True, True])
         self.inh_readout = kwargs.get("inh_readout", True)
         # check parameters and generate mask
         self._check_parameters()
@@ -30,7 +33,8 @@ class MultiAreaEI(MultiArea):
         assert isinstance(self.inter_area_connections, list) and len(self.inter_area_connections) == 4, \
             "inter_area_connections must be list of 4 boolean"
         for i in range(4):
-            assert isinstance(self.inter_area_connections[i], bool), "inter_area_connections must be list of 4 boolean"
+            assert isinstance(
+                self.inter_area_connections[i], bool), "inter_area_connections must be list of 4 boolean"
 
     def _generate_mask(self):
         """
@@ -65,29 +69,35 @@ class MultiAreaEI(MultiArea):
         if not self.inter_area_connections[0]:
             for i in range(self.n_areas):
                 for j in range(i+1, self.n_areas):
-                    self.hidden_mask[np.ix_(self.excitatory_neurons[i], self.excitatory_neurons[j])] = 0
-                    self.hidden_mask[np.ix_(self.excitatory_neurons[j], self.excitatory_neurons[i])] = 0
+                    self.hidden_mask[np.ix_(
+                        self.excitatory_neurons[i], self.excitatory_neurons[j])] = 0
+                    self.hidden_mask[np.ix_(
+                        self.excitatory_neurons[j], self.excitatory_neurons[i])] = 0
 
         # remove exc_inh connections between areas
         if not self.inter_area_connections[1]:
             for i in range(self.n_areas):
                 for j in range(self.n_areas):
                     if i != j:
-                        self.hidden_mask[np.ix_(self.inhibitory_neurons[i], self.excitatory_neurons[j])] = 0
+                        self.hidden_mask[np.ix_(
+                            self.inhibitory_neurons[i], self.excitatory_neurons[j])] = 0
 
         # remove inh_exc connections between areas
         if not self.inter_area_connections[2]:
             for i in range(self.n_areas):
                 for j in range(self.n_areas):
                     if i != j:
-                        self.hidden_mask[np.ix_(self.excitatory_neurons[i], self.inhibitory_neurons[j])] = 0
+                        self.hidden_mask[np.ix_(
+                            self.excitatory_neurons[i], self.inhibitory_neurons[j])] = 0
 
         # remove inh_inh connections between areas
         if not self.inter_area_connections[3]:
             for i in range(self.n_areas):
                 for j in range(i+1, self.n_areas):
-                    self.hidden_mask[np.ix_(self.inhibitory_neurons[i], self.inhibitory_neurons[j])] = 0
-                    self.hidden_mask[np.ix_(self.inhibitory_neurons[j], self.inhibitory_neurons[i])] = 0
+                    self.hidden_mask[np.ix_(
+                        self.inhibitory_neurons[i], self.inhibitory_neurons[j])] = 0
+                    self.hidden_mask[np.ix_(
+                        self.inhibitory_neurons[j], self.inhibitory_neurons[i])] = 0
 
         # delete connections from inhibitory neurons to readout layers
         if not self.inh_readout:

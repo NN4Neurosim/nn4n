@@ -14,7 +14,8 @@ def print_dict(title, params):
     print(f"{title}: ")
     maxlen = max([len(s) for s in params.keys()])
     for k in params.keys():
-        print(3*' ' + '| {}:{}{}'.format(k, (maxlen - len(k) + 1)*' ', params[k]))
+        print(3*' ' + '| {}:{}{}'.format(k,
+              (maxlen - len(k) + 1)*' ', params[k]))
     print()
 
 
@@ -51,7 +52,7 @@ def plot_connectivity_matrix_dist(w, title, colorbar=True, ignore_zeros=False):
     """
     if type(w) == torch.Tensor:
         w = w.detach().numpy()
-    
+
     r = np.max(np.abs(w))
 
     img_width, hist_height = 6, 2

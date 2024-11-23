@@ -1,7 +1,7 @@
+from test_utils import get_weight_info, check_activation
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from test_utils import get_weight_info, check_activation
 
 
 # Checker functions
@@ -19,17 +19,21 @@ def check_model_params(model, pm):
     assert model.recurrent_layer.hidden_layer.self_connections == pm["self_connections"], \
         AssertionError(f'Self connections should be {pm["self_connections"]}')
     assert model.recurrent_layer.hidden_layer.positivity_constraints == pm["positivity_constraints"], \
-        AssertionError(f'Positivity contraint should be {pm["positivity_constraints"]}')
+        AssertionError(f'Positivity contraint should be {
+                       pm["positivity_constraints"]}')
 
     input_info = get_weight_info(model.recurrent_layer.input_layer.weight)
     hidden_info = get_weight_info(model.recurrent_layer.hidden_layer.weight)
     readout_info = get_weight_info(model.readout_layer.weight)
     assert input_info["dist"] == pm["layer_distributions"][0], \
-        AssertionError(f'Input layer weight should be {pm["layer_distributions"][0]}')
+        AssertionError(f'Input layer weight should be {
+                       pm["layer_distributions"][0]}')
     assert hidden_info["dist"] == pm["layer_distributions"][1], \
-        AssertionError(f'Hidden layer weight should be {pm["layer_distributions"][1]}')
+        AssertionError(f'Hidden layer weight should be {
+                       pm["layer_distributions"][1]}')
     assert readout_info["dist"] == pm["layer_distributions"][2], \
-        AssertionError(f'Output layer weight should be {pm["layer_distributions"][2]}')
+        AssertionError(f'Output layer weight should be {
+                       pm["layer_distributions"][2]}')
 
     assert model.recurrent_layer.input_layer.use_bias == pm["layer_biases"][0], \
         AssertionError(f'Input layer bias should be {pm["layer_biases"][0]}')
@@ -41,7 +45,9 @@ def check_model_params(model, pm):
     if not pm["self_connections"]:
         # only check if self connections are not allowed
         assert hidden_info["self_connections"] == pm["self_connections"], \
-            AssertionError(f'Hidden layer should have self connections {pm["self_connections"]}')
+            AssertionError(f'Hidden layer should have self connections {
+                           pm["self_connections"]}')
 
     assert check_activation(pm["activation"], model.recurrent_layer.activation), \
-        AssertionError(f'Hidden layer activation should be {pm["activation"]}, output value error')
+        AssertionError(f'Hidden layer activation should be {
+                       pm["activation"]}, output value error')

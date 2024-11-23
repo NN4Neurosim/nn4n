@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class RNNConnectivityLoss(nn.Module):
     def __init__(self, layer, metric='fro', **kwargs):
         super().__init__()
@@ -17,7 +18,8 @@ class RNNConnectivityLoss(nn.Module):
                 model.readout_layer.weight
             ]
 
-            loss = torch.sum(torch.stack([self._compute_norm(weight) for weight in weights]))
+            loss = torch.sum(torch.stack(
+                [self._compute_norm(weight) for weight in weights]))
             return loss
         elif self.layer == 'input':
             return self._compute_norm(model.recurrent_layer.input_layer.weight)

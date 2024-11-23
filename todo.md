@@ -13,3 +13,16 @@
 - [ ] Need some kind of function or managing class to perform the forward pass. Like `model({"area_1": input_1, "area_2": input_2})`.
 - [ ] Remove the deprecation warnings.
 - [ ] The `get_area` related of functions in the mask module are a bit un-intuitive. Might be good to rename them.
+- [ ] Consider restructure.
+- [ ] Add `print_specs`.
+- [ ] Better to construct network layer by layer.
+- [ ] Make `area_manager` an instance of the model?
+- [x] Remove `relaxed_states` in the RNN
+- [x] Remove the init_state.
+- [ ] Make the layer to be either initialized with a dictionary or directly with the layer.
+- [ ] For some reason, all the masks are set with a transpose. For instance: `self.ei_mask = layer_struct['ei_mask'].T`. Not a big issue, but good to check or just simplify
+- [ ] Remove the `plasticity` scales
+- [ ] Make the `weights` and `biases` to be singular.
+
+## RNN Composer Module
+- [ ] Think about how store the entire model. Currently thinking about making a checkpoint function for each layer.

@@ -10,6 +10,7 @@ import torch.nn as nn
 
 from nn4n.model import CTRNN
 
+
 class RNNLoss(nn.Module):
     """
     Loss function for RNN
@@ -27,9 +28,10 @@ class RNNLoss(nn.Module):
             loss (to evenly distribute firing rate across neurons), default: 0
         - lambda_fr_cv: coefficient for the coefficient of variation of firing
             rate loss (to evenly distribute firing rate across neurons), default: 0
-    
+
     Note that these firing rate does not automatically normalized to a similar magnitude
     """
+
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
@@ -92,7 +94,8 @@ class RNNLoss(nn.Module):
         This compute the L2 norm (for now) of the hidden states across all timesteps and batch_size
         Then take the square of the mean of the norm
         """
-        if not self.batch_first: states = states.transpose(0, 1)
+        if not self.batch_first:
+            states = states.transpose(0, 1)
         mean_fr = torch.mean(states, dim=(0, 1))
         # return torch.pow(torch.mean(states, dim=(0, 1)), 2).mean() # this might not be correct
         # return torch.norm(states, p='fro')**2/states.numel() # this might not be correct
@@ -107,7 +110,8 @@ class RNNLoss(nn.Module):
         Parameters:
         - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
         """
-        if not self.batch_first: states = states.transpose(0, 1)
+        if not self.batch_first:
+            states = states.transpose(0, 1)
         avg_fr = torch.mean(states, dim=(0, 1))
         return avg_fr.std()
 
@@ -120,7 +124,8 @@ class RNNLoss(nn.Module):
         Parameters:
         - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
         """
-        if not self.batch_first: states = states.transpose(0, 1)
+        if not self.batch_first:
+            states = states.transpose(0, 1)
         avg_fr = torch.mean(torch.sqrt(torch.square(states)), dim=(0, 1))
         return avg_fr.std()/avg_fr.mean()
 
@@ -131,7 +136,7 @@ class RNNLoss(nn.Module):
         Parameters:
             - pred: size=(-1, batch_size, 2), predicted labels
             - label: size=(-1, batch_size, 2), labels
-        
+
         where -1 is the sequence length
         """
         loss = [self.lambda_mse * torch.square(pred-label).mean()]

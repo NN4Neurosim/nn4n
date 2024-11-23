@@ -43,6 +43,7 @@ class MLP(BaseNN):
             if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
             that directly specifies the plasticity_masks
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -103,12 +104,19 @@ class MLP(BaseNN):
 
         self.biases = self._broadcast_values(self.biases, n_weights)
         self.weights = self._broadcast_values(self.weights, n_weights)
-        self.sparsity_masks = self._broadcast_values(self.sparsity_masks, n_weights, is_mask=True)
-        self.ei_masks = self._broadcast_values(self.ei_masks, n_weights, is_mask=True)
-        self.plasticity_masks = self._broadcast_values(self.plasticity_masks, n_weights, is_mask=True)
-        self.plasticity_masks = self._regularize_plas_masks(self.plasticity_masks, self.dims)
-        self.preact_noise = self._broadcast_values(self.preact_noise, n_weights-1)  # no noise for the readout & input layer
-        self.postact_noise = self._broadcast_values(self.postact_noise, n_weights-1)  # no noise for the readout & input layer
+        self.sparsity_masks = self._broadcast_values(
+            self.sparsity_masks, n_weights, is_mask=True)
+        self.ei_masks = self._broadcast_values(
+            self.ei_masks, n_weights, is_mask=True)
+        self.plasticity_masks = self._broadcast_values(
+            self.plasticity_masks, n_weights, is_mask=True)
+        self.plasticity_masks = self._regularize_plas_masks(
+            self.plasticity_masks, self.dims)
+        # no noise for the readout & input layer
+        self.preact_noise = self._broadcast_values(
+            self.preact_noise, n_weights-1)
+        self.postact_noise = self._broadcast_values(
+            self.postact_noise, n_weights-1)  # no noise for the readout & input layer
 
     def _regularize_plas_masks(self, masks, target_dim):
         if any(mask is not None for mask in masks):
@@ -121,21 +129,27 @@ class MLP(BaseNN):
             if min_plas != max_plas:
                 params = []
                 for i in range(3):
-                    if masks[i] is None: params.append(torch.ones(target_dim[i]))
+                    if masks[i] is None:
+                        params.append(torch.ones(target_dim[i]))
                     else:
-                        _temp_mask = (masks[i] - min_plas) / (max_plas - min_plas)
-                        params.append(self._check_array(_temp_mask, "plasticity_masks", target_dim[i], i))
+                        _temp_mask = (masks[i] - min_plas) / \
+                            (max_plas - min_plas)
+                        params.append(self._check_array(
+                            _temp_mask, "plasticity_masks", target_dim[i], i))
                 # check the total number of unique plasticity values
-                plasticity_scales = torch.unique(torch.cat([param.flatten() for param in params]))
+                plasticity_scales = torch.unique(
+                    torch.cat([param.flatten() for param in params]))
                 if len(plasticity_scales) > 5:
-                    raise ValueError("The number of unique plasticity values cannot be larger than 5")
+                    raise ValueError(
+                        "The number of unique plasticity values cannot be larger than 5")
                 return params
         return [torch.ones(target_dim[i]) for i in range(3)]
 
     def _standardize_masks(self, masks):
         assert masks is not None, "Masks cannot be None"
         if len(masks) != len(self.dims):
-            raise ValueError("The length of the mask must be the same as the length of dims")
+            raise ValueError(
+                "The length of the mask must be the same as the length of dims")
 
         for i in range(len(masks)):
             if masks[i] is None:
@@ -147,7 +161,7 @@ class MLP(BaseNN):
                 # check shape is the same as dims
                 if masks[i].shape != (self.dims[i], self.dims[i+1]):
                     raise ValueError(f"Mask shape mismatch, expected: {(self.dims[i], self.dims[i+1])}, got: {masks[i].shape}")
-    
+
     def apply_plasticity(self):
         pass
 
@@ -178,9 +192,10 @@ class MLP(BaseNN):
                 break
             x = layer(x)
             x += torch.randn_like(x) * self.preact_noise[i]
-            x = self.activation(x) + torch.randn_like(x) * self.postact_noise[i]
+            x = self.activation(x) + torch.randn_like(x) * \
+                self.postact_noise[i]
             hidden_states.append(x)
-        
+
         return x, hidden_states
 
     def print_layers(self):

@@ -4,66 +4,28 @@ import numpy as np
 import warnings
 
 from nn4n.model import BaseNN
-from nn4n.layer import RecurrentLayer
-from nn4n.layer import LinearLayer
 
-param_list = ['dims', 'preact_noise', 'postact_noise', 'activation',
-              'tau', 'dt', 'weights', 'biases', 'sparsity_masks',
-              'ei_masks', 'plasticity_masks']
+param_list = ['dims', 'preact_noise', 'postact_noise',
+              'activation', 'tau', 'dt', 'weights',
+              'biases']
 
-dep_param_list = ['input_dim', 'output_dim', 'hidden_size', 'ei_balance', 'learnable',
-                  'init_state', 'allow_negative', 'use_dale', 'new_synapses', 'positivity_constraints',
-                  'sparsity_constraints', 'layer_distributions', 'layer_biases',
-                  'layer_masks', 'scaling', 'self_connections']
+dep_param_list = ['init_state', 'sparsity_masks',
+                  'ei_masks', 'plasticity_masks']
 
 
-class CTRNN(BaseNN):
-    """
-    Recurrent network model
+class RNN(BaseNN):
+    def __init__(self, input_layer, hidden_layer, output_layer=None):
+        """
+        Recurrent Neural Network
 
-    Keyword Arguments:
-        - dims: dimensions of the network, default: [1, 100, 1]
-        - preact_noise: noise added to pre-activation, default: 0
-        - postact_noise: noise added to post-activation, default: 0
-        - activation: activation function, default: "relu", can be "relu", "sigmoid", "tanh", "retanh"
-        - dt: time step, default: 10
-        - tau: time constant, default: 100
-        - batch_first: whether the input is batch first or not, default: True
-        - biases: use bias or not for each layer, a list of 3 values or a single value
-            if a single value is passed, it will be broadcasted to a list of 3 values, it can be:
-            - None: no bias
-            - 'zero' or 0: bias initialized to 0
-            - 'normal': bias initialized from a normal distribution
-            - 'uniform': bias initialized from a uniform distribution
-            if a list of 3 values is passed, each value can be either the same as above or
-            a numpy array/torch tensor that directly specifies the bias
-        - weights: distribution of weights for each layer, a list of 3 strings or
-            a single string, if a single string is passed, it will be broadcasted to a list of 3 strings
-            it can be:
-            - 'normal': weights initialized from a normal distribution
-            - 'uniform': weights initialized from a uniform distribution
-            if a list of 3 values is passed, each string can be either the same as above or
-            a numpy array/torch tensor that directly specifies the weights
-        - sparsity_masks: use sparsity_masks or not, a list of 3 values or a single None
-            if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
-            that directly specifies the sparsity_masks
-        - ei_masks: use ei_masks or not, a list of 3 values or a single None
-            if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
-            that directly specifies the ei_masks
-        - plasticity_masks: use plasticity_masks or not, a list of 3 values or a single None
-            if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
-            that directly specifies the plasticity_masks
-        - synapse_growth_masks: use synapse_growth_masks or not, a list of 3 values or a single None
-            if a single None is passed, it will be broadcasted to a list of 3 None
-            if a list of 3 values is passed, each value can be either None or a numpy array/torch tensor
-            that directly specifies the probability of growing a synapse at the selected location if there is no synapse.
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        Parameters:
+            - input_layer: input layer
+            - hidden_layer: hidden layer
+            - output_layer: output layer, optional
+        """
+        self.input_layer = input_layer
+        self.hidden_layer = hidden_layer
+        self.output_layer = output_layer
 
     # INITIALIZATION
     # ======================================================================================
@@ -77,13 +39,10 @@ class CTRNN(BaseNN):
         self.weights = kwargs.pop("weights", 'uniform')
         self.batch_first = kwargs.pop("batch_first", True)
 
-        # network dynamics parameters
-        self.sparsity_masks = kwargs.pop("sparsity_masks", None)
-        self.ei_masks = kwargs.pop("ei_masks", None)
-        self.plasticity_masks = kwargs.pop("plasticity_masks", None)
-
         # temp storage
+        # TODO: move to recurrent layer
         self.preact_noise = kwargs.pop("preact_noise", 0)
+        # TODO: move to recurrent layer
         self.postact_noise = kwargs.pop("postact_noise", 0)
 
         # suppress warnings
@@ -97,7 +56,7 @@ class CTRNN(BaseNN):
 
         # layers
         self.recurrent_layer = RecurrentLayer(layer_struct=rc_struct)
-        self.readout_layer = LinearLayer.from_dict(layer_struct=out_struct)
+        self.readout_layer = LinearLayer(layer_struct=out_struct)
 
     @property
     def layers(self):
@@ -107,68 +66,6 @@ class CTRNN(BaseNN):
             self.readout_layer
         ]
         return layer_list
-
-    def _handle_warnings(self, kwargs):
-        """ Handle deprecated parameters """
-        slevel = 5  # output the warning at the level where kwargs is passed
-        # check if there is any deprecated parameter
-        if 'input_dim' in kwargs or 'output_dim' in kwargs or 'hidden_size' in kwargs:
-            if 'dims' not in kwargs:
-                self.dims = [kwargs.pop("input_dim", 1), kwargs.pop(
-                    "hidden_size", 100), kwargs.pop("output_dim", 1)]
-            warnings.warn("input_dim, output_dim, hidden_size are deprecated. Use dims instead.",
-                          UserWarning, stacklevel=slevel)
-        if 'init_state' in kwargs:
-            warnings.warn("init_state is deprecated. Directly pass the initial state in the forward function.",
-                          UserWarning, stacklevel=slevel)
-        if 'ei_balance' in kwargs:
-            warnings.warn("ei_balance is deprecated. No ei_balance specification is needed.",
-                          UserWarning, stacklevel=slevel)
-        if 'allow_negative' in kwargs:
-            warnings.warn("allow_negative is deprecated. No allow_negative specification is needed.",
-                          UserWarning, stacklevel=slevel)
-        if 'use_dale' in kwargs:
-            warnings.warn("use_dale is deprecated. Use ei_masks instead. No Dale's law is applied.",
-                          UserWarning, stacklevel=slevel)
-        if 'new_synapses' in kwargs:
-            warnings.warn("new_synapses is deprecated. Use sparsity_masks instead. No synapse constraint is applied.",
-                          UserWarning, stacklevel=slevel)
-        if 'learnable' in kwargs:
-            warnings.warn("learnable is deprecated. Use `plasticity_masks` instead.\n"
-                          "   If you wish to define the learning behavior of the weights, generate a matrix "
-                          "with the desired learning rate and pass it to the model via `plasticity_masks`.", UserWarning, stacklevel=slevel)
-        if 'positivity_constraints' in kwargs:
-            warnings.warn("positivity_constraints is deprecated. Use `ei_masks` instead.\n"
-                          "   If you wish to constraint the positivity of the weights, generate a matrix with the "
-                          "desired positivity/netagivity and pass it to the model via `ei_masks`.", UserWarning, stacklevel=slevel)
-        if 'sparsity_constraints' in kwargs:
-            warnings.warn("sparsity_constraints is deprecated. Use sparsity_masks instead.\n"
-                          "   If you wish to constraint the sparsity of the weights, mask the element that you wish "
-                          "to constrain to zero and pass the mask to the model via `sparsity_masks`.", UserWarning, stacklevel=slevel)
-        if 'scaling' in kwargs:
-            warnings.warn("scaling is deprecated. Use `weights` instead.\n"
-                          "   If you wish to scale the weights, generate the weights with the desired "
-                          "scaling and pass them to the model via `weights`.", UserWarning, stacklevel=slevel)
-        if 'self_connections' in kwargs:
-            warnings.warn("self_connections is deprecated. Use sparsity_masks instead.\n"
-                          "   If you wish to constraint the sparsity of the weights, mask the element that you wish, "
-                          "i.e. the diagonal elements, to constrain to zero and pass the mask to the model via `sparsity_masks`.", UserWarning, stacklevel=slevel)
-        if 'layer_distributions' in kwargs:
-            warnings.warn("layer_distributions is deprecated. Use `weights` instead.\n"
-                          "   The parameter `weights` inherits the functionality of `layer_distributions`."
-                          "Simply pass a list of distributions to `weights` and the model will generate the weights accordingly.", UserWarning, stacklevel=slevel)
-        if 'layer_biases' in kwargs:
-            warnings.warn("layer_biases is deprecated. Use `biases` instead.\n"
-                          "   The parameter `biases` inherits the functionality of `layer_biases`."
-                          "Simply pass a list of biases to `biases` and the model will generate the biases accordingly.", UserWarning, stacklevel=slevel)
-        if 'layer_masks' in kwargs:
-            warnings.warn("layer_masks is deprecated. Use `sparsity_masks`, `ei_masks`, and `plasticity_masks` instead.\n"
-                          "   The parameter `sparsity_masks`, `ei_masks`, and `plasticity_masks` inherits the functionality of `layer_masks`."
-                          "Simply pass a list of masks to `sparsity_masks`, `ei_masks`, and `plasticity_masks` and the model will generate the masks accordingly.", UserWarning, stacklevel=slevel)
-
-        for key in kwargs:
-            if not key in param_list and not key in dep_param_list:
-                print("unrecognized parameter: {}".format(key))
 
     def _check_masks(self, param, param_type, dims):
         """ General function to check different parameter types. """
@@ -181,7 +78,7 @@ class CTRNN(BaseNN):
             if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks", "biases"]:
                 param = [None] * 3
             else:
-                raise ValueError(f"{param_type} cannot be None when param_type is {param_type}")
+                raise ValueError(f"{param_type} cannot be None when param_type is {param_type}")  # weights
         elif param is not None and type(param) != list and param_type in ["weights"]:
             param = [param] * 3
 
@@ -191,8 +88,7 @@ class CTRNN(BaseNN):
             else:
                 param = [param] * 3
         if len(param) != 3:
-            raise ValueError(
-                f"{param_type} is/can not be broadcasted to a list of length 3")
+            raise ValueError(f"{param_type} is/can not be broadcasted to a list of length 3")
 
         # param_type are all legal because it is passed by non-user code
         if param_type == "plasticity_masks":
@@ -265,10 +161,8 @@ class CTRNN(BaseNN):
                 raise ValueError(
                     f"{param_type}[{index}] must be a numpy array of shape {dim}")
         else:
-            raise ValueError((
-                f"{param_type}[{index}] must be a string of 'uniform' or 'normal'"
-                f"or a numpy array/torch tensor with shape {dim}"
-            ))
+            raise ValueError(f"{param_type}[{index}] must be a string of 'uniform' or 'normal' \
+                or a numpy array/torch tensor with shape {dim}")
 
     def _check_parameters(self):
         """ Check parameters """
@@ -355,14 +249,15 @@ class CTRNN(BaseNN):
         # skip constraints if the model is not in training mode
         if self.training:
             self._enforce_constraints()
-        hidden_states = self.recurrent_layer(x, init_state)
+        hidden_states, relaxed_states = self.recurrent_layer(x, init_state)
         output = self.readout_layer(hidden_states.float())
 
         if not self.batch_first:
             output = output.transpose(0, 1)
             hidden_states = hidden_states.transpose(0, 1)
+            relaxed_states = relaxed_states.transpose(0, 1)
 
-        return output, {'h': hidden_states}
+        return output, {'h': hidden_states, 'r': relaxed_states}
 
     def train(self):
         """

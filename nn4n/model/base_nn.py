@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 
+
 class BaseNN(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
         assert type(self) != BaseNN, "BaseNN cannot be run directly"
         self.kwargs_checkpoint = kwargs.copy()
         self._initialize(**kwargs)
-    
+
     def _initialize(self, **kwargs):
         """ initialize the model """
         pass

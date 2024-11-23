@@ -2,6 +2,7 @@ import numpy as np
 from nn4n.mask.base_mask import BaseMask
 from nn4n.utils.help_functions import print_dict
 
+
 class MultiArea(BaseMask):
     def __init__(self, **kwargs):
         """
@@ -11,7 +12,8 @@ class MultiArea(BaseMask):
         """
         super().__init__(**kwargs)
         self.n_areas = kwargs.get("n_areas", 2)
-        self.area_connectivities = kwargs.get("area_connectivities", [0.1, 0.1])
+        self.area_connectivities = kwargs.get(
+            "area_connectivities", [0.1, 0.1])
         self.input_areas = kwargs.get("input_areas", None)
         self.readout_areas = kwargs.get("readout_areas", None)
 
@@ -30,15 +32,19 @@ class MultiArea(BaseMask):
             # create a node assignment list
             node_assigment = np.zeros(self.n_areas, dtype=np.ndarray)
             for i in range(self.n_areas):
-                node_assigment[i] = np.arange(self.hidden_size // self.n_areas) + i * (self.hidden_size // self.n_areas)
+                node_assigment[i] = np.arange(
+                    self.hidden_size // self.n_areas) + i * (self.hidden_size // self.n_areas)
             self.node_assigment = node_assigment
         elif isinstance(self.n_areas, list):
-            assert sum(self.n_areas) == self.hidden_size, "sum of n_areas must be equal to hidden_size"
-            assert np.all(np.array(self.n_areas) > 0), "elements of n_areas must be larger than 0"
+            assert sum(
+                self.n_areas) == self.hidden_size, "sum of n_areas must be equal to hidden_size"
+            assert np.all(np.array(self.n_areas) >
+                          0), "elements of n_areas must be larger than 0"
             # create a node assignment list
             node_assigment = np.zeros(len(self.n_areas), dtype=np.ndarray)
             for i in range(len(self.n_areas)):
-                node_assigment[i] = np.arange(self.n_areas[i]) + sum(self.n_areas[:i])
+                node_assigment[i] = np.arange(
+                    self.n_areas[i]) + sum(self.n_areas[:i])
             self.node_assigment = node_assigment
             self.n_areas = len(self.n_areas)
         else:
@@ -52,15 +58,20 @@ class MultiArea(BaseMask):
         assert np.all(0 <= np.array(self.area_connectivities)) and np.all(np.array(self.area_connectivities) <= 1), \
             "area_connectivities must be between 0 and 1"
         if isinstance(self.area_connectivities, list):
-            assert len(self.area_connectivities) in [2, 3], "length of area_connectivities must be 2 or 3"
+            assert len(self.area_connectivities) in [
+                2, 3], "length of area_connectivities must be 2 or 3"
             # transform list to np.ndarray
             area_connectivities = np.zeros((self.n_areas, self.n_areas))
-            area_connectivities[np.tril_indices(self.n_areas, -1)] = self.area_connectivities[0]
-            area_connectivities[np.triu_indices(self.n_areas, 1)] = self.area_connectivities[1]
-            area_connectivities[np.diag_indices(self.n_areas)] = self.area_connectivities[2] if len(self.area_connectivities) == 3 else 1
+            area_connectivities[np.tril_indices(
+                self.n_areas, -1)] = self.area_connectivities[0]
+            area_connectivities[np.triu_indices(
+                self.n_areas, 1)] = self.area_connectivities[1]
+            area_connectivities[np.diag_indices(self.n_areas)] = self.area_connectivities[2] if len(
+                self.area_connectivities) == 3 else 1
             self.area_connectivities = area_connectivities
         elif isinstance(self.area_connectivities, np.ndarray):
-            assert self.area_connectivities.shape == (self.n_areas, self.n_areas), "shape of area_connectivities must be (n_areas, n_areas)"
+            assert self.area_connectivities.shape == (
+                self.n_areas, self.n_areas), "shape of area_connectivities must be (n_areas, n_areas)"
         else:
             assert False, "area_connectivities must be list or np.ndarray"
 
@@ -69,12 +80,14 @@ class MultiArea(BaseMask):
             self.input_areas = np.arange(self.n_areas)
         else:
             self.input_areas = np.array(self.input_areas)
-            assert np.all(0 <= self.input_areas) and np.all(self.input_areas < self.n_areas), "input_areas must be between 0 and n_areas"
+            assert np.all(0 <= self.input_areas) and np.all(
+                self.input_areas < self.n_areas), "input_areas must be between 0 and n_areas"
         if self.readout_areas is None:
             self.readout_areas = np.arange(self.n_areas)
         else:
             self.readout_areas = np.array(self.readout_areas)
-            assert np.all(0 <= self.readout_areas) and np.all(self.readout_areas < self.n_areas), "readout_areas must be between 0 and n_areas"
+            assert np.all(0 <= self.readout_areas) and np.all(
+                self.readout_areas < self.n_areas), "readout_areas must be between 0 and n_areas"
 
     def _generate_hidden_mask(self):
         """ Generate the mask for the hidden layer """
@@ -85,7 +98,8 @@ class MultiArea(BaseMask):
                     area_i_size = len(self.node_assigment[i])
                     area_j_size = len(self.node_assigment[j])
                     hidden_mask[np.ix_(self.node_assigment[i], self.node_assigment[j])] = \
-                        self._generate_sparse_matrix(area_i_size, area_j_size, self.area_connectivities[i, j])
+                        self._generate_sparse_matrix(
+                            area_i_size, area_j_size, self.area_connectivities[i, j])
         self.hidden_mask = hidden_mask
 
     def _generate_input_mask(self):
@@ -93,7 +107,8 @@ class MultiArea(BaseMask):
         input_mask = np.zeros((self.hidden_size, self.input_dim))
         for i in self.input_areas:
             area_i_size = len(self.node_assigment[i])
-            input_mask[np.ix_(self.node_assigment[i], np.arange(self.input_dim))] = self._generate_sparse_matrix(area_i_size, self.input_dim, 1)
+            input_mask[np.ix_(self.node_assigment[i], np.arange(
+                self.input_dim))] = self._generate_sparse_matrix(area_i_size, self.input_dim, 1)
         self.input_mask = input_mask
 
     def _generate_readout_mask(self):
@@ -101,7 +116,8 @@ class MultiArea(BaseMask):
         readout_mask = np.zeros((self.readout_dim, self.hidden_size))
         for i in self.readout_areas:
             area_i_size = len(self.node_assigment[i])
-            readout_mask[np.ix_(np.arange(self.readout_dim), self.node_assigment[i])] = self._generate_sparse_matrix(self.readout_dim, area_i_size, 1)
+            readout_mask[np.ix_(np.arange(self.readout_dim), self.node_assigment[i])
+                         ] = self._generate_sparse_matrix(self.readout_dim, area_i_size, 1)
         self.readout_mask = readout_mask
 
     def get_input_indices(self):

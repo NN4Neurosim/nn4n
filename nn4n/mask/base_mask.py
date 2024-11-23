@@ -2,8 +2,10 @@ import numpy as np
 import nn4n.utils as utils
 from nn4n.utils.help_functions import print_dict
 
+
 class BaseMask():
     """ Base class for all masks """
+
     def __init__(self, **kwargs):
         """
         @kwarg hidden_size: number of hidden neurons in total, must be defined
@@ -97,15 +99,20 @@ class BaseMask():
 
     def plot_masks(self):
         if self.input_mask is not None:
-            input_mask_ = self.input_mask if self.input_mask.shape[1] > self.input_mask.shape[0] else self.input_mask.T
-            utils.plot_connectivity_matrix(input_mask_, "Input Layer Mask", False)
+            input_mask_ = self.input_mask if self.input_mask.shape[
+                1] > self.input_mask.shape[0] else self.input_mask.T
+            utils.plot_connectivity_matrix(
+                input_mask_, "Input Layer Mask", False)
 
         if self.hidden_mask is not None:
-            utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Mask", False)
+            utils.plot_connectivity_matrix(
+                self.hidden_mask, "Hidden Layer Mask", False)
 
         if self.readout_mask is not None:
-            readout_mask_ = self.readout_mask if self.readout_mask.shape[1] > self.readout_mask.shape[0] else self.readout_mask.T
-            utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Mask", False)
+            readout_mask_ = self.readout_mask if self.readout_mask.shape[
+                1] > self.readout_mask.shape[0] else self.readout_mask.T
+            utils.plot_connectivity_matrix(
+                readout_mask_, "Readout Layer Mask", False)
 
     def get_masks(self):
         """ Return the masks """

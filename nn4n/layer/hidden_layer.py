@@ -8,7 +8,7 @@ import nn4n.utils as utils
 class HiddenLayer(nn.Module):
     """
     Hidden layer of the RNN. The layer is initialized by passing specs in layer_struct.
-    
+
     Required keywords in layer_struct:
         - input_dim: input dimension
         - output_dim: output dimension
@@ -18,6 +18,7 @@ class HiddenLayer(nn.Module):
         - ei_mask: mask for Dale's law
         - plasticity_mask: mask for plasticity
     """
+
     def __init__(self, layer_struct, **kwargs):
         super().__init__()
         # some params are for verbose printing
@@ -26,18 +27,21 @@ class HiddenLayer(nn.Module):
         self.ei_mask = layer_struct['ei_mask'].T if layer_struct['ei_mask'] is not None else None
         self.sparsity_mask = layer_struct['sparsity_mask'].T if layer_struct['sparsity_mask'] is not None else None
         self.plasticity_mask = layer_struct['plasticity_mask'].T if layer_struct['plasticity_mask'] is not None else None
-        self.plasticity_scales = torch.unique(self.plasticity_mask) # all unique plasticity values in the plasticity mask
-        
+        # all unique plasticity values in the plasticity mask
+        self.plasticity_scales = torch.unique(self.plasticity_mask)
+
         # generate weights and bias
         self.weight = self._generate_weight(layer_struct['weights'])
         self.bias = self._generate_bias(layer_struct['biases'])
-        
+
         # initialize constraints
         self._init_constraints()
 
         # parameterize the weights and bias
-        self.weight = nn.Parameter(self.weight, requires_grad=layer_struct['weights'] is not None)
-        self.bias = nn.Parameter(self.bias, requires_grad=layer_struct['biases'] is not None)
+        self.weight = nn.Parameter(
+            self.weight, requires_grad=layer_struct['weights'] is not None)
+        self.bias = nn.Parameter(
+            self.bias, requires_grad=layer_struct['biases'] is not None)
 
     # INITIALIZATION
     # ======================================================================================
@@ -49,7 +53,8 @@ class HiddenLayer(nn.Module):
             w = torch.rand(self.output_dim, self.input_dim) * sqrt_k
             w = w * 2 - sqrt_k
         elif weight_init == 'normal':
-            w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(torch.tensor(self.input_dim))
+            w = torch.randn(self.output_dim, self.input_dim) / \
+                torch.sqrt(torch.tensor(self.input_dim))
         elif weight_init == 'zero':
             w = torch.zeros((self.output_dim, self.input_dim))
         elif type(weight_init) == np.ndarray:
@@ -66,7 +71,8 @@ class HiddenLayer(nn.Module):
             b = torch.rand(self.output_dim) * sqrt_k
             b = b * 2 - sqrt_k
         elif bias_init == 'normal':
-            b = torch.randn(self.output_dim) / torch.sqrt(torch.tensor(self.input_dim))
+            b = torch.randn(self.output_dim) / \
+                torch.sqrt(torch.tensor(self.input_dim))
         elif bias_init == 'zero' or bias_init == None:
             b = torch.zeros(self.output_dim)
         elif type(bias_init) == np.ndarray:
@@ -83,8 +89,10 @@ class HiddenLayer(nn.Module):
         if self.sparsity_mask is not None:
             self.weight *= self.sparsity_mask
         if self.ei_mask is not None:
-            self.weight[self.ei_mask == 1] = torch.clamp(self.weight[self.ei_mask == 1], min=0)
-            self.weight[self.ei_mask == -1] = torch.clamp(self.weight[self.ei_mask == -1], max=0)
+            self.weight[self.ei_mask == 1] = torch.clamp(
+                self.weight[self.ei_mask == 1], min=0)
+            self.weight[self.ei_mask == -
+                        1] = torch.clamp(self.weight[self.ei_mask == -1], max=0)
             self._balance_excitatory_inhibitory()
 
     def _balance_excitatory_inhibitory(self):
@@ -175,8 +183,8 @@ class HiddenLayer(nn.Module):
     # HELPER FUNCTIONS
     # ======================================================================================
     def get_weight(self):
-        """ Get the value of weight """ 
-        
+        """ Get the value of weight """
+        pass
 
     def set_weight(self, weight):
         """ Set the value of weight """
@@ -188,7 +196,7 @@ class HiddenLayer(nn.Module):
         """ Plot the weights matrix and distribution of each layer """
         weight = self.weight.cpu() if self.weight.device != torch.device('cpu') else self.weight
         utils.plot_connectivity_matrix_dist(weight.detach().numpy(), "Hidden Layer", False, self.sparsity_mask is not None)
-    
+
     def print_layers(self):
         """ Print the specs of each layer """
         param_dict = {
