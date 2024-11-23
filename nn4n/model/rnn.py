@@ -264,7 +264,6 @@ class RNN(BaseNN):
             "plasticity_mask": self.plasticity_masks[2],
         }
         return rc_struct, out_struct
-
     # ======================================================================================
 
     # FORWARD
@@ -333,14 +332,28 @@ class RNN(BaseNN):
 
     # HELPER FUNCTIONS
     # ======================================================================================
-    def print_layers(self):
+    def print_layer(self):
         """Print the specs of each layer"""
-        self.recurrent_layer.print_layers()
-        self.readout_layer.print_layers()
+        self.recurrent_layer.print_layer()
+        self.readout_layer.print_layer()
 
-    def plot_layers(self):
+    def plot_layer(self):
         """Plot the weights matrix and distribution of each layer"""
-        self.recurrent_layer.plot_layers()
-        self.readout_layer.plot_layers()
+        self.recurrent_layer.plot_layer()
+        self.readout_layer.plot_layer()
+    # ======================================================================================
 
+    # HANDLE DEPRECATION
+    # ======================================================================================
+    def plot_layer(self):
+        warnings.warn(
+            "plot_layers is deprecated, use plot_layer instead", DeprecationWarning
+        )
+        self.plot_layer()
+
+    def print_layers(self):
+        warnings.warn(
+            "print_layers is deprecated, use print_layer instead", DeprecationWarning
+        )
+        self.print_layer()
     # ======================================================================================

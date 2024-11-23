@@ -40,6 +40,6 @@ class BaseNN(nn.Module):
         self._initialize(**self.kwargs_checkpoint)
         self.load_state_dict(checkpoint["model_state_dict"])
 
-    def print_layers(self):
+    def print_layer(self):
         """print layer information"""
         pass

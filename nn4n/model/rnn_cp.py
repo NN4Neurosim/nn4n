@@ -305,13 +305,13 @@ class RNN_CP(BaseNN):
 
     # HELPER FUNCTIONS
     # ======================================================================================
-    def print_layers(self):
+    def print_layer(self):
         """ Print the specs of each layer """
-        self.recurrent_layer.print_layers()
-        self.readout_layer.print_layers()
+        self.recurrent_layer.print_layer()
+        self.readout_layer.print_layer()
 
-    def plot_layers(self):
+    def plot_layer(self):
         """ Plot the weights matrix and distribution of each layer """
-        self.recurrent_layer.plot_layers()
-        self.readout_layer.plot_layers()
+        self.recurrent_layer.plot_layer()
+        self.readout_layer.plot_layer()
     # ======================================================================================

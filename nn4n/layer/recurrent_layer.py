@@ -122,12 +122,12 @@ class RecurrentLayer(nn.Module):
 
     # HELPER FUNCTIONS
     # ==================================================================================================
-    def plot_layers(self, **kwargs):
+    def plot_layer(self, **kwargs):
         """Plot the weight matrix and distribution of each layer"""
-        self.input_layer.plot_layers()
-        self.hidden_layer.plot_layers()
+        self.input_layer.plot_layer()
+        self.hidden_layer.plot_layer()
 
-    def print_layers(self):
+    def print_layer(self):
         """Print the weight matrix and distribution of each layer"""
         param_dict = {
             "preact_noise": self.preact_noise,
@@ -135,8 +135,8 @@ class RecurrentLayer(nn.Module):
             "activation": self.act,
             "alpha": self.alpha,
         }
-        self.input_layer.print_layers()
+        self.input_layer.print_layer()
         print_dict("Recurrence", param_dict)
-        self.hidden_layer.print_layers()
+        self.hidden_layer.print_layer()
 
     # ==================================================================================================

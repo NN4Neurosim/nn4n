@@ -14,7 +14,7 @@
 - [ ] Remove the deprecation warnings.
 - [ ] The `get_area` related of functions in the mask module are a bit un-intuitive. Might be good to rename them.
 - [x] ~~Consider restructure.~~
-- [ ] Add `print_specs`.
+- [x] Add `print_specs`, already have that as `print_layer`.
 - [x] Better to construct network layer by layer.
 - [ ] Make `area_manager` an instance of the model?
 - [x] Remove `relaxed_states` in the RNN
@@ -24,6 +24,8 @@
 - [ ] Remove the `plasticity` scales, only allow 1 or 0 as for reason suggested in one of the previous todo item.
 - [x] Make the `weights` and `biases` to be singular.
 - [ ] Change the `weights` and `biases` in layers to `weight_dist` and `bias_dist`.
+- [ ] Don't really remember what does `LinearLayer.auto_rescale()` do. Need to check.
+- [ ] The `hidden_layer` is the same as the linear layer, consider to remove.
 
 ## RNN Composer Module
 - [ ] Think about how store the entire model. Currently thinking about making a checkpoint function for each layer.
