@@ -22,21 +22,21 @@ class CompositeLoss(nn.Module):
 
         # Mapping of loss types to their respective classes or instances
         loss_types = {
-            'fr': FiringRateLoss,
-            'fr_dist': FiringRateDistLoss,
-            'rnn_conn': RNNConnectivityLoss,
-            'state_pred': StatePredictionLoss,
-            'entropy': EntropyLoss,
-            'mse': nn.MSELoss,
-            'hebbian': HebbianLoss,
+            "fr": FiringRateLoss,
+            "fr_dist": FiringRateDistLoss,
+            "rnn_conn": RNNConnectivityLoss,
+            "state_pred": StatePredictionLoss,
+            "entropy": EntropyLoss,
+            "mse": nn.MSELoss,
+            "hebbian": HebbianLoss,
         }
-        torch_losses = ['mse']
+        torch_losses = ["mse"]
 
         # Iterate over the loss_cfg to instantiate and store losses
         for loss_name, loss_spec in loss_cfg.items():
-            loss_type = loss_spec['type']
-            loss_params = loss_spec.get('params', {})
-            loss_lambda = loss_spec.get('lambda', 1.0)
+            loss_type = loss_spec["type"]
+            loss_params = loss_spec.get("params", {})
+            loss_lambda = loss_spec.get("lambda", 1.0)
 
             # Instantiate the loss function
             if loss_type in loss_types:
@@ -51,7 +51,9 @@ class CompositeLoss(nn.Module):
                 # Store the loss instance and its weight in a dictionary
                 self.loss_components[loss_name] = (loss_instance, loss_lambda)
             else:
-                raise ValueError(f"Invalid loss type '{loss_type}'. Available types are: {list(loss_types.keys())}")
+                raise ValueError(
+                    f"Invalid loss type '{loss_type}'. Available types are: {list(loss_types.keys())}"
+                )
 
     def forward(self, loss_input_dict):
         """
@@ -70,8 +72,7 @@ class CompositeLoss(nn.Module):
                 loss_inputs = loss_input_dict[loss_name]
                 if isinstance(loss_fn, nn.MSELoss):
                     # For MSELoss, assume the inputs are 'input' and 'target'
-                    loss_value = loss_fn(
-                        loss_inputs['input'], loss_inputs['target'])
+                    loss_value = loss_fn(loss_inputs["input"], loss_inputs["target"])
                 else:
                     loss_value = loss_fn(**loss_inputs)
                 loss_dict[loss_name] = loss_weight * loss_value

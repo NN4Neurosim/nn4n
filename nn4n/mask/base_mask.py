@@ -3,8 +3,8 @@ import nn4n.utils as utils
 from nn4n.utils.help_functions import print_dict
 
 
-class BaseMask():
-    """ Base class for all masks """
+class BaseMask:
+    """Base class for all masks"""
 
     def __init__(self, **kwargs):
         """
@@ -18,7 +18,9 @@ class BaseMask():
         self.readout_dim = self.dims[2]
 
         # cannot be run as a child class
-        assert self.__class__.__name__ != "BaseMask", "BaseMask cannot be run as a child class"
+        assert (
+            self.__class__.__name__ != "BaseMask"
+        ), "BaseMask cannot be run as a child class"
 
     def _check_parameters(self):
         """
@@ -78,15 +80,15 @@ class BaseMask():
         raise NotImplementedError
 
     def get_readout_indices(self):
-        """ Return the indices of neurons that send readout """
+        """Return the indices of neurons that send readout"""
         raise NotImplementedError
 
     def get_areas(self):
-        """ Return the number of areas """
+        """Return the number of areas"""
         raise NotImplementedError
 
     def get_area_indices(self, area):
-        """ Return the indices of neurons in area """
+        """Return the indices of neurons in area"""
         raise NotImplementedError
 
     def _generate_sparse_matrix(self, n, m, p):
@@ -99,23 +101,26 @@ class BaseMask():
 
     def plot_masks(self):
         if self.input_mask is not None:
-            input_mask_ = self.input_mask if self.input_mask.shape[
-                1] > self.input_mask.shape[0] else self.input_mask.T
-            utils.plot_connectivity_matrix(
-                input_mask_, "Input Layer Mask", False)
+            input_mask_ = (
+                self.input_mask
+                if self.input_mask.shape[1] > self.input_mask.shape[0]
+                else self.input_mask.T
+            )
+            utils.plot_connectivity_matrix(input_mask_, "Input Layer Mask", False)
 
         if self.hidden_mask is not None:
-            utils.plot_connectivity_matrix(
-                self.hidden_mask, "Hidden Layer Mask", False)
+            utils.plot_connectivity_matrix(self.hidden_mask, "Hidden Layer Mask", False)
 
         if self.readout_mask is not None:
-            readout_mask_ = self.readout_mask if self.readout_mask.shape[
-                1] > self.readout_mask.shape[0] else self.readout_mask.T
-            utils.plot_connectivity_matrix(
-                readout_mask_, "Readout Layer Mask", False)
+            readout_mask_ = (
+                self.readout_mask
+                if self.readout_mask.shape[1] > self.readout_mask.shape[0]
+                else self.readout_mask.T
+            )
+            utils.plot_connectivity_matrix(readout_mask_, "Readout Layer Mask", False)
 
     def get_masks(self):
-        """ Return the masks """
+        """Return the masks"""
         assert self.input_mask is not None, "input_mask is not generated"
         assert self.hidden_mask is not None, "hidden_mask is not generated"
         assert self.readout_mask is not None, "readout_mask is not generated"
@@ -126,7 +131,7 @@ class BaseMask():
             "dims": self.dims,
             "hidden_size": self.hidden_size,
             "input_dim": self.input_dim,
-            "readout_dim": self.readout_dim
+            "readout_dim": self.readout_dim,
         }
 
     def print_specs(self):

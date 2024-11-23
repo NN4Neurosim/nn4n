@@ -10,22 +10,26 @@ class BaseNN(nn.Module):
         self._initialize(**kwargs)
 
     def _initialize(self, **kwargs):
-        """ initialize the model """
+        """initialize the model"""
         pass
 
     def save(self, path):
-        """ save model and kwargs to the same file """
+        """save model and kwargs to the same file"""
         assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
-        torch.save({
-            "model_state_dict": self.state_dict(),
-            "kwargs": self.kwargs_checkpoint
-        }, path)
+        assert (
+            path[-4:] == ".pth" or path[-3:] == ".pt"
+        ), "path must end with .pth or .pt"
+        torch.save(
+            {"model_state_dict": self.state_dict(), "kwargs": self.kwargs_checkpoint},
+            path,
+        )
 
     def load(self, path, map_location=None):
-        """ load model and kwargs from the same file """
+        """load model and kwargs from the same file"""
         assert type(path) == str, "path must be a string"
-        assert path[-4:] == ".pth" or path[-3:] == ".pt", "path must end with .pth or .pt"
+        assert (
+            path[-4:] == ".pth" or path[-3:] == ".pt"
+        ), "path must end with .pth or .pt"
         if map_location is None:
             checkpoint = torch.load(path)
         else:
@@ -37,5 +41,5 @@ class BaseNN(nn.Module):
         self.load_state_dict(checkpoint["model_state_dict"])
 
     def print_layers(self):
-        """ print layer information """
+        """print layer information"""
         pass

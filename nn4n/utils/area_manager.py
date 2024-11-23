@@ -6,6 +6,7 @@ def check_init(func):
         if self._area_indices is None:
             raise ValueError("Area indices are not initialized")
         return func(self, *args, **kwargs)
+
     return wrapper
 
 

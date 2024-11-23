@@ -30,7 +30,7 @@ class MLPLoss(nn.Module):
         self.loss_list = loss_list
 
     def _loss_fr(self, states, **kwargs):
-        """ Compute the loss for firing rate """
+        """Compute the loss for firing rate"""
         # return torch.sqrt(torch.square(states)).mean()
         loss = []
         for s in states:
@@ -39,7 +39,7 @@ class MLPLoss(nn.Module):
         return torch.stack(loss).mean()
 
     def _loss_fr_sd(self, states, **kwargs):
-        """ Compute the loss for firing rate for each neuron in terms of SD """
+        """Compute the loss for firing rate for each neuron in terms of SD"""
         # return torch.sqrt(torch.square(states)).mean(dim=(0)).std()
         return torch.pow(torch.mean(states, dim=(0, 1)), 2).std()
 
@@ -50,17 +50,17 @@ class MLPLoss(nn.Module):
         @param label: size=(-1, batch_size, 2), labels
         @param dur: duration of the trial
         """
-        loss = [self.lambda_mse * torch.square(pred-label).mean()]
+        loss = [self.lambda_mse * torch.square(pred - label).mean()]
         for i in range(len(self.loss_list)):
             if self.lambda_list[i] == 0:
                 continue
             else:
-                loss.append(self.lambda_list[i]*self.loss_list[i](**kwargs))
+                loss.append(self.lambda_list[i] * self.loss_list[i](**kwargs))
         loss = torch.stack(loss)
         return loss.sum(), loss
 
     def to(self, device):
-        """ Move to device """
+        """Move to device"""
         super().to(device)
         self.lambda_list = self.lambda_list.to(device)
         return self

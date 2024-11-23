@@ -3,6 +3,7 @@ Test file for the base vanilla RNN.
 Item to be tested:
     - CTRNN construction
 """
+
 from structure_checker_base import check_model_params
 from nn4n.model import CTRNN
 

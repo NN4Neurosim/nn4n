@@ -1,11 +1,11 @@
 # TODOs:
 - [ ] The examples need to be updated. Especially on the main branch.
 - [ ] Resolve the transpose issue in the model module and the mask module.
-- [ ] Make the model use `batch_first` by default.
+- [x] Make the model use `batch_first` by default. All `batch_first` parameters are removed, let user set it in their own usage.
 - [x] Refactor the RNNLoss part, let it take a dictionary instead of many separate `lambda_*` parameters. --> added the `CompositeLoss` instead.
 - [x] Added batch_first parameter. Adjusted to batch_first by default to follow PyTorch standard.
 - [x] Varying `alpha`. Alpha is now learnable
-- [ ] Make `alpha` can be defined with a vector.
+- [x] Make `alpha` can be defined with a vector.
 - [ ] Need to adjust implementation for `apply_plasticity` as it won't support SSL framework.
 - [ ] Reconsider the `apply_plasticity`, Adam will not work with it.
 - [ ] Change output to readout. (Forgot what I meant by this).
@@ -13,16 +13,17 @@
 - [ ] Need some kind of function or managing class to perform the forward pass. Like `model({"area_1": input_1, "area_2": input_2})`.
 - [ ] Remove the deprecation warnings.
 - [ ] The `get_area` related of functions in the mask module are a bit un-intuitive. Might be good to rename them.
-- [ ] Consider restructure.
+- [x] ~~Consider restructure.~~
 - [ ] Add `print_specs`.
-- [ ] Better to construct network layer by layer.
+- [x] Better to construct network layer by layer.
 - [ ] Make `area_manager` an instance of the model?
 - [x] Remove `relaxed_states` in the RNN
 - [x] Remove the init_state.
-- [ ] Make the layer to be either initialized with a dictionary or directly with the layer.
-- [ ] For some reason, all the masks are set with a transpose. For instance: `self.ei_mask = layer_struct['ei_mask'].T`. Not a big issue, but good to check or just simplify
-- [ ] Remove the `plasticity` scales
-- [ ] Make the `weights` and `biases` to be singular.
+- [x] Make the layers can be initialized with either a dictionary or directly with init.
+- [ ] For some reason, all the masks are set with a transpose. For instance: `self.ei_mask = layer_struct['ei_mask'].T`. Not a big issue, but good to check or just simplify. (duplicated item)
+- [ ] Remove the `plasticity` scales, only allow 1 or 0 as for reason suggested in one of the previous todo item.
+- [x] Make the `weights` and `biases` to be singular.
+- [ ] Change the `weights` and `biases` in layers to `weight_dist` and `bias_dist`.
 
 ## RNN Composer Module
 - [ ] Think about how store the entire model. Currently thinking about making a checkpoint function for each layer.

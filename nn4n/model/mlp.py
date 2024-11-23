@@ -48,13 +48,13 @@ class MLP(BaseNN):
         super().__init__(**kwargs)
 
     def _initialize(self, **kwargs):
-        """ Initialize/Reinitialize the network """
+        """Initialize/Reinitialize the network"""
         super()._initialize(**kwargs)
         # parameters that used in all layers
         # base parameters
         self.dims = kwargs.pop("dims", [10, 10])
         self.biases = kwargs.pop("biases", None)
-        self.weights = kwargs.pop("weights", 'uniform')
+        self.weights = kwargs.pop("weights", "uniform")
         self.activation = get_activation(kwargs.pop("activation", "relu"))
 
         # network dynamics parameters
@@ -78,10 +78,10 @@ class MLP(BaseNN):
 
     def _init_layers(self):
         self.layers = nn.ModuleList()
-        for i in range(len(self.dims)-1):
+        for i in range(len(self.dims) - 1):
             layer_struct = {
                 "input_dim": self.dims[i],
-                "output_dim": self.dims[i+1],
+                "output_dim": self.dims[i + 1],
                 "weights": self.weights[i],
                 "biases": self.biases[i],
                 "sparsity_mask": self.sparsity_masks[i],
@@ -92,11 +92,11 @@ class MLP(BaseNN):
             self.layers.append(l)
 
     def _handle_warnings(self, kwargs):
-        """ Handle deprecated parameters """
+        """Handle deprecated parameters"""
         pass
 
     def _check_parameters(self):
-        """ Check if the parameters meet the requirements """
+        """Check if the parameters meet the requirements"""
         # check if dims is a list
         if not isinstance(self.dims, list):
             raise ValueError("dims must be a list of integers")
@@ -105,18 +105,20 @@ class MLP(BaseNN):
         self.biases = self._broadcast_values(self.biases, n_weights)
         self.weights = self._broadcast_values(self.weights, n_weights)
         self.sparsity_masks = self._broadcast_values(
-            self.sparsity_masks, n_weights, is_mask=True)
-        self.ei_masks = self._broadcast_values(
-            self.ei_masks, n_weights, is_mask=True)
+            self.sparsity_masks, n_weights, is_mask=True
+        )
+        self.ei_masks = self._broadcast_values(self.ei_masks, n_weights, is_mask=True)
         self.plasticity_masks = self._broadcast_values(
-            self.plasticity_masks, n_weights, is_mask=True)
+            self.plasticity_masks, n_weights, is_mask=True
+        )
         self.plasticity_masks = self._regularize_plas_masks(
-            self.plasticity_masks, self.dims)
+            self.plasticity_masks, self.dims
+        )
         # no noise for the readout & input layer
-        self.preact_noise = self._broadcast_values(
-            self.preact_noise, n_weights-1)
+        self.preact_noise = self._broadcast_values(self.preact_noise, n_weights - 1)
         self.postact_noise = self._broadcast_values(
-            self.postact_noise, n_weights-1)  # no noise for the readout & input layer
+            self.postact_noise, n_weights - 1
+        )  # no noise for the readout & input layer
 
     def _regularize_plas_masks(self, masks, target_dim):
         if any(mask is not None for mask in masks):
@@ -132,16 +134,20 @@ class MLP(BaseNN):
                     if masks[i] is None:
                         params.append(torch.ones(target_dim[i]))
                     else:
-                        _temp_mask = (masks[i] - min_plas) / \
-                            (max_plas - min_plas)
-                        params.append(self._check_array(
-                            _temp_mask, "plasticity_masks", target_dim[i], i))
+                        _temp_mask = (masks[i] - min_plas) / (max_plas - min_plas)
+                        params.append(
+                            self._check_array(
+                                _temp_mask, "plasticity_masks", target_dim[i], i
+                            )
+                        )
                 # check the total number of unique plasticity values
                 plasticity_scales = torch.unique(
-                    torch.cat([param.flatten() for param in params]))
+                    torch.cat([param.flatten() for param in params])
+                )
                 if len(plasticity_scales) > 5:
                     raise ValueError(
-                        "The number of unique plasticity values cannot be larger than 5")
+                        "The number of unique plasticity values cannot be larger than 5"
+                    )
                 return params
         return [torch.ones(target_dim[i]) for i in range(3)]
 
@@ -149,7 +155,8 @@ class MLP(BaseNN):
         assert masks is not None, "Masks cannot be None"
         if len(masks) != len(self.dims):
             raise ValueError(
-                "The length of the mask must be the same as the length of dims")
+                "The length of the mask must be the same as the length of dims"
+            )
 
         for i in range(len(masks)):
             if masks[i] is None:
@@ -159,15 +166,17 @@ class MLP(BaseNN):
             if isinstance(masks[i], torch.Tensor):
                 masks[i] = masks[i].float()
                 # check shape is the same as dims
-                if masks[i].shape != (self.dims[i], self.dims[i+1]):
-                    raise ValueError(f"Mask shape mismatch, expected: {(self.dims[i], self.dims[i+1])}, got: {masks[i].shape}")
+                if masks[i].shape != (self.dims[i], self.dims[i + 1]):
+                    raise ValueError(
+                        f"Mask shape mismatch, expected: {(self.dims[i], self.dims[i+1])}, got: {masks[i].shape}"
+                    )
 
     def apply_plasticity(self):
         pass
 
     @staticmethod
     def _broadcast_values(value, length, is_mask=False):
-        """ Broadcast a single value to a list if it's not already a list """
+        """Broadcast a single value to a list if it's not already a list"""
         if not isinstance(value, list):
             if is_mask and value != None:
                 raise ValueError("Mask value cannot be auto-broadcasted")
@@ -175,7 +184,9 @@ class MLP(BaseNN):
         else:
             # check if the length of the list is correct
             if len(value) != length:
-                raise ValueError(f"Expected a list of length {length}, got a list of length {len(value)}")
+                raise ValueError(
+                    f"Expected a list of length {length}, got a list of length {len(value)}"
+                )
             return value
 
     def forward(self, x, batch_first=True):
@@ -187,13 +198,12 @@ class MLP(BaseNN):
             x = x.transpose(0, 1)
         hidden_states = []
         for i, layer in enumerate(self.layers):
-            if i == len(self.layers)-1:
+            if i == len(self.layers) - 1:
                 x = layer(x)
                 break
             x = layer(x)
             x += torch.randn_like(x) * self.preact_noise[i]
-            x = self.activation(x) + torch.randn_like(x) * \
-                self.postact_noise[i]
+            x = self.activation(x) + torch.randn_like(x) * self.postact_noise[i]
             hidden_states.append(x)
 
         return x, hidden_states

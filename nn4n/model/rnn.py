@@ -5,12 +5,18 @@ import warnings
 
 from nn4n.model import BaseNN
 
-param_list = ['dims', 'preact_noise', 'postact_noise',
-              'activation', 'tau', 'dt', 'weights',
-              'biases']
+param_list = [
+    "dims",
+    "preact_noise",
+    "postact_noise",
+    "activation",
+    "tau",
+    "dt",
+    "weights",
+    "biases",
+]
 
-dep_param_list = ['init_state', 'sparsity_masks',
-                  'ei_masks', 'plasticity_masks']
+dep_param_list = ["init_state", "sparsity_masks", "ei_masks", "plasticity_masks"]
 
 
 class RNN(BaseNN):
@@ -30,13 +36,13 @@ class RNN(BaseNN):
     # INITIALIZATION
     # ======================================================================================
     def _initialize(self, **kwargs):
-        """ Initialize/Reinitialize the network """
+        """Initialize/Reinitialize the network"""
         super()._initialize(**kwargs)
         # parameters that used in all layers
         # base parameters
         self.dims = kwargs.pop("dims", [1, 100, 1])
         self.biases = kwargs.pop("biases", None)
-        self.weights = kwargs.pop("weights", 'uniform')
+        self.weights = kwargs.pop("weights", "uniform")
         self.batch_first = kwargs.pop("batch_first", True)
 
         # temp storage
@@ -63,22 +69,28 @@ class RNN(BaseNN):
         layer_list = [
             self.recurrent_layer.input_layer,
             self.recurrent_layer.hidden_layer,
-            self.readout_layer
+            self.readout_layer,
         ]
         return layer_list
 
     def _check_masks(self, param, param_type, dims):
-        """ General function to check different parameter types. """
-        target_dim = [(dims[0], dims[1]), (dims[1], dims[1]),
-                      (dims[1], dims[2])]
+        """General function to check different parameter types."""
+        target_dim = [(dims[0], dims[1]), (dims[1], dims[1]), (dims[1], dims[2])]
         target_dim_biases = [dims[1], dims[1], dims[2]]
 
         # Handle None cases
         if param is None:
-            if param_type in ["ei_masks", "sparsity_masks", "plasticity_masks", "biases"]:
+            if param_type in [
+                "ei_masks",
+                "sparsity_masks",
+                "plasticity_masks",
+                "biases",
+            ]:
                 param = [None] * 3
             else:
-                raise ValueError(f"{param_type} cannot be None when param_type is {param_type}")  # weights
+                raise ValueError(
+                    f"{param_type} cannot be None when param_type is {param_type}"
+                )  # weights
         elif param is not None and type(param) != list and param_type in ["weights"]:
             param = [param] * 3
 
@@ -88,7 +100,9 @@ class RNN(BaseNN):
             else:
                 param = [param] * 3
         if len(param) != 3:
-            raise ValueError(f"{param_type} is/can not be broadcasted to a list of length 3")
+            raise ValueError(
+                f"{param_type} is/can not be broadcasted to a list of length 3"
+            )
 
         # param_type are all legal because it is passed by non-user code
         if param_type == "plasticity_masks":
@@ -99,16 +113,27 @@ class RNN(BaseNN):
                 if param[i] is not None:
                     if param_type in ["ei_masks", "sparsity_masks"]:
                         param[i] = self._check_array(
-                            param[i], param_type, target_dim[i], i)
+                            param[i], param_type, target_dim[i], i
+                        )
                         if param_type == "ei_masks":
                             param[i] = torch.where(
-                                param[i] > 0, torch.tensor(1), torch.tensor(-1))
+                                param[i] > 0, torch.tensor(1), torch.tensor(-1)
+                            )
                         elif param_type == "sparsity_masks":
                             param[i] = torch.where(
-                                param[i] == 0, torch.tensor(0), torch.tensor(1))
+                                param[i] == 0, torch.tensor(0), torch.tensor(1)
+                            )
                     elif param_type in ["weights", "biases"]:
                         self._check_distribution_or_array(
-                            param[i], param_type, target_dim_biases[i] if param_type == "biases" else target_dim[i], i)
+                            param[i],
+                            param_type,
+                            (
+                                target_dim_biases[i]
+                                if param_type == "biases"
+                                else target_dim[i]
+                            ),
+                            i,
+                        )
         return param
 
     def _regularize_plas_masks(self, masks, target_dim):
@@ -125,16 +150,20 @@ class RNN(BaseNN):
                     if masks[i] is None:
                         params.append(torch.ones(target_dim[i]))
                     else:
-                        _temp_mask = (masks[i] - min_plas) / \
-                            (max_plas - min_plas)
-                        params.append(self._check_array(
-                            _temp_mask, "plasticity_masks", target_dim[i], i))
+                        _temp_mask = (masks[i] - min_plas) / (max_plas - min_plas)
+                        params.append(
+                            self._check_array(
+                                _temp_mask, "plasticity_masks", target_dim[i], i
+                            )
+                        )
                 # check the total number of unique plasticity values
                 plasticity_scales = torch.unique(
-                    torch.cat([param.flatten() for param in params]))
+                    torch.cat([param.flatten() for param in params])
+                )
                 if len(plasticity_scales) > 5:
                     raise ValueError(
-                        "The number of unique plasticity values cannot be larger than 5")
+                        "The number of unique plasticity values cannot be larger than 5"
+                    )
                 return params
         return [torch.ones(target_dim[i]) for i in range(3)]
 
@@ -144,33 +173,41 @@ class RNN(BaseNN):
                 param = torch.from_numpy(param)
             else:
                 raise ValueError(
-                    f"{param_type}[{index}] must be a numpy array or torch tensor")
+                    f"{param_type}[{index}] must be a numpy array or torch tensor"
+                )
         if param.shape != dim:
             raise ValueError(
-                f"{param_type}[{index}] must be a numpy array of shape {dim}")
+                f"{param_type}[{index}] must be a numpy array of shape {dim}"
+            )
         return param
 
     def _check_distribution_or_array(self, param, param_type, dim, index):
         if type(param) == str:
-            if param not in ['uniform', 'normal', 'zero']:
+            if param not in ["uniform", "normal", "zero"]:
                 raise ValueError(
-                    f"{param_type}[{index}] must be a string of 'uniform' or 'normal'")
+                    f"{param_type}[{index}] must be a string of 'uniform' or 'normal'"
+                )
         elif type(param) == torch.Tensor:
             # its already being converted to torch.Tensor, so no need to check np.ndarray case
             if param.shape != dim:
                 raise ValueError(
-                    f"{param_type}[{index}] must be a numpy array of shape {dim}")
+                    f"{param_type}[{index}] must be a numpy array of shape {dim}"
+                )
         else:
-            raise ValueError(f"{param_type}[{index}] must be a string of 'uniform' or 'normal' \
-                or a numpy array/torch tensor with shape {dim}")
+            raise ValueError(
+                f"{param_type}[{index}] must be a string of 'uniform' or 'normal' \
+                or a numpy array/torch tensor with shape {dim}"
+            )
 
     def _check_parameters(self):
-        """ Check parameters """
+        """Check parameters"""
         # check dims
         assert type(self.dims) == list, "dims must be a list"
         assert len(self.dims) == 3, "dims must be a list of length 3"
         for i in self.dims:
-            assert type(i) == int, f"dims must be a list of integers, {i} is not an integer"
+            assert (
+                type(i) == int
+            ), f"dims must be a list of integers, {i} is not an integer"
             assert i > 0, "dims must be a list of positive integers"
 
         # check ei_masks
@@ -181,13 +218,15 @@ class RNN(BaseNN):
         self.biases = self._check_masks(self.biases, "biases", self.dims)
         # check sparsity_masks
         self.sparsity_masks = self._check_masks(
-            self.sparsity_masks, "sparsity_masks", self.dims)
+            self.sparsity_masks, "sparsity_masks", self.dims
+        )
         # check plasticity_masks
         self.plasticity_masks = self._check_masks(
-            self.plasticity_masks, "plasticity_masks", self.dims)
+            self.plasticity_masks, "plasticity_masks", self.dims
+        )
 
     def _build_structures(self, kwargs):
-        """ Build structures """
+        """Build structures"""
         # build structures
         rc_struct = {
             "activation": kwargs.pop("activation", "relu"),
@@ -213,7 +252,7 @@ class RNN(BaseNN):
                 "sparsity_mask": self.sparsity_masks[1],
                 "ei_mask": self.ei_masks[1],
                 "plasticity_mask": self.plasticity_masks[1],
-            }
+            },
         }
         out_struct = {
             "input_dim": self.dims[1],
@@ -225,19 +264,20 @@ class RNN(BaseNN):
             "plasticity_mask": self.plasticity_masks[2],
         }
         return rc_struct, out_struct
+
     # ======================================================================================
 
     # FORWARD
     # ======================================================================================
     def to(self, device):
-        """ Move the network to device """
+        """Move the network to device"""
         super().to(device)
         self.recurrent_layer.to(device)
         self.readout_layer.to(device)
         return self
 
     def forward(self, x: torch.Tensor, init_state: torch.Tensor = None) -> torch.Tensor:
-        """ 
+        """
         Forwardly update network
 
         Inputs:
@@ -257,7 +297,7 @@ class RNN(BaseNN):
             hidden_states = hidden_states.transpose(0, 1)
             relaxed_states = relaxed_states.transpose(0, 1)
 
-        return output, {'h': hidden_states, 'r': relaxed_states}
+        return output, {"h": hidden_states, "r": relaxed_states}
 
     def train(self):
         """
@@ -269,8 +309,8 @@ class RNN(BaseNN):
         self.training = True
 
     def eval(self):
-        """ 
-        Set pre-activation and post-activation noise to zero 
+        """
+        Set pre-activation and post-activation noise to zero
         and pause enforcing constraints
         """
         self.recurrent_layer.preact_noise = 0
@@ -294,12 +334,13 @@ class RNN(BaseNN):
     # HELPER FUNCTIONS
     # ======================================================================================
     def print_layers(self):
-        """ Print the specs of each layer """
+        """Print the specs of each layer"""
         self.recurrent_layer.print_layers()
         self.readout_layer.print_layers()
 
     def plot_layers(self):
-        """ Plot the weights matrix and distribution of each layer """
+        """Plot the weights matrix and distribution of each layer"""
         self.recurrent_layer.plot_layers()
         self.readout_layer.plot_layers()
+
     # ======================================================================================
