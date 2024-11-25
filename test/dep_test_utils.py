@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from scipy.stats import shapiro, chisquare
 
+def test_load_save_model():
+    pass
 
 def to_numpy(w):
     if isinstance(w, np.ndarray):

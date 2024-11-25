@@ -83,6 +83,10 @@ class BaseLayer(nn.Module):
         )
 
     def _check_layer(self):
+        """
+        Check if the layer is initialized properly
+        """
+        # TODO: Implement this
         pass
 
     # INIT TRAINABLE
@@ -288,7 +292,7 @@ class BaseLayer(nn.Module):
                 else 1
             )
         }
-    
+
     def print_layer(self):
         """
         Print the specs of the layer

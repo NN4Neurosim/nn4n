@@ -26,6 +26,9 @@
 - [ ] Change the `weights` and `biases` in layers to `weight_dist` and `bias_dist`.
 - [ ] Don't really remember what does `LinearLayer.auto_rescale()` do. Need to check.
 - [ ] The `hidden_layer` is the same as the linear layer, consider to remove.
+- [ ] Make the `dt` and `tau` to be a single property. Already did this but the `ctrnn` module need to automatically parse `dt` and `tau` to `alpha` for compatibility.
+- [ ] Put back init_state.
+
 
 ## RNN Composer Module
 - [ ] Think about how store the entire model. Currently thinking about making a checkpoint function for each layer.

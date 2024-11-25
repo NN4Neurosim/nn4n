@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from nn4n.utils import print_dict, get_activation
 
-from nn4n.layer import HiddenLayer
 from nn4n.layer import LinearLayer
 
 
@@ -37,7 +36,7 @@ class RecurrentLayer(nn.Module):
         )
 
         self.input_layer = LinearLayer.from_dict(layer_struct["in_struct"])
-        self.hidden_layer = HiddenLayer.from_dict(layer_struct=layer_struct["hid_struct"])
+        self.hidden_layer = LinearLayer.from_dict(layer_struct["hid_struct"])
 
     # FORWARD
     # ==================================================================================================
