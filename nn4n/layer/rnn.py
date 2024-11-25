@@ -70,6 +70,10 @@ class RNN(nn.Module):
         Returns:
             - hidden_state_list: hidden states of the network, list of tensors, each element
         """
+        # Skip constraints if the model is not in training mode
+        if self.training:
+            self.enforce_constraints()
+
         # Initialize hidden states as a list of tensors
         _bs, _T, _ = x.size()
         hidden_states = [
@@ -94,7 +98,6 @@ class RNN(nn.Module):
             for i in range(len(self.hidden_layers))
         ]
 
-
         # Forward pass through time
         for t in range(_T):
             for i, layer in enumerate(self.hidden_layers):
@@ -113,9 +116,30 @@ class RNN(nn.Module):
 
         return output, hidden_states
 
+    def train(self):
+        """
+        Set pre-activation and post-activation noise to the specified value
+        and resume enforcing constraints
+        """
+        for layer in self.hidden_layers:
+            layer.train()
+        self.training = True
+
+    def eval(self):
+        """
+        Set pre-activation and post-activation noise to zero
+        and pause enforcing constraints
+        """
+        for layer in self.hidden_layers:
+            layer.eval()
+        self.training = False
+
     def apply_plasticity(self):
         """Apply plasticity masks to the weight gradients"""
-        pass
+        for layer in self.hidden_layers:
+            layer.apply_plasticity()
+        if self.readout_layer is not None:
+            self.readout_layer.apply_plasticity()
 
     def enforce_constraints(self):
         """
@@ -123,15 +147,17 @@ class RNN(nn.Module):
         This is by default automatically called after each forward pass,
         but can be called manually if needed
         """
-        pass
-
-    # ==================================================================================================
+        for layer in self.hidden_layers:
+            layer.enforce_constraints()
+        if self.readout_layer is not None:
+            self.readout_layer.enforce_constraints()
 
     # HELPER FUNCTIONS
     # ==================================================================================================
     def plot_layer(self, **kwargs):
         """Plot the weight matrix and distribution of each layer"""
-        pass
+        for i, layer in enumerate(self.hidden_layers):
+            layer.plot_layer(**kwargs)
 
     def print_layer(self):
         """Print the weight matrix and distribution of each layer"""

@@ -3,9 +3,10 @@ import torch.nn as nn
 from nn4n.utils import print_dict, get_activation
 
 from nn4n.layer import LinearLayer
+from .base_layer import BaseLayer
 
 
-class RecurrentLayer(nn.Module):
+class RecurrentLayer(BaseLayer):
     """
     Recurrent layer of the RNN. The layer is initialized by passing specs in layer_struct.
 
@@ -117,8 +118,6 @@ class RecurrentLayer(nn.Module):
 
         return fr_t, v_t
 
-    # ==================================================================================================
-
     # HELPER FUNCTIONS
     # ==================================================================================================
     def plot_layer(self, **kwargs):
@@ -126,16 +125,12 @@ class RecurrentLayer(nn.Module):
         self.input_layer.plot_layer()
         self.hidden_layer.plot_layer()
 
-    def print_layer(self):
-        """Print the weight matrix and distribution of each layer"""
-        param_dict = {
+    def get_specs(self):
+        """Return the specs of the layer"""
+        return {
+            "activation": self.act,
             "preact_noise": self.preact_noise,
             "postact_noise": self.postact_noise,
-            "activation": self.act,
-            "alpha": self.alpha,
+            "learn_alpha": self.alpha.requires_grad,
+            "alpha_mean": self.alpha.mean().item() if len(self.alpha) > 0 else self.alpha,
         }
-        self.input_layer.print_layer()
-        print_dict("Recurrence", param_dict)
-        self.hidden_layer.print_layer()
-
-    # ==================================================================================================

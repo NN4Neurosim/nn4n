@@ -2,17 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-class CustomLoss(nn.Module):
-    def __init__(self, batch_first=True):
-        super().__init__()
-        self.batch_first = batch_first
-
-    def forward(self, **kwargs):
-        pass
-
-
-class FiringRateLoss(CustomLoss):
+class FiringRateLoss(nn.Module):
     def __init__(self, metric="l2", **kwargs):
         super().__init__(**kwargs)
         assert metric in ["l1", "l2"], "metric must be either l1 or l2"
@@ -29,7 +19,7 @@ class FiringRateLoss(CustomLoss):
             return F.mse_loss(mean_fr, torch.zeros_like(mean_fr), reduction="mean")
 
 
-class FiringRateDistLoss(CustomLoss):
+class FiringRateDistLoss(nn.Module):
     def __init__(self, metric="sd", **kwargs):
         super().__init__(**kwargs)
         valid_metrics = ["sd", "cv", "mean_ad", "max_ad"]
@@ -63,15 +53,12 @@ class FiringRateDistLoss(CustomLoss):
             return torch.max(torch.abs(mean_fr - avg_mean_fr))
 
 
-class StatePredictionLoss(CustomLoss):
+class StatePredictionLoss(nn.Module):
     def __init__(self, tau=1, **kwargs):
         super().__init__(**kwargs)
         self.tau = tau
 
     def forward(self, states, **kwargs):
-        if not self.batch_first:
-            states = states.transpose(0, 1)
-
         # Ensure the sequence is long enough for the prediction window
         assert (
             states.shape[1] > self.tau

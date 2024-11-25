@@ -35,7 +35,6 @@ class RNNLoss(nn.Module):
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
-        self.batch_first = model.batch_first
         if type(self.model) != CTRNN:
             raise TypeError("model must be CTRNN")
         self._init_losses(**kwargs)
@@ -103,8 +102,6 @@ class RNNLoss(nn.Module):
         This compute the L2 norm (for now) of the hidden states across all timesteps and batch_size
         Then take the square of the mean of the norm
         """
-        if not self.batch_first:
-            states = states.transpose(0, 1)
         mean_fr = torch.mean(states, dim=(0, 1))
         # return torch.pow(torch.mean(states, dim=(0, 1)), 2).mean() # this might not be correct
         # return torch.norm(states, p='fro')**2/states.numel() # this might not be correct
@@ -119,8 +116,6 @@ class RNNLoss(nn.Module):
         Parameters:
         - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
         """
-        if not self.batch_first:
-            states = states.transpose(0, 1)
         avg_fr = torch.mean(states, dim=(0, 1))
         return avg_fr.std()
 
@@ -133,8 +128,6 @@ class RNNLoss(nn.Module):
         Parameters:
         - states: size=(batch_size, n_timesteps, hidden_size), hidden states of the network
         """
-        if not self.batch_first:
-            states = states.transpose(0, 1)
         avg_fr = torch.mean(torch.sqrt(torch.square(states)), dim=(0, 1))
         return avg_fr.std() / avg_fr.mean()
 

@@ -11,20 +11,17 @@ def check_init(func):
 
 
 class AreaManager:
-    def __init__(self, area_indices=None, batch_first=True):
+    def __init__(self, area_indices=None):
         """
         Initialize the AreaManager
 
         Inputs:
             - area_indices: a list of indices (array) denoting a neuron's area assignment
-            - batch_first: whether the states are batch-first (default: True)
         """
         if area_indices is not None:
             self.set_area_indices(area_indices)
         else:
             self._area_indices = None  # Ensure it's None initially
-
-        self._batch_first = batch_first
 
     def set_area_indices(self, area_indices):
         """

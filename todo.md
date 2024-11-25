@@ -3,7 +3,7 @@
 - [ ] Resolve the transpose issue in the model module and the mask module.
 - [x] Make the model use `batch_first` by default. All `batch_first` parameters are removed, let user set it in their own usage.
 - [x] Refactor the RNNLoss part, let it take a dictionary instead of many separate `lambda_*` parameters. --> added the `CompositeLoss` instead.
-- [x] Added batch_first parameter. Adjusted to batch_first by default to follow PyTorch standard.
+- [x] Adjusted the network to batch_first by default to follow PyTorch standard.
 - [x] Varying `alpha`. Alpha is now learnable
 - [x] Make `alpha` can be defined with a vector.
 - [ ] Need to adjust implementation for `apply_plasticity` as it won't support SSL framework.

@@ -1,6 +1,6 @@
 import numpy as np
 from nn4n.mask.base_mask import BaseMask
-from nn4n.utils.help_functions import print_dict
+from nn4n.utils.helper_functions import print_dict
 
 
 class RandomInput(BaseMask):

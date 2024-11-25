@@ -39,11 +39,8 @@ class HiddenLayer(nn.Module):
         self.postact_noise = postact_noise
         self.alpha = (
             torch.nn.Parameter(
-                torch.full((self.linear_layer.input_dim,),
-                alpha
-            ), requires_grad=True)
-            if learn_alpha
-            else alpha
+                torch.full((self.hidden_size,), alpha
+            ), requires_grad=True if learn_alpha else False)
         )
 
     @property
@@ -56,7 +53,7 @@ class HiddenLayer(nn.Module):
 
     @property
     def hidden_size(self) -> int:
-        return self.output_dim
+        return self.linear_layer.input_dim
 
     @staticmethod
     def _generate_noise(shape: torch.Size, noise: float) -> torch.Tensor:
@@ -69,6 +66,8 @@ class HiddenLayer(nn.Module):
         self.alpha = self.alpha.to(device)
         return self
 
+    # FORWARD
+    # =================================================================================
     def forward(
         self, 
         fr_hid_t: torch.Tensor,
@@ -98,3 +97,35 @@ class HiddenLayer(nn.Module):
             _postact_noise = self._generate_noise(fr_t_next.size(), self.postact_noise)
             fr_t_next = fr_t_next + _postact_noise
         return fr_t_next, v_t_next
+
+    def enforce_constraints(self):
+        """
+        Enforce constraints on the layer
+        """
+        self.linear_layer.enforce_constraints()
+        self.input_layer.enforce_constraints()
+    
+    def apply_plasticity(self):
+        """
+        Apply plasticity masks to the weight gradients
+        """
+        self.linear_layer.apply_plasticity()
+        self.input_layer.apply_plasticity()
+
+    def train(self):
+        # TODO: change the noise to regular level
+        pass
+
+    def eval(self):
+        # TODO: change the noise to zero
+        pass
+
+    # HELPER FUNCTIONS
+    # ======================================================================================
+    def plot_layer(self, **kwargs):
+        """
+        Plot the layer
+        """
+        self.linear_layer.plot_layer(**kwargs)
+        if self.input_layer is not None:
+            self.input_layer.plot_layer(**kwargs)

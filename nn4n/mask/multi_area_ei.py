@@ -1,6 +1,6 @@
 import numpy as np
 from .multi_area import MultiArea
-from nn4n.utils.help_functions import print_dict
+from nn4n.utils.helper_functions import print_dict
 
 
 class MultiAreaEI(MultiArea):
@@ -16,31 +16,32 @@ class MultiAreaEI(MultiArea):
         @kwarg inh_readout: whether to readout inhibitory neurons, default: True
         """
         super().__init__(**kwargs)
-        # initialize parameters
+        # Initialize parameters
         self.exc_pct = kwargs.get("exc_pct", 0.8)
         self.inter_area_connections = kwargs.get(
             "inter_area_connections", [True, True, True, True]
         )
         self.inh_readout = kwargs.get("inh_readout", True)
-        # check parameters and generate mask
+        # Check parameters and generate mask
         self._check_parameters()
         self._generate_masks()
 
     def _check_parameters(self):
         super()._check_parameters()
-        # check exc_pct
+        # Check exc_pct
         assert 0 <= self.exc_pct <= 1, "exc_pct must be between 0 and 1"
-        # check if inter_area_connections is list of 4 boolean
+        # Check if inter_area_connections is list of 4 boolean
         assert (
             isinstance(self.inter_area_connections, list)
             and len(self.inter_area_connections) == 4
         ), "inter_area_connections must be list of 4 boolean"
+        # Four elements are ‘exc-exc’, ‘exc-inh’, ‘inh-exc’, and ‘inh-inh’
         for i in range(4):
             assert isinstance(
                 self.inter_area_connections[i], bool
             ), "inter_area_connections must be list of 4 boolean"
 
-    def _generate_mask(self):
+    def _generate_masks(self):
         """
         Generate the mask for the multi-area network
         """
@@ -117,6 +118,14 @@ class MultiAreaEI(MultiArea):
         if not self.inh_readout:
             for i in range(self.n_areas):
                 self.readout_mask[:, self.inhibitory_neurons[i]] = 0
+
+    def get_sparsity_masks(self):
+        masks = self.get_masks()
+        # The sparsity masks will be binary version of the current masks, all 1 and -1 are 1, 0 remains 0
+        sparsity_masks = []
+        for mask in masks:
+            sparsity_masks.append((mask != 0).astype(int))
+        return sparsity_masks
 
     def get_specs(self):
         """
