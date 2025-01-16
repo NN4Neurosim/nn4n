@@ -129,3 +129,17 @@ class HiddenLayer(nn.Module):
         self.linear_layer.plot_layer(**kwargs)
         if self.input_layer is not None:
             self.input_layer.plot_layer(**kwargs)
+
+    def _get_specs(self):
+        """
+        Get specs of the layer
+        """
+        return {
+            "input_dim": self.input_dim,
+            "output_dim": self.output_dim,
+            "hidden_size": self.hidden_size,
+            "alpha": self.alpha,
+            "learn_alpha": self.learn_alpha,
+            "preact_noise": self.preact_noise,
+            "postact_noise": self.postact_noise,
+        }

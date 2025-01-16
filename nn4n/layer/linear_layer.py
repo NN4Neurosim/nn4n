@@ -89,17 +89,17 @@ class LinearLayer(BaseLayer):
             assert (
                 self.sparsity_mask.shape == (self.output_dim, self.input_dim)
             ), f"Sparsity mask shape mismatch, expected {(self.output_dim, self.input_dim)}, got {self.sparsity_mask.shape}"
-            self.sparsity_mask = torch.tensor(self.sparsity_mask, dtype=torch.int)
+            self.sparsity_mask = self.sparsity_mask.clone().detach().int()
         if self.ei_mask is not None:
             assert (
                 self.ei_mask.shape == (self.output_dim, self.input_dim)
             ), f"Excitatory/Inhibitory mask shape mismatch, expected {(self.output_dim, self.input_dim)}, got {self.ei_mask.shape}"
-            self.ei_mask = torch.tensor(self.ei_mask, dtype=torch.float)
+            self.ei_mask = self.ei_mask.clone().detach().float()
         if self.plasticity_mask is not None:
             assert (
                 self.plasticity_mask.shape == (self.output_dim, self.input_dim)
             ), f"Plasticity mask shape mismatch, expected {(self.output_dim, self.input_dim)}, got {self.plasticity_mask.shape}"
-            self.plasticity_mask = torch.tensor(self.plasticity_mask, dtype=torch.float)
+            self.plasticity_mask = self.plasticity_mask.clone().detach().float()
 
     def auto_rescale(self, param_type):
         """

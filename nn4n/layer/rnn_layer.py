@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 from typing import List
-from nn4n.utils import print_dict, get_activation
+from nn4n.utils import print_dict, format_dict, get_activation
 from nn4n.layer import LinearLayer
 
 
-class RNN(nn.Module):
+class RNNLayer(nn.Module):
     """
     Recurrent layer of the RNN. The layer is initialized by passing specs in layer_struct.
 
@@ -44,6 +44,7 @@ class RNN(nn.Module):
             layer.to(device)
         if self.readout_layer is not None:
             self.readout_layer.to(device)
+        return self
 
     def _generate_init_state(
         self,

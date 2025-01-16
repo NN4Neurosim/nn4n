@@ -51,9 +51,6 @@ class AreaManager:
         Returns:
             - list of states of different areas
         """
-        if not self._batch_first:
-            states = states.permute(1, 0, 2)
-
         area_states = [states[:, :, idx] for idx in self._area_indices]
         return area_states
 
@@ -68,9 +65,6 @@ class AreaManager:
         Returns:
             - states of the specific area
         """
-        if self._batch_first:
-            states = states.permute(1, 0, 2)
-
         return states[:, :, self._area_indices[area_idx]]
 
     @check_init

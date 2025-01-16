@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from .firing_rate_loss import *
 from .connectivity_loss import *
+from .prediction_loss import *
 
 
 class CompositeLoss(nn.Module):
@@ -28,9 +29,9 @@ class CompositeLoss(nn.Module):
             "state_pred": StatePredictionLoss,
             "entropy": EntropyLoss,
             "mse": nn.MSELoss,
+            "cross_entropy": CrossEntropyLoss,
             "hebbian": HebbianLoss,
         }
-        torch_losses = ["mse"]
 
         # Iterate over the loss_cfg to instantiate and store losses
         for loss_name, loss_spec in loss_cfg.items():
@@ -41,7 +42,7 @@ class CompositeLoss(nn.Module):
             # Instantiate the loss function
             if loss_type in loss_types:
                 loss_class = loss_types[loss_type]
-                if loss_type in torch_losses:
+                if loss_type in ["mse"]:
                     # If torch built-in loss, don't pass the params
                     loss_instance = loss_class()
                 else:
@@ -70,9 +71,8 @@ class CompositeLoss(nn.Module):
             # Retrieve the corresponding input for this loss from the input dictionary
             if loss_name in loss_input_dict:
                 loss_inputs = loss_input_dict[loss_name]
-                if isinstance(loss_fn, nn.MSELoss):
-                    # For MSELoss, assume the inputs are 'input' and 'target'
-                    loss_value = loss_fn(loss_inputs["input"], loss_inputs["target"])
+                if isinstance(loss_fn, nn.MSELoss) or isinstance(loss_fn, nn.CrossEntropyLoss):
+                    loss_value = loss_fn(loss_inputs["pred"], loss_inputs["target"])
                 else:
                     loss_value = loss_fn(**loss_inputs)
                 loss_dict[loss_name] = loss_weight * loss_value

@@ -8,9 +8,9 @@ class FiringRateLoss(nn.Module):
         assert metric in ["l1", "l2"], "metric must be either l1 or l2"
         self.metric = metric
 
-    def forward(self, states, **kwargs):
+    def forward(self, state, **kwargs):
         # Calculate the mean firing rate across specified dimensions
-        mean_fr = torch.mean(states, dim=(0, 1))
+        mean_fr = torch.mean(state, dim=(0, 1))
 
         # Replace custom norm calculation with PyTorch's built-in norm
         if self.metric == "l1":
@@ -30,8 +30,8 @@ class FiringRateDistLoss(nn.Module):
         )
         self.metric = metric
 
-    def forward(self, states, **kwargs):
-        mean_fr = torch.mean(states, dim=(0, 1))
+    def forward(self, state, **kwargs):
+        mean_fr = torch.mean(state, dim=(0, 1))
 
         # Standard deviation
         if self.metric == "sd":
@@ -58,26 +58,26 @@ class StatePredictionLoss(nn.Module):
         super().__init__(**kwargs)
         self.tau = tau
 
-    def forward(self, states, **kwargs):
+    def forward(self, state, **kwargs):
         # Ensure the sequence is long enough for the prediction window
         assert (
-            states.shape[1] > self.tau
+            state.shape[1] > self.tau
         ), "The sequence length is shorter than the prediction window."
 
         # Use MSE loss instead of manual difference calculation
-        return F.mse_loss(states[: -self.tau], states[self.tau :], reduction="mean")
+        return F.mse_loss(state[: -self.tau], state[self.tau :], reduction="mean")
 
 
 class HebbianLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, states, weights):
-        # states shape: (batch_size, time_steps, num_neurons)
+    def forward(self, state, weights):
+        # state shape: (batch_size, time_steps, num_neurons)
         # weights shape: (num_neurons, num_neurons)
 
         # Compute correlations by averaging over time steps
-        correlations = torch.einsum("bti,btj->btij", states, states)
+        correlations = torch.einsum("bti,btj->btij", state, state)
 
         # Apply weights to correlations and sum to get Hebbian loss for each batch
         hebbian_loss = torch.sum(weights * correlations, dim=(-1, -2))
@@ -93,23 +93,23 @@ class EntropyLoss(nn.Module):
         super().__init__(**kwargs)
         self.reg = reg
 
-    def forward(self, states):
-        # states shape: (batch_size, time_steps, num_neurons)
-        batch_size, time_steps, num_neurons = states.shape
+    def forward(self, state):
+        # state shape: (batch_size, time_steps, num_neurons)
+        batch_size, time_steps, num_neurons = state.shape
 
-        # Normalize the states to create a probability distribution
+        # Normalize the state to create a probability distribution
         # Add a small epsilon to avoid log(0)
         eps = 1e-8
-        prob_states = states / (states.sum(dim=-1, keepdim=True) + eps)
+        prob_state = state / (state.sum(dim=-1, keepdim=True) + eps)
 
         # Compute the entropy of the neuron activations
-        entropy_loss = -torch.sum(prob_states * torch.log(prob_states + eps), dim=-1)
+        entropy_loss = -torch.sum(prob_state * torch.log(prob_state + eps), dim=-1)
 
         # Take the mean entropy over batches and time steps
         mean_entropy = torch.mean(entropy_loss)
 
         # Add regularization term (optional, same as before)
-        reg_loss = torch.mean(torch.norm(states, dim=-1) ** 2)
+        reg_loss = torch.mean(torch.norm(state, dim=-1) ** 2)
         total_loss = mean_entropy + self.reg * reg_loss
 
         return total_loss
@@ -122,17 +122,17 @@ class PopulationKL(nn.Module):
         self.reg = reg
         self.reduction = reduction
 
-    def forward(self, states_0, states_1):
+    def forward(self, state_0, state_1):
         # Compute the mean and variance across batches and time steps
         # Shape: (1, 1, n_neurons)
-        mean_0 = torch.mean(states_0, dim=(0, 1), keepdim=True)
+        mean_0 = torch.mean(state_0, dim=(0, 1), keepdim=True)
         # Shape: (1, 1, n_neurons)
-        mean_1 = torch.mean(states_1, dim=(0, 1), keepdim=True)
+        mean_1 = torch.mean(state_1, dim=(0, 1), keepdim=True)
         var_0 = torch.var(
-            states_0, dim=(0, 1), unbiased=False, keepdim=True
+            state_0, dim=(0, 1), unbiased=False, keepdim=True
         )  # Shape: (1, 1, n_neurons)
         var_1 = torch.var(
-            states_1, dim=(0, 1), unbiased=False, keepdim=True
+            state_1, dim=(0, 1), unbiased=False, keepdim=True
         )  # Shape: (1, 1, n_neurons)
 
         # Compute the KL divergence between the two populations (per neuron)
@@ -160,16 +160,16 @@ class PopulationKL(nn.Module):
         else:
             raise ValueError(f"Invalid reduction mode: {self.reduction}")
 
-        # Regularization: L2 norm of the states across the neurons
-        reg_loss = torch.mean(torch.norm(states_0, dim=-1) ** 2) + torch.mean(
-            torch.norm(states_1, dim=-1) ** 2
+        # Regularization: L2 norm of the state across the neurons
+        reg_loss = torch.mean(torch.norm(state_0, dim=-1) ** 2) + torch.mean(
+            torch.norm(state_1, dim=-1) ** 2
         )
 
         # Combine the KL divergence with the regularization term
         if self.reduction == "none":
             # If no reduction, add regularization element-wise
             total_loss = kl_loss + self.reg * (
-                torch.norm(states_0, dim=-1) ** 2 + torch.norm(states_1, dim=-1) ** 2
+                torch.norm(state_0, dim=-1) ** 2 + torch.norm(state_1, dim=-1) ** 2
             )
         else:
             total_loss = kl_loss + self.reg * reg_loss

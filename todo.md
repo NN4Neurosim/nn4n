@@ -28,6 +28,7 @@
 - [ ] The `hidden_layer` is the same as the linear layer, consider to remove.
 - [ ] Make the `dt` and `tau` to be a single property. Already did this but the `ctrnn` module need to automatically parse `dt` and `tau` to `alpha` for compatibility.
 - [ ] Put back init_state.
+- [ ] See if the model.print_layer() can directedly defined into `__repr__`.
 
 
 ## RNN Composer Module

@@ -18,6 +18,26 @@ def print_dict(title, params):
     print()
 
 
+def format_dict(title, params):
+    """
+    Format a dictionary into a nicely formatted string.
+
+    Inputs:
+        - title: title of the dictionary
+        - params: dictionary to be formatted
+
+    Returns:
+        - A string representing the formatted dictionary.
+    """
+    result = []
+    result.append(f"{title}:")
+    maxlen = max([len(s) for s in params.keys()])
+    for k in params.keys():
+        result.append("   | {}:{}{}".format(k, (maxlen - len(k) + 1) * " ", params[k]))
+    result.append("")
+    return "\n".join(result)
+
+
 def get_activation(act):
     """
     Return the activation function given the name
