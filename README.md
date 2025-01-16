@@ -43,7 +43,7 @@ A visual illustration of the EIRNN is shown below.
 The yellow nodes denote nodes in the input layer. The middle circle denotes the hidden layer. There are blue nodes and red nodes, representing inhibitory neurons and excitatory neurons, respectively. The depicted network has an E/I ratio of 4/1. The purple nodes are ReadoutLayer neurons.
 
 #### Multi-Area CTRNN
-The RNN could also contain multiple areas. Denote the neurons in the hidden layer as \( \mathcal{N} = \{ n_1, n_2, \ldots, n_{N_{hid}} \} \). The neurons within it may be partitioned into multiple areas, \( \mathcal{A} = \{A_1, A_2, \ldots, A_{N_{area}}\} \). The areas are disjoint and their union is the set of all neurons in the hidden layer, i.e., \( \mathcal{N} = \bigcup_{i=1}^{N_{area}} A_i \). Neurons within the same area may be more densely connected and even receive different inputs.
+The RNN could also contain multiple areas. Denote the neurons in the hidden layer as $\mathcal{N} = \{ n_1, n_2, \ldots, n_{N_{hid}} \}$. The neurons within it may be partitioned into multiple areas, $\mathcal{A} = \{A_1, A_2, \ldots, A_{N_{area}}\}$. The areas are disjoint and their union is the set of all neurons in the hidden layer, i.e., $\mathcal{N} = \bigcup_{i=1}^{N_{area}} A_i$. Neurons within the same area may be more densely connected and even receive different inputs.
 
 A visual illustration of the Multi-Area CTRNN:
 
