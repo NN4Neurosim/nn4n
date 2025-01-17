@@ -1,8 +1,7 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
-class CrossEntropyLoss(nn.Module):
+class CrossEntropyLoss(torch.nn.Module):
     def __init__(self, apply_softmax=True):
         """
         Cross-Entropy Loss for continuous probability distributions.

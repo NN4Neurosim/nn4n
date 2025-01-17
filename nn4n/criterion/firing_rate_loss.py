@@ -1,8 +1,7 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
-class FiringRateLoss(nn.Module):
+class FiringRateLoss(torch.nn.Module):
     def __init__(self, metric="l2", **kwargs):
         super().__init__(**kwargs)
         assert metric in ["l1", "l2"], "metric must be either l1 or l2"
@@ -19,7 +18,7 @@ class FiringRateLoss(nn.Module):
             return F.mse_loss(mean_fr, torch.zeros_like(mean_fr), reduction="mean")
 
 
-class FiringRateDistLoss(nn.Module):
+class FiringRateDistLoss(torch.nn.Module):
     def __init__(self, metric="sd", **kwargs):
         super().__init__(**kwargs)
         valid_metrics = ["sd", "cv", "mean_ad", "max_ad"]
@@ -53,7 +52,7 @@ class FiringRateDistLoss(nn.Module):
             return torch.max(torch.abs(mean_fr - avg_mean_fr))
 
 
-class StatePredictionLoss(nn.Module):
+class StatePredictionLoss(torch.nn.Module):
     def __init__(self, tau=1, **kwargs):
         super().__init__(**kwargs)
         self.tau = tau
@@ -68,7 +67,7 @@ class StatePredictionLoss(nn.Module):
         return F.mse_loss(state[: -self.tau], state[self.tau :], reduction="mean")
 
 
-class HebbianLoss(nn.Module):
+class HebbianLoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -88,7 +87,7 @@ class HebbianLoss(nn.Module):
         return mean_hebbian_loss
 
 
-class EntropyLoss(nn.Module):
+class EntropyLoss(torch.nn.Module):
     def __init__(self, reg=1e1, **kwargs):
         super().__init__(**kwargs)
         self.reg = reg
@@ -115,7 +114,7 @@ class EntropyLoss(nn.Module):
         return total_loss
 
 
-class PopulationKL(nn.Module):
+class PopulationKL(torch.nn.Module):
     def __init__(self, symmetric=True, reg=1e-3, reduction="mean"):
         super().__init__()
         self.symmetric = symmetric

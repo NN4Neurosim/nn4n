@@ -1,28 +1,23 @@
 import torch
-import torch.nn as nn
 from .linear_layer import LinearLayer
 
 
-class HiddenLayer(nn.Module):
+class LeakyLinearLayer(torch.nn.Module):
     def __init__(
         self,
         linear_layer: LinearLayer,
-        activation: nn.Module,
-        input_layer: LinearLayer = None,
+        activation: torch.nn.Module,
         alpha: float = 0.1,
         learn_alpha: bool = False,
         preact_noise: float = 0,
         postact_noise: float = 0,
     ):
         """
-        Hidden layer of the network. The layer is initialized by passing specs in layer_struct.
+        Leaky linear layer, which usually is used in the hidden layer of the RNN
 
         Parameters:
             - linear_layer: linear layer. I.e., W_rc in the RNN
             - activation: activation function
-            - input_layer: input projection layer. I.e., W_in in the RNN, this is
-                optional. If not provided, the input will directly be added to the
-                hidden state, which is equivalent to setting W_in to identity matrix.
             - alpha: alpha value for the hidden layer
             - learn_alpha: whether to learn alpha
             - preact_noise: noise added to pre-activation
@@ -32,14 +27,13 @@ class HiddenLayer(nn.Module):
         assert linear_layer.input_dim == linear_layer.output_dim, \
             "Input and output dimensions of the linear layer must be the same"
         self.linear_layer = linear_layer
-        self.input_layer = input_layer
         self.activation = activation
         self.learn_alpha = learn_alpha
         self.preact_noise = preact_noise
         self.postact_noise = postact_noise
         self.alpha = (
             torch.nn.Parameter(
-                torch.full((self.hidden_size,), alpha
+                torch.full((self.size,), alpha
             ), requires_grad=True if learn_alpha else False)
         )
 
@@ -52,7 +46,7 @@ class HiddenLayer(nn.Module):
         return self.linear_layer.output_dim
 
     @property
-    def hidden_size(self) -> int:
+    def size(self) -> int:
         return self.linear_layer.input_dim
 
     @staticmethod
@@ -68,49 +62,48 @@ class HiddenLayer(nn.Module):
 
     # FORWARD
     # =================================================================================
-    def forward(
-        self, 
-        fr_hid_t: torch.Tensor,
-        v_hid_t: torch.Tensor, 
-        u_in_t: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         """
         Forwardly update network
 
         Parameters:
-            - fr_hid_t: hidden state (post-activation), shape: (batch_size, hidden_size)
-            - v_hid_t: hidden state (pre-activation), shape: (batch_size, hidden_size)
-            - u_in_t: input, shape: (batch_size, input_size)
+            - fr: hidden state (post-activation), shape: (batch_size, hidden_size)
+            - v: hidden state (pre-activation), shape: (batch_size, hidden_size)
+            - u: input (raw/projected input), shape: (batch_size, input_size)
 
         Returns:
-            - fr_t_next: hidden state (post-activation), shape: (batch_size, hidden_size)
-            - v_t_next: hidden state (pre-activation), shape: (batch_size, hidden_size)
+            - fr_n: hidden state (post-activation), shape: (batch_size, hidden_size)
+            - v_n: hidden state (pre-activation), shape: (batch_size, hidden_size)
         """
-        v_in_t = self.input_layer(u_in_t) if self.input_layer is not None else u_in_t
-        v_hid_t_next = self.linear_layer(fr_hid_t)
-        v_t_next = (1 - self.alpha) * v_hid_t + self.alpha * (v_hid_t_next + v_in_t)
+        # Main update step
+        v_n = (1 - self.alpha) * v + self.alpha * (self.linear_layer(fr) + u)
+
+        # Preactivation noise
         if self.preact_noise > 0:
-            _preact_noise = self._generate_noise(v_t_next.size(), self.preact_noise)
-            v_t_next = v_t_next + _preact_noise
-        fr_t_next = self.activation(v_t_next)
+            _preact_noise = self._generate_noise(v_n.size(), self.preact_noise)
+            v_n = v_n + _preact_noise
+
+        # Activation
+        fr_n = self.activation(v_n)
+
+        # Postactivation noise
         if self.postact_noise > 0:
-            _postact_noise = self._generate_noise(fr_t_next.size(), self.postact_noise)
-            fr_t_next = fr_t_next + _postact_noise
-        return fr_t_next, v_t_next
+            _postact_noise = self._generate_noise(fr_n.size(), self.postact_noise)
+            fr_n = fr_n + _postact_noise
+        
+        return fr_n, v_n
 
     def enforce_constraints(self):
         """
         Enforce constraints on the layer
         """
         self.linear_layer.enforce_constraints()
-        self.input_layer.enforce_constraints()
     
     def apply_plasticity(self):
         """
         Apply plasticity masks to the weight gradients
         """
         self.linear_layer.apply_plasticity()
-        self.input_layer.apply_plasticity()
 
     def train(self):
         # TODO: change the noise to regular level
@@ -127,8 +120,6 @@ class HiddenLayer(nn.Module):
         Plot the layer
         """
         self.linear_layer.plot_layer(**kwargs)
-        if self.input_layer is not None:
-            self.input_layer.plot_layer(**kwargs)
 
     def _get_specs(self):
         """

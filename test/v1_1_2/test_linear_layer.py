@@ -1,4 +1,4 @@
-from nn4n.layer import LinearLayer
+from nn4n.nn import LinearLayer
 
 if __name__ == "__main__":
     input_dim = 100

@@ -1,9 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 
-class RNNConnectivityLoss(nn.Module):
+class RNNConnectivityLoss(torch.nn.Module):
     def __init__(self, layer, metric="fro", **kwargs):
         super().__init__()
         assert metric in ["l1", "fro"], "metric must be either l1 or l2"

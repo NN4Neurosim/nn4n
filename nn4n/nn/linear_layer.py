@@ -1,11 +1,9 @@
 import torch
-import torch.nn as nn
 import numpy as np
-from .base_layer import BaseLayer
 import nn4n.utils as utils
 
 
-class LinearLayer(BaseLayer):
+class LinearLayer(torch.nn.Module):
     """
     Linear Layer with optional sparsity, excitatory/inhibitory, and plasticity constraints.
     The layer is initialized by passing specs in layer_struct.
@@ -132,10 +130,10 @@ class LinearLayer(BaseLayer):
         # Enfore constraints
         self._init_constraints()
         # Convert weight and bias to learnable parameters
-        self.weight = nn.Parameter(
+        self.weight = torch.nn.Parameter(
             self.weight, requires_grad=self.weight_dist is not None
         )
-        self.bias = nn.Parameter(self.bias, requires_grad=self.bias_dist is not None)
+        self.bias = torch.nn.Parameter(self.bias, requires_grad=self.bias_dist is not None)
 
     def _init_constraints(self):
         """
@@ -338,3 +336,9 @@ class LinearLayer(BaseLayer):
                 else 1
             )
         }
+
+    def print_layer(self):
+        """
+        Print the specs of the layer
+        """
+        utils.print_dict(f"{self.__class__.__name__} layer", self.get_specs())

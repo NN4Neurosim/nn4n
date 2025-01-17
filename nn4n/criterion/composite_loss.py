@@ -1,11 +1,10 @@
 import torch
-import torch.nn as nn
 from .firing_rate_loss import *
 from .connectivity_loss import *
 from .prediction_loss import *
 
 
-class CompositeLoss(nn.Module):
+class CompositeLoss(torch.nn.Module):
     def __init__(self, loss_cfg):
         """
         Initializes the CompositeLoss module.
@@ -28,7 +27,7 @@ class CompositeLoss(nn.Module):
             "rnn_conn": RNNConnectivityLoss,
             "state_pred": StatePredictionLoss,
             "entropy": EntropyLoss,
-            "mse": nn.MSELoss,
+            "mse": torch.nn.MSELoss,
             "cross_entropy": CrossEntropyLoss,
             "hebbian": HebbianLoss,
         }
@@ -71,7 +70,7 @@ class CompositeLoss(nn.Module):
             # Retrieve the corresponding input for this loss from the input dictionary
             if loss_name in loss_input_dict:
                 loss_inputs = loss_input_dict[loss_name]
-                if isinstance(loss_fn, nn.MSELoss) or isinstance(loss_fn, nn.CrossEntropyLoss):
+                if isinstance(loss_fn, torch.nn.MSELoss) or isinstance(loss_fn, torch.nn.CrossEntropyLoss):
                     loss_value = loss_fn(loss_inputs["pred"], loss_inputs["target"])
                 else:
                     loss_value = loss_fn(**loss_inputs)

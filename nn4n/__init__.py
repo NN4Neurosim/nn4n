@@ -1,5 +1,4 @@
-from . import model
-from . import layer
+from . import nn
 from . import mask
 from . import utils
 from . import criterion

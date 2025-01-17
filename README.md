@@ -22,8 +22,8 @@ This project aims to address these issues by improving the biological plausibili
 <div style="margin-top: 40px;"></div>
 
 ## Network Structures
-#### Vanilla CTRNN
-A simplistic Vanilla CTRNN contains three layers: an input layer, a hidden layer, and a readout layer, as depicted below.
+#### Vanilla Continuous Time RNN
+A simplistic Vanilla Continuous Time RNN contains three layers: an input layer, a hidden layer, and a readout layer, as depicted below.
 
 <p align="center">
   <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/RNN_structure.png" width="400">
@@ -31,8 +31,8 @@ A simplistic Vanilla CTRNN contains three layers: an input layer, a hidden layer
 
 The yellow nodes represent neurons that project input signals to the hidden layer, the green neurons are in the hidden layer, and the purple nodes represent neurons that read out from the hidden layer neurons. Both input and readout neurons are 'imagined' to be there. I.e., they only project or receive signals and, therefore, do not have activations and internal states.
 
-#### Excitatory-Inhibitory Constrained CTRNN
-The implementation of CTRNN also supports Excitatory-Inhibitory constrained continuous-time RNN (EIRNN) similar to what was proposed by H. Francis Song, Guangyu R. Yang, and Xiao-Jing Wang in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792)
+#### Excitatory-Inhibitory Constrained Continuous Time RNN
+The implementation of Continuous Time RNN also supports Excitatory-Inhibitory constrained continuous-time RNN (EIRNN) similar to what was proposed by H. Francis Song, Guangyu R. Yang, and Xiao-Jing Wang in [Training Excitatory-Inhibitory Recurrent Neural Networks for Cognitive Tasks: A Simple and Flexible Framework](https://doi.org/10.1371/journal.pcbi.1004792)
 
 A visual illustration of the EIRNN is shown below.
 
@@ -42,10 +42,10 @@ A visual illustration of the EIRNN is shown below.
 
 The yellow nodes denote nodes in the input layer. The middle circle denotes the hidden layer. There are blue nodes and red nodes, representing inhibitory neurons and excitatory neurons, respectively. The depicted network has an E/I ratio of 4/1. The purple nodes are ReadoutLayer neurons.
 
-#### Multi-Area CTRNN
+#### Multi-Area Continuous Time RNN
 The RNN could also contain multiple areas. Denote the neurons in the hidden layer as $\mathcal{N} = \{ n_1, n_2, \ldots, n_{N_{hid}} \}$. The neurons within it may be partitioned into multiple areas, $\mathcal{A} = \{A_1, A_2, \ldots, A_{N_{area}}\}$. The areas are disjoint and their union is the set of all neurons in the hidden layer, i.e., $\mathcal{N} = \bigcup_{i=1}^{N_{area}} A_i$. Neurons within the same area may be more densely connected and even receive different inputs.
 
-A visual illustration of the Multi-Area CTRNN:
+A visual illustration of the Multi-Area Continuous Time RNN:
 
 <p align="center">
   <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/multi_area_structure.png" width="400">

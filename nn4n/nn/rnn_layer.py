@@ -1,36 +1,35 @@
 import torch
-import torch.nn as nn
 from typing import List
 from nn4n.utils import print_dict, format_dict, get_activation
-from nn4n.layer import LinearLayer
+from nn4n.nn import RecurrentLayer
 
 
-class RNNLayer(nn.Module):
+class RNNLayer(torch.nn.Module):
     """
-    Recurrent layer of the RNN. The layer is initialized by passing specs in layer_struct.
+    Recurrent layer of the RNN.
 
     Parameters:
-        - layers: list of layers in the network
+        - recurrent_layers: list of recurrent layers in the network
     """
 
     def __init__(self,
-                 hidden_layers: List[nn.Module],
-                 readout_layer: LinearLayer = None,
+                 recurrent_layers: List[torch.nn.Module],
+                 readout_layer: torch.nn.Module = None,
                  device: str = "cpu"):
         """
         Initialize the recurrent layer
 
         Parameters:
-            - hidden_layers: list of hidden layers
-            - readout_layer: readout layer, optional
+            - recurrent_layers: list of recurrent_layers
+            - readout_layer: readout layer
         """
         super().__init__()
-        if not isinstance(hidden_layers, list) or not all(isinstance(_l, nn.Module) for _l in hidden_layers):
-            raise ValueError("`layers` must be a list of nn.Module instances.")
-        self.hidden_layers = nn.ModuleList(hidden_layers)
+        if not isinstance(recurrent_layers, list) or \
+           not all(isinstance(l, torch.nn.Module) for l in recurrent_layers):
+            raise ValueError("`recurrent_layers` must be a list of torch.nn.Module instances.")
+        self.recurrent_layers = torch.nn.ModuleList(recurrent_layers)
         self.readout_layer = readout_layer
         self.device = torch.device(device)
-        self.hidden_sizes = [layer.hidden_size for layer in hidden_layers]
 
     # FORWARD
     # ==================================================================================================
@@ -40,10 +39,8 @@ class RNNLayer(nn.Module):
         """
         super().to(device)
         self.device = device
-        for layer in self.hidden_layers:
+        for layer in self.recurrent_layers:
             layer.to(device)
-        if self.readout_layer is not None:
-            self.readout_layer.to(device)
         return self
 
     def _generate_init_state(
@@ -66,56 +63,52 @@ class RNNLayer(nn.Module):
         Inputs:
             - x: input, shape: (batch_size, n_timesteps, input_dim)
             - init_states: a list of initial states of the network, each element 
-                           has shape: (batch_size, hidden_size_i), i-th hidden layer
+                           has shape: (batch_size, leaky_layer_i_size), i-th leaky layer
 
         Returns:
             - hidden_state_list: hidden states of the network, list of tensors, each element
         """
-        # Skip constraints if the model is not in training mode
-        if self.training:
-            self.enforce_constraints()
+        # # Skip constraints if the model is not in training mode
+        # if self.training:
+        #     self.enforce_constraints()
 
         # Initialize hidden states as a list of tensors
-        _bs, _T, _ = x.size()
-        hidden_states = [
-            torch.zeros(_bs, _T+1, hidden_size, device=self.device)
-            for hidden_size in self.hidden_sizes
-        ]
+        # Temporarily add an extra time step to store the initial state
+        # The initial state will be removed at the end
+        bs, T, _ = x.size()
+        layer_states = [torch.zeros(bs, T+1, l.size, device=self.device) for l in self.recurrent_layers]
 
         # Set the hidden state at t=0 if provided
+        # TODO: this is a bit problematic because sometime we might want to only set part of the initial states
         if init_states is not None:
-            assert len(init_states) == len(self.hidden_layers), \
+            assert len(init_states) == len(self.recurrent_layers), \
                 "Number of initial states must match the number of hidden layers."
-            for i, _s in enumerate(init_states):
-                hidden_states[i][:, 0, :] = _s
+            for i, init_s in enumerate(init_states):
+                layer_states[i][:, 0] = init_s
 
-        # Initialize two lists to store membrane potentials and firing rates
-        v_t_list = [
-            hidden_states[i][:, 0, :].clone()  # shape: (batch_size, hidden_size_i)
-            for i in range(len(self.hidden_layers))
-        ]
-        fr_t_list = [
-            hidden_states[i][:, 0, :].clone()  # shape: (batch_size, hidden_size_i)
-            for i in range(len(self.hidden_layers))
-        ]
+        # Initialize two lists to store membrane potentials and firing rates for one time step
+        # The list is over the sequential hidden layers, not time steps
+        # Each item i is of shape (batch_size, hidden_size(i))
+        v_list = [layer_states[i][:, 0].clone() for i in range(len(self.recurrent_layers))]
+        fr_list = [layer_states[i][:, 0].clone() for i in range(len(self.recurrent_layers))]
 
         # Forward pass through time
-        for t in range(_T):
-            for i, layer in enumerate(self.hidden_layers):
-                # Input to the current layer, use input if its the first layer
-                u_in_t = x[:, t, :] if i == 0 else fr_t_list[i-1]
-                fr_t_list[i], v_t_list[i] = layer(fr_t_list[i], v_t_list[i], u_in_t)
+        for t in range(T):
+            for i, layer in enumerate(self.recurrent_layers):
+                # If the first layer, use the actual input, otherwise use the previous layer's output
+                u_in = x[:, t] if i == 0 else fr_list[i-1]
+                fr_list[i], v_list[i] = layer(fr_list[i], v_list[i], u_in)
 
                 # Update hidden states and membrane potentials
-                hidden_states[i][:, t+1, :] = fr_t_list[i].clone()
+                layer_states[i][:, t+1, :] = fr_list[i].clone()
 
         # Trim the hidden states to remove the initial state
-        hidden_states = [state[:, 1:, :] for state in hidden_states]
+        layer_states = [state[:, 1:, :] for state in layer_states]
 
         # Readout layer
-        output = self.readout_layer(hidden_states[-1]) if self.readout_layer is not None else None
+        output = self.readout_layer(layer_states[-1]) if self.readout_layer is not None else None
 
-        return output, hidden_states
+        return output, layer_states
 
     def train(self):
         """
@@ -141,6 +134,8 @@ class RNNLayer(nn.Module):
             layer.apply_plasticity()
         if self.readout_layer is not None:
             self.readout_layer.apply_plasticity()
+        if self.readout_layer is not None:
+            self.readout_layer.apply_plasticity()
 
     def enforce_constraints(self):
         """
@@ -150,6 +145,8 @@ class RNNLayer(nn.Module):
         """
         for layer in self.hidden_layers:
             layer.enforce_constraints()
+        if self.input_layer is not None:
+            self.input_layer.enforce_constraints()
         if self.readout_layer is not None:
             self.readout_layer.enforce_constraints()
 
