@@ -1,5 +1,6 @@
 import torch
-from nn4n.nn import LinearLayer, LeakyLinearLayer
+from .linear_layer import LinearLayer
+from .leaky_linear_layer import LeakyLinearLayer
 
 
 class RecurrentLayer(torch.nn.Module):

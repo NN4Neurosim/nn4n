@@ -112,36 +112,14 @@ class BlockRecurrentLayer(torch.nn.Module):
         v_in_t = self.input_layer(u_in_t) if self.input_layer is not None else u_in_t
         v_hid_t_next = self.linear_layer(fr_hid_t)
         v_t_next = (1 - self.alpha) * v_hid_t + self.alpha * (v_hid_t_next + v_in_t)
-        if self.preact_noise > 0:
+        if self.preact_noise > 0 and self.training:
             _preact_noise = self._generate_noise(v_t_next.size(), self.preact_noise)
             v_t_next = v_t_next + _preact_noise
         fr_t_next = self.activation(v_t_next)
-        if self.postact_noise > 0:
+        if self.postact_noise > 0 and self.training:
             _postact_noise = self._generate_noise(fr_t_next.size(), self.postact_noise)
             fr_t_next = fr_t_next + _postact_noise
         return fr_t_next, v_t_next
-
-    def enforce_constraints(self):
-        """
-        Enforce constraints on the layer
-        """
-        self.linear_layer.enforce_constraints()
-        self.input_layer.enforce_constraints()
-    
-    def apply_plasticity(self):
-        """
-        Apply plasticity masks to the weight gradients
-        """
-        self.linear_layer.apply_plasticity()
-        self.input_layer.apply_plasticity()
-
-    def train(self):
-        # TODO: change the noise to regular level
-        pass
-
-    def eval(self):
-        # TODO: change the noise to zero
-        pass
 
     # HELPER FUNCTIONS
     # ======================================================================================

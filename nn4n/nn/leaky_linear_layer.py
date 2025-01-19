@@ -5,7 +5,7 @@ from .linear_layer import LinearLayer
 class LeakyLinearLayer(torch.nn.Module):
     def __init__(
         self,
-        linear_layer: LinearLayer,
+        linear_layer: torch.nn.Module,
         activation: torch.nn.Module,
         alpha: float = 0.1,
         learn_alpha: bool = False,
@@ -53,13 +53,6 @@ class LeakyLinearLayer(torch.nn.Module):
     def _generate_noise(shape: torch.Size, noise: float) -> torch.Tensor:
         return torch.randn(shape) * noise
 
-    def to(self, device):
-        """Move the network to the device (cpu/gpu)"""
-        super().to(device)
-        self.linear_layer.to(device)
-        self.alpha = self.alpha.to(device)
-        return self
-
     # FORWARD
     # =================================================================================
     def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
@@ -79,7 +72,7 @@ class LeakyLinearLayer(torch.nn.Module):
         v_n = (1 - self.alpha) * v + self.alpha * (self.linear_layer(fr) + u)
 
         # Preactivation noise
-        if self.preact_noise > 0:
+        if self.preact_noise > 0 and self.training:
             _preact_noise = self._generate_noise(v_n.size(), self.preact_noise)
             v_n = v_n + _preact_noise
 
@@ -87,31 +80,11 @@ class LeakyLinearLayer(torch.nn.Module):
         fr_n = self.activation(v_n)
 
         # Postactivation noise
-        if self.postact_noise > 0:
+        if self.postact_noise > 0 and self.training:
             _postact_noise = self._generate_noise(fr_n.size(), self.postact_noise)
             fr_n = fr_n + _postact_noise
         
         return fr_n, v_n
-
-    def enforce_constraints(self):
-        """
-        Enforce constraints on the layer
-        """
-        self.linear_layer.enforce_constraints()
-    
-    def apply_plasticity(self):
-        """
-        Apply plasticity masks to the weight gradients
-        """
-        self.linear_layer.apply_plasticity()
-
-    def train(self):
-        # TODO: change the noise to regular level
-        pass
-
-    def eval(self):
-        # TODO: change the noise to zero
-        pass
 
     # HELPER FUNCTIONS
     # ======================================================================================

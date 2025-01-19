@@ -1,7 +1,5 @@
 import torch
 from typing import List
-from nn4n.utils import print_dict, format_dict, get_activation
-from nn4n.nn import RecurrentLayer
 
 
 class RNNLayer(torch.nn.Module):
@@ -68,10 +66,6 @@ class RNNLayer(torch.nn.Module):
         Returns:
             - hidden_state_list: hidden states of the network, list of tensors, each element
         """
-        # # Skip constraints if the model is not in training mode
-        # if self.training:
-        #     self.enforce_constraints()
-
         # Initialize hidden states as a list of tensors
         # Temporarily add an extra time step to store the initial state
         # The initial state will be removed at the end
@@ -109,46 +103,6 @@ class RNNLayer(torch.nn.Module):
         output = self.readout_layer(layer_states[-1]) if self.readout_layer is not None else None
 
         return output, layer_states
-
-    def train(self):
-        """
-        Set pre-activation and post-activation noise to the specified value
-        and resume enforcing constraints
-        """
-        for layer in self.hidden_layers:
-            layer.train()
-        self.training = True
-
-    def eval(self):
-        """
-        Set pre-activation and post-activation noise to zero
-        and pause enforcing constraints
-        """
-        for layer in self.hidden_layers:
-            layer.eval()
-        self.training = False
-
-    def apply_plasticity(self):
-        """Apply plasticity masks to the weight gradients"""
-        for layer in self.hidden_layers:
-            layer.apply_plasticity()
-        if self.readout_layer is not None:
-            self.readout_layer.apply_plasticity()
-        if self.readout_layer is not None:
-            self.readout_layer.apply_plasticity()
-
-    def enforce_constraints(self):
-        """
-        Enforce sparsity and excitatory/inhibitory constraints if applicable.
-        This is by default automatically called after each forward pass,
-        but can be called manually if needed
-        """
-        for layer in self.hidden_layers:
-            layer.enforce_constraints()
-        if self.input_layer is not None:
-            self.input_layer.enforce_constraints()
-        if self.readout_layer is not None:
-            self.readout_layer.enforce_constraints()
 
     # HELPER FUNCTIONS
     # ==================================================================================================
