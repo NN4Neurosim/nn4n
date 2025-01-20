@@ -1,7 +1,5 @@
 import nn4n
 import torch
-import numpy as np
-
 
 class Module(torch.nn.Module):
     """
@@ -35,8 +33,9 @@ class Module(torch.nn.Module):
         self._enforce_positivity()
         self._balance_excitatory_inhibitory()
 
-        # Register the forward hook
+        # Register the forward and backward hooks
         self.register_forward_pre_hook(self.enforce_constraints)
+        self._register_backward_hooks()
 
     # INIT MASKS
     # ======================================================================================
@@ -74,8 +73,7 @@ class Module(torch.nn.Module):
         ext_sum = self.weight[self.positivity_mask == 1].sum()
         inh_sum = self.weight[self.positivity_mask == -1].sum()
         if ext_sum == 0 or inh_sum == 0:
-            # Automatically stop balancing if one of the sums is 0
-            # devide by 10 to avoid recurrent explosion/decay
+            # Avoid explosions/decay by scaling everything down
             self.weight /= 10
         else:
             if ext_sum > abs(inh_sum):
@@ -112,6 +110,20 @@ class Module(torch.nn.Module):
         w[self.positivity_mask.T == 1] = torch.clamp(w[self.positivity_mask.T == 1], min=0)
         w[self.positivity_mask.T == -1] = torch.clamp(w[self.positivity_mask.T == -1], max=0)
         self.weight.data.copy_(torch.nn.Parameter(w))
+
+    # BACKWARD HOOK
+    # ======================================================================================
+    def _register_backward_hooks(self):
+        """
+        Register hooks to modify gradients during backprop.
+        For example, zero out gradients for masked-out weights
+        to prevent updates in those positions.
+        """
+        if self.sparsity_mask is not None:
+            def hook_fn(grad):
+                # If a weight is masked out, its gradient is zeroed.
+                return grad * (self.sparsity_mask.T > 0).float()
+            self.weight.register_hook(hook_fn)
 
     # UTILITIES
     # ======================================================================================

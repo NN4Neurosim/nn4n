@@ -17,10 +17,10 @@
 - [x] Clean up the masks code and make them register as a buffer for simplicity.
 - [x] Put back init_state.
 - [x] Constraints (sparsity, positivity, etc.) are now enforced after each forward pass, registered as a buffer and also registered `enforce_constraints()` with `register_forward_pre_hook`.
+- [x] Add a backward hook to enforce constraints (zeroing out the gradients of those unlearnable weights).
 - [x] Think about how to store the entire model. Currently thinking about making a checkpoint function for each layer.
 - [x] The `hidden_layer` is the same as the linear layer, consider to remove.
 
----
 
 ## Unresolved Items
 - [ ] The examples need to be updated. Especially on the main branch.

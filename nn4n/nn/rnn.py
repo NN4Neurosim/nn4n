@@ -2,7 +2,7 @@ import torch
 from typing import List
 
 
-class RNNLayer(torch.nn.Module):
+class RNN(torch.nn.Module):
     """
     Recurrent layer of the RNN.
 
@@ -12,8 +12,8 @@ class RNNLayer(torch.nn.Module):
 
     def __init__(self,
                  recurrent_layers: List[torch.nn.Module],
-                 readout_layer: torch.nn.Module = None,
-                 device: str = "cpu"):
+                 readout_layer: torch.nn.Module = None
+                 ):
         """
         Initialize the recurrent layer
 
@@ -27,7 +27,6 @@ class RNNLayer(torch.nn.Module):
             raise ValueError("`recurrent_layers` must be a list of torch.nn.Module instances.")
         self.recurrent_layers = torch.nn.ModuleList(recurrent_layers)
         self.readout_layer = readout_layer
-        self.device = torch.device(device)
 
     # FORWARD
     # ==================================================================================================
@@ -50,6 +49,18 @@ class RNNLayer(torch.nn.Module):
         """Generate initial state"""
         return torch.full((batch_size, dim), i_val, device=self.device)
 
+    def _get_input_shape(self, x: torch.Tensor) -> int:
+        """Get the input size"""
+        return x.shape
+    
+    def _get_input(self, x: torch.Tensor, t: int) -> torch.Tensor:
+        """Get the input at time t"""
+        return x[:, t]
+    
+    def _get_output(self, layer_states: List[torch.Tensor]) -> torch.Tensor:
+        """Get the output from the layer states"""
+        return self.readout_layer(layer_states[-1]) if self.readout_layer is not None else None
+
     def forward(
         self,
         x: torch.Tensor,
@@ -69,7 +80,7 @@ class RNNLayer(torch.nn.Module):
         # Initialize hidden states as a list of tensors
         # Temporarily add an extra time step to store the initial state
         # The initial state will be removed at the end
-        bs, T, _ = x.size()
+        bs, T, _ = self._get_input_shape(x)  # For code reuse in BlockRNN
         layer_states = [torch.zeros(bs, T+1, l.size, device=self.device) for l in self.recurrent_layers]
 
         # Set the hidden state at t=0 if provided
@@ -90,7 +101,7 @@ class RNNLayer(torch.nn.Module):
         for t in range(T):
             for i, layer in enumerate(self.recurrent_layers):
                 # If the first layer, use the actual input, otherwise use the previous layer's output
-                u_in = x[:, t] if i == 0 else fr_list[i-1]
+                u_in = self._get_input(x, t) if i == 0 else fr_list[i-1]
                 fr_list[i], v_list[i] = layer(fr_list[i], v_list[i], u_in)
 
                 # Update hidden states and membrane potentials
@@ -99,8 +110,7 @@ class RNNLayer(torch.nn.Module):
         # Trim the hidden states to remove the initial state
         layer_states = [state[:, 1:, :] for state in layer_states]
 
-        # Readout layer
-        output = self.readout_layer(layer_states[-1]) if self.readout_layer is not None else None
+        output = self._get_output(layer_states)
 
         return output, layer_states
 
@@ -115,3 +125,37 @@ class RNNLayer(torch.nn.Module):
         """Print the weight matrix and distribution of each layer"""
         pass
     # ==================================================================================================
+
+
+class BlockRNN(RNN):
+    def __init__(self, recurrent_layers: List[torch.nn.Module], block_readout_layer: torch.nn.Module = None, *args, **kwargs):
+        super().__init__(recurrent_layers=recurrent_layers)
+        """
+        Initialize the block RNN
+
+        Parameters:
+            - recurrent_layers: list of recurrent layers
+            - block_readout_layer: block readout layer
+        """
+        if block_readout_layer is not None:
+            assert len(block_readout_layer) == self.recurrent_layers[-1].n_blocks, \
+                "Number of block readout layers must match the number of blocks in the last recurrent layer."
+            self.block_readout_layer = torch.nn.ModuleList(block_readout_layer)
+        else:
+            self.block_readout_layer = None
+        
+    def _get_input_shape(self, x: List[torch.Tensor]) -> int:
+        """Get the input size"""
+        return x[0].shape
+    
+    def _get_input(self, x: List[torch.Tensor], t: int) -> List[torch.Tensor]:
+        """Get the input at time t"""
+        return [x[i][:, t] for i in range(len(x))]
+    
+    def _get_output(self, layer_states: List[torch.Tensor]) -> torch.Tensor:
+        """Get the output from the layer states"""
+        outputs = []
+        for i, layer in enumerate(self.recurrent_layers):
+            if self.block_readout_layer is not None:
+                outputs.append(self.block_readout_layer[i](layer_states[-1][:, :, layer.block_indices(i)]))
+        return outputs

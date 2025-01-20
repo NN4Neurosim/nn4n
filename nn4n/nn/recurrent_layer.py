@@ -36,16 +36,7 @@ class RecurrentLayer(torch.nn.Module):
     def size(self) -> int:
         return self.leaky_layer.input_dim
 
-    def to(self, device: torch.device):
-        """Move the network to the device (cpu/gpu)"""
-        super().to(device)
-        self.device = device
-        self.leaky_layer.to(device)
-        if self.projection_layer is not None:
-            self.projection_layer.to(device)
-        return self
-
-    def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+    def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor, u_aux: torch.Tensor = None):
         """
         Forwardly update network
 
@@ -53,10 +44,12 @@ class RecurrentLayer(torch.nn.Module):
             - fr: hidden state (post-activation), shape: (batch_size, hidden_size)
             - v: hidden state (pre-activation), shape: (batch_size, hidden_size)
             - u: input, shape: (batch_size, input_size)
+            - u_aux: auxiliary input to be added after projection, shape: (batch_size, hidden_size)
 
         Returns:
             - fr_next: hidden state (post-activation), shape: (batch_size, hidden_size)
             - v_next: hidden state (pre-activation), shape: (batch_size, hidden_size)
         """
         u = self.projection_layer(u) if self.projection_layer is not None else u
+        u = u + u_aux if u_aux is not None else u
         return self.leaky_layer(fr, v, u)
