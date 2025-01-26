@@ -1,3 +1,24 @@
+# Cheat Sheet
+## Sphinx
+### Generate API docs
+```bash
+sphinx-apidoc -o docs/source/ nn4n/ -M
+```
+### Build
+```bash
+sphinx-build -b html docs/source/ docs/build/
+```
+Or use `sphinx-autobuild` to build and serve at the same time.
+```bash
+sphinx-autobuild docs/nn4n/ docs/build/
+```
+### Serve
+VSCode should automatically forward the port to the browser if running on remote.
+```bash
+python -m http.server --directory docs/build/ 8000
+```
+
+# Todo
 ## Resolved Items
 - [x] Resolve the transpose issue in the model module and the mask module. --> So both masks and weights are now consistent, will transpose them per call.
 - [x] Make the model use `batch_first` by default. All `batch_first` parameters are removed, let user set it in their own usage.

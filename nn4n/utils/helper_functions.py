@@ -56,7 +56,7 @@ def get_activation(act):
     elif act == "retanh":
         return lambda x: torch.maximum(torch.tanh(x), torch.tensor(0))
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Activation function {act} not supported")
 
 
 def plot_connectivity_matrix(w, title, colorbar=True):

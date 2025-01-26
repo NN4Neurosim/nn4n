@@ -1,5 +1,4 @@
 import torch
-from .linear_layer import LinearLayer
 
 
 class LeakyLinearLayer(torch.nn.Module):
@@ -50,8 +49,8 @@ class LeakyLinearLayer(torch.nn.Module):
         return self.linear_layer.input_dim
 
     @staticmethod
-    def _generate_noise(shape: torch.Size, noise: float) -> torch.Tensor:
-        return torch.randn(shape) * noise
+    def _generate_noise(shape: torch.Size, noise: float, device: torch.device) -> torch.Tensor:
+        return torch.randn(shape, device=device) * noise
 
     # FORWARD
     # =================================================================================
@@ -73,7 +72,7 @@ class LeakyLinearLayer(torch.nn.Module):
 
         # Preactivation noise
         if self.preact_noise > 0 and self.training:
-            _preact_noise = self._generate_noise(v_n.size(), self.preact_noise)
+            _preact_noise = self._generate_noise(v_n.size(), self.preact_noise, device=v_n.device)
             v_n = v_n + _preact_noise
 
         # Activation
@@ -81,7 +80,7 @@ class LeakyLinearLayer(torch.nn.Module):
 
         # Postactivation noise
         if self.postact_noise > 0 and self.training:
-            _postact_noise = self._generate_noise(fr_n.size(), self.postact_noise)
+            _postact_noise = self._generate_noise(fr_n.size(), self.postact_noise, device=fr_n.device)
             fr_n = fr_n + _postact_noise
         
         return fr_n, v_n

@@ -6,7 +6,7 @@
 [![Downloads](https://static.pepy.tech/badge/nn4n/month)](https://pepy.tech/project/nn4n)<br>
 
 <p align="center">
-<img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/attractor.png" width="300">
+<img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/source/_static/images/attractor.png" width="300">
 </p>
 
 ## [Documentation](https://nn4n.org/)
@@ -26,7 +26,7 @@ This project aims to address these issues by improving the biological plausibili
 A simplistic Vanilla Continuous Time RNN contains three layers: an input layer, a hidden layer, and a readout layer, as depicted below.
 
 <p align="center">
-  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/RNN_structure.png" width="400">
+  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/source/_static/images/RNN_structure.png" width="400">
 </p>
 
 The yellow nodes represent neurons that project input signals to the hidden layer, the green neurons are in the hidden layer, and the purple nodes represent neurons that read out from the hidden layer neurons. Both input and readout neurons are 'imagined' to be there. I.e., they only project or receive signals and, therefore, do not have activations and internal states.
@@ -37,7 +37,7 @@ The implementation of Continuous Time RNN also supports Excitatory-Inhibitory co
 A visual illustration of the EIRNN is shown below.
 
 <p align="center">
-  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/EIRNN_structure.png" width="400">
+  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/source/_static/images/EIRNN_structure.png" width="400">
 </p>
 
 The yellow nodes denote nodes in the input layer. The middle circle denotes the hidden layer. There are blue nodes and red nodes, representing inhibitory neurons and excitatory neurons, respectively. The depicted network has an E/I ratio of 4/1. The purple nodes are ReadoutLayer neurons.
@@ -48,7 +48,7 @@ The RNN could also contain multiple areas. Denote the neurons in the hidden laye
 A visual illustration of the Multi-Area Continuous Time RNN:
 
 <p align="center">
-  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/images/multi_area_structure.png" width="400">
+  <img src="https://github.com/NN4Neurosim/nn4n/blob/main/docs/source/_static/images/multi_area_structure.png" width="400">
 </p>
 <div style="margin-top: 40px;"></div>
 

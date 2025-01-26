@@ -50,6 +50,8 @@ class RecurrentLayer(torch.nn.Module):
             - fr_next: hidden state (post-activation), shape: (batch_size, hidden_size)
             - v_next: hidden state (pre-activation), shape: (batch_size, hidden_size)
         """
-        u = self.projection_layer(u) if self.projection_layer is not None else u
+        if self.projection_layer is not None:
+            u = self.projection_layer(u)
+        u = 0 if u is None else u
         u = u + u_aux if u_aux is not None else u
         return self.leaky_layer(fr, v, u)

@@ -1,4 +1,5 @@
 import torch
+from .tensor_pack import TensorPack
 from typing import List, Tuple
 from .recurrent_layer import RecurrentLayer
 
@@ -71,13 +72,13 @@ class BlockRecurrentLayer(torch.nn.Module):
             block_sizes.append(block_size)
         return block_sizes
     
-    def set_projection(self, from_idx, to_idx, layer):
+    def set_projection(self, from_idx, to_idx, projection_layer):
         # NOTE: this is "inversed" which is slightly confusing
-        self[to_idx, from_idx] = layer
+        self[to_idx, from_idx] = projection_layer
 
-    def set_recurrent(self, idx, layer):
-        self[idx, idx] = layer
-    
+    def set_recurrent(self, idx, recurrent_layer):
+        self[idx, idx] = recurrent_layer
+
     def __getitem__(self, idx: tuple):
         return self.block_recurrent[idx]
     
@@ -104,7 +105,7 @@ class BlockRecurrentLayer(torch.nn.Module):
         self, 
         fr: torch.Tensor,
         v: torch.Tensor, 
-        u_list: List[torch.Tensor]
+        u_list: TensorPack
     ) -> torch.Tensor:
         """
         Forwardly update network
@@ -131,11 +132,17 @@ class BlockRecurrentLayer(torch.nn.Module):
                     continue
                 layer = self.block_recurrent[to_idx, from_idx]
                 if layer is not None:
-                    u_aux_list[to_idx] += layer(fr_list[from_idx])
+                    add_u_aux = layer(fr_list[from_idx])
+                    u_aux_list[to_idx] += add_u_aux
 
         for diag_idx in range(self.n_blocks):
-            layer = self.block_recurrent[diag_idx, diag_idx]
-            fr_n_list[diag_idx], v_n_list[diag_idx] = layer(fr_list[diag_idx], v_list[diag_idx], u_list[diag_idx], u_aux_list[diag_idx])
+            diag_layer = self.block_recurrent[diag_idx, diag_idx]
+            fr_n_list[diag_idx], v_n_list[diag_idx] = diag_layer(
+                fr=fr_list[diag_idx], 
+                v=v_list[diag_idx], 
+                u=u_list[diag_idx], 
+                u_aux=u_aux_list[diag_idx]
+            )
 
         fr_next = torch.cat(fr_n_list, dim=-1)
         v_next = torch.cat(v_n_list, dim=-1)

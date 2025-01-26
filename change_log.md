@@ -1,1 +1,3 @@
 - Removed all batch_first logic.
+- Added TensorPack class to handle tensor packing and unpacking.
+- Added docstrings to some functions to support auto doc generation via Sphinx.
