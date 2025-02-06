@@ -9,13 +9,12 @@ class TensorPack:
 
     **Construction rules**:
     
-    1. If ``data`` is None, we store an empty list.
-    2. If ``data`` is a single ``torch.Tensor``, we store it in a list.
-    3. If ``data`` is a single ``np.ndarray``, we convert it to a ``torch.Tensor`` and store it in a list.
-    4. If ``data`` is a list/tuple, we check each element:
-       - If they are all Tensors, NumPy arrays, or None, we store them individually.
-       - Otherwise, we attempt to interpret ``data`` as numeric/nested lists and convert it to a single ``torch.Tensor``.
-    5. Otherwise, we attempt to interpret ``data`` as numeric/nested lists and convert it to a single ``torch.Tensor``.
+        - If ``data`` is None, we store an empty list.
+        - If ``data`` is a single ``torch.Tensor``, we store it in a list.
+        - If ``data`` is a single ``np.ndarray``, we convert it to a ``torch.Tensor`` and store it in a list.
+        - If ``data`` is a list/tuple, we check each element:
+            - If they are all Tensors, NumPy arrays, or None, we store them individually.
+        - Otherwise, we attempt to interpret ``data`` as numeric/nested lists and convert it to a single ``torch.Tensor``.
 
     **Examples**:
 
@@ -55,12 +54,12 @@ class TensorPack:
 
     def __init__(self, data=None, dtype=None, device=None):
         """
-        :param data: Input data for initializing the container.
-        :type data: Any
-        :param dtype: (Optional) torch.dtype for casting the Tensors.
-        :type dtype: torch.dtype, optional
-        :param device: (Optional) Device (e.g. 'cpu' or 'cuda') for the Tensors.
-        :type device: torch.device, optional
+        Initialize the TensorPack with the given data.
+
+        Parameters:
+            data (Any): The input data for initializing the container.
+            dtype (torch.dtype, optional): The dtype for casting the Tensors.
+            device (torch.device, optional): The device for the Tensors.
         """
         if data is None:
             # No data => empty container

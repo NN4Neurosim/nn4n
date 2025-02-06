@@ -15,8 +15,8 @@ class RecurrentLayer(torch.nn.Module):
         projection layer if there's any.
 
         Parameters:
-            - leaky_layer: leaky linear layer
-            - projection_layer: projection layer
+            leaky_layer: leaky linear layer
+            projection_layer: projection layer
         """
         super().__init__()
 
@@ -36,19 +36,30 @@ class RecurrentLayer(torch.nn.Module):
     def size(self) -> int:
         return self.leaky_layer.input_dim
 
+    @property
+    def postact_noise(self) -> float:
+        return self.leaky_layer.postact_noise
+    
+    @property
+    def preact_noise(self) -> float:
+        return self.leaky_layer.preact_noise
+    
+    def set_noise(self, postact_noise: float = None, preact_noise: float = None):
+        self.leaky_layer.set_noise(postact_noise, preact_noise)
+
     def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor, u_aux: torch.Tensor = None):
         """
         Forwardly update network
 
         Parameters:
-            - fr: hidden state (post-activation), shape: (batch_size, hidden_size)
-            - v: hidden state (pre-activation), shape: (batch_size, hidden_size)
-            - u: input, shape: (batch_size, input_size)
-            - u_aux: auxiliary input to be added after projection, shape: (batch_size, hidden_size)
+            fr: hidden state (post-activation), shape: (batch_size, hidden_size)
+            v: hidden state (pre-activation), shape: (batch_size, hidden_size)
+            u: input, shape: (batch_size, input_size)
+            u_aux: auxiliary input to be added after projection, shape: (batch_size, hidden_size)
 
         Returns:
-            - fr_next: hidden state (post-activation), shape: (batch_size, hidden_size)
-            - v_next: hidden state (pre-activation), shape: (batch_size, hidden_size)
+            fr_next: hidden state (post-activation), shape: (batch_size, hidden_size)
+            v_next: hidden state (pre-activation), shape: (batch_size, hidden_size)
         """
         if self.projection_layer is not None:
             u = self.projection_layer(u)

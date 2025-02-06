@@ -52,6 +52,12 @@ class LeakyLinearLayer(torch.nn.Module):
     def _generate_noise(shape: torch.Size, noise: float, device: torch.device) -> torch.Tensor:
         return torch.randn(shape, device=device) * noise
 
+    def set_noise(self, postact_noise: float = None, preact_noise: float = None):
+        if postact_noise is not None:
+            self.postact_noise = postact_noise
+        if preact_noise is not None:
+            self.preact_noise = preact_noise
+
     # FORWARD
     # =================================================================================
     def forward(self, fr: torch.Tensor, v: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
