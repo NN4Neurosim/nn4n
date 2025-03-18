@@ -4,7 +4,6 @@ from . import criterion
 from . import mask
 from . import nn
 from . import utils
-from .nn import tensor_pack as tp
-from .nn import TensorPack
+from .nn.tensor_pack import empty_tp
 
-__all__ = ['criterion', 'mask', 'nn', 'utils', 'tp']
+__all__ = ['criterion', 'mask', 'nn', 'utils', 'empty_tp']

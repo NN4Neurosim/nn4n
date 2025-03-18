@@ -1,5 +1,5 @@
 import torch
-from typing import List
+from typing import List, Optional
 from .tensor_pack import TensorPack
 
 class RNN(torch.nn.Module):
@@ -11,8 +11,8 @@ class RNN(torch.nn.Module):
     """
 
     def __init__(self,
-                 recurrent_layers: List[torch.nn.Module],
-                 readout_layer: torch.nn.Module = None,
+                 recurrent_layers: Optional[List[torch.nn.Module]] = None,
+                 readout_layer: Optional[torch.nn.Module] = None,
                  device: torch.device = "cpu"
                  ):
         """
@@ -24,10 +24,7 @@ class RNN(torch.nn.Module):
             - device: device to move the network to
         """
         super().__init__()
-        if not isinstance(recurrent_layers, list) or \
-           not all(isinstance(l, torch.nn.Module) for l in recurrent_layers):
-            raise ValueError("`recurrent_layers` must be a list of torch.nn.Module instances.")
-        self.recurrent_layers = torch.nn.ModuleList(recurrent_layers)
+        self.recurrent_layers = torch.nn.ModuleList(recurrent_layers) if recurrent_layers is not None else None
         self.readout_layer = readout_layer
         self.device = device
 
@@ -39,8 +36,9 @@ class RNN(torch.nn.Module):
         """
         super().to(device)
         self.device = device
-        for layer in self.recurrent_layers:
-            layer.to(device)
+        if self.recurrent_layers is not None:
+            for layer in self.recurrent_layers:
+                layer.to(device)
         return self
 
     def _generate_init_state(
@@ -72,6 +70,37 @@ class RNN(torch.nn.Module):
             if init_s is not None:
                 layer_states[i][:, 0] = init_s
 
+    def add_recurrent_layer(self, layer: torch.nn.Module, idx: int = -1):
+        """Add a recurrent layer to the network"""
+        # If the recurrent layers are not initialized, initialize them
+        if self.recurrent_layers is None:
+            self.recurrent_layers = []
+
+        # Insert the layer at the specified index
+        self.recurrent_layers.insert(idx, layer)
+        
+        # If the recurrent layers are not a ModuleList, convert them to one
+        if not isinstance(self.recurrent_layers, torch.nn.ModuleList):
+            self.recurrent_layers = torch.nn.ModuleList(self.recurrent_layers)
+
+    def set_recurrent_layer(self, idx: int, layer: torch.nn.Module):
+        """Set a recurrent layer at a specific index"""
+        self.recurrent_layers[idx] = layer
+
+    def freeze(self):
+        """Freeze the network"""
+        for layer in self.recurrent_layers:
+            layer.freeze()
+        if self.readout_layer is not None:
+            self.readout_layer.freeze()
+
+    def unfreeze(self):
+        """Unfreeze the network"""
+        for layer in self.recurrent_layers:
+            layer.unfreeze()
+        if self.readout_layer is not None:
+            self.readout_layer.unfreeze()
+
     def forward(
         self,
         x: torch.Tensor,
@@ -92,7 +121,7 @@ class RNN(torch.nn.Module):
         # Temporarily add an extra time step to store the initial state
         # The initial state will be removed at the end
         bs, T, _ = self._get_input_shape(x)  # For code reuse in BlockRNN
-        layer_states = [torch.zeros(bs, T+1, l.size, device=self.device) for l in self.recurrent_layers]
+        layer_states = [torch.zeros(bs, T+1, l.hidden_size, device=self.device) for l in self.recurrent_layers]
 
         # Set the hidden state at t=0 if provided
         if init_states is not None:
@@ -135,8 +164,14 @@ class RNN(torch.nn.Module):
 
 
 class BlockRNN(RNN):
-    def __init__(self, recurrent_layers: List[torch.nn.Module], block_readout_layer: torch.nn.Module = None, *args, **kwargs):
-        super().__init__(recurrent_layers=recurrent_layers)
+    def __init__(
+        self, 
+        recurrent_layers: Optional[List[torch.nn.Module]] = None, 
+        block_readout_layer: Optional[List[torch.nn.Module]] = None, 
+        *args, 
+        **kwargs
+    ):
+        super().__init__(recurrent_layers=recurrent_layers, *args, **kwargs)
         """
         Initialize the block RNN
 
@@ -150,18 +185,18 @@ class BlockRNN(RNN):
             self.block_readout_layer = torch.nn.ModuleList(block_readout_layer)
         else:
             self.block_readout_layer = None
-        
+
     def _get_input_shape(self, x: TensorPack) -> int:
         """Get the input size"""
         for i in range(len(x)):
             if x[i] is not None:
                 return x[i].shape
         raise ValueError("No non-None input found.")
-    
+
     def _get_input(self, x: TensorPack, t: int) -> TensorPack:
         """Get the input at time t"""
         return [x[i][:, t] if x[i] is not None else None for i in range(len(x))]
-    
+
     def _assign_init_states(self, layer_states: TensorPack, init_states: TensorPack):
         """Assign initial states to the layer states"""
         assert len(layer_states) == len(init_states), \
@@ -171,7 +206,7 @@ class BlockRNN(RNN):
                 if init_states[i, j] is not None:
                     block_indices = self.recurrent_layers[i].block_indices(j)
                     layer_states[i][:, 0, block_indices] = init_states[i, j]
-    
+
     def _get_output(self, layer_states: TensorPack) -> TensorPack:
         """Get the output from the layer states"""
         outputs = []

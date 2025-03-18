@@ -2,12 +2,13 @@ import torch
 from .linear_layer import LinearLayer
 from .leaky_linear_layer import LeakyLinearLayer
 
+from typing import Optional
 
 class RecurrentLayer(torch.nn.Module):
     def __init__(
         self,
-        leaky_layer: LeakyLinearLayer,
-        projection_layer: LinearLayer = None,
+        leaky_layer: Optional[LeakyLinearLayer] = None,
+        projection_layer: Optional[LinearLayer] = None,
         device: str = "cpu"
     ):
         """
@@ -33,9 +34,13 @@ class RecurrentLayer(torch.nn.Module):
         return self.leaky_layer.output_dim
 
     @property
-    def size(self) -> int:
+    def hidden_size(self) -> int:
         return self.leaky_layer.input_dim
-
+    
+    @property
+    def size(self) -> int:
+        return (self.hidden_size, self.hidden_size)
+    
     @property
     def postact_noise(self) -> float:
         return self.leaky_layer.postact_noise
@@ -43,6 +48,22 @@ class RecurrentLayer(torch.nn.Module):
     @property
     def preact_noise(self) -> float:
         return self.leaky_layer.preact_noise
+    
+    def freeze(self):
+        """
+        Freeze the layer
+        """
+        self.leaky_layer.freeze()
+        if self.projection_layer is not None:
+            self.projection_layer.freeze()
+
+    def unfreeze(self):
+        """
+        Unfreeze the layer
+        """
+        self.leaky_layer.unfreeze()
+        if self.projection_layer is not None:
+            self.projection_layer.unfreeze()
     
     def set_noise(self, postact_noise: float = None, preact_noise: float = None):
         self.leaky_layer.set_noise(postact_noise, preact_noise)

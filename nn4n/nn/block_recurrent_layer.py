@@ -1,6 +1,6 @@
 import torch
 from .tensor_pack import TensorPack
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 from .recurrent_layer import RecurrentLayer
 
 
@@ -16,12 +16,15 @@ class BlockMatrix(torch.nn.Module):
     **Parameters**:
         - n_blocks: number of blocks
     """
-    def __init__(self, n_blocks: int):
+    def __init__(self, n_blocks: Optional[int] = None):
         super().__init__()
-        self.n_blocks = n_blocks
-        self.matrix = torch.nn.ModuleList(
-            [torch.nn.ModuleList([None for _ in range(n_blocks)]) for _ in range(n_blocks)]
-        )
+        self.n_blocks = n_blocks if n_blocks is not None else 0
+        if n_blocks is not None:
+            self.block_matrix = torch.nn.ModuleList(
+                [torch.nn.ModuleList([None for _ in range(n_blocks)]) for _ in range(n_blocks)]
+            )
+        else:
+            self.block_matrix = torch.nn.ModuleList()
 
     def __getitem__(self, idx: tuple):
         if not isinstance(idx, tuple) or len(idx) != 2:
@@ -29,7 +32,7 @@ class BlockMatrix(torch.nn.Module):
         i, j = idx
         if not (0 <= i < self.n_blocks) or not (0 <= j < self.n_blocks):
             raise IndexError("Index out of bounds")
-        return self.matrix[i][j]
+        return self.block_matrix[i][j]
 
     def __setitem__(self, idx: tuple, value: torch.nn.Module):
         if not isinstance(idx, tuple) or len(idx) != 2:
@@ -44,7 +47,28 @@ class BlockMatrix(torch.nn.Module):
         else:
             assert isinstance(value, torch.nn.Module), "Off-diagonal blocks must be an instance of torch.nn.Module"
             assert not isinstance(value, RecurrentLayer), "Off-diagonal blocks cannot be an instance of nn4n.nn.RecurrentLayer"
-        self.matrix[i][j] = value
+        self.block_matrix[i][j] = value
+
+    def add_block(self, n_add: int):
+        """
+        Add a new block to the block matrix
+        """
+        # First, iterate through each row of the current block matrix and add n_add None to each row
+        for i in range(self.n_blocks):
+            self.block_matrix[i].extend([None for _ in range(n_add)])
+        
+        # Then, add n_add new rows to the block matrix
+        for _ in range(n_add):
+            self.block_matrix.append(torch.nn.ModuleList([None for _ in range(self.n_blocks + n_add)]))
+
+        # Update n_blocks
+        self.n_blocks += n_add
+
+    def list_all_blocks(self):
+        """
+        Get the values of the block matrix
+        """
+        return [self.block_matrix[i][j] for i in range(self.n_blocks) for j in range(self.n_blocks)]
 
 
 class BlockRecurrentLayer(torch.nn.Module):
@@ -64,18 +88,36 @@ class BlockRecurrentLayer(torch.nn.Module):
     **Parameters**:
         n_blocks: number of blocks
     """
-    def __init__(self, n_blocks: int, **kwargs):
+    def __init__(self, n_blocks: Optional[int] = None, **kwargs):
         super().__init__()
         self.block_recurrent = BlockMatrix(n_blocks=n_blocks)
         self.initialized = False
     
+    def freeze(self):
+        """
+        Freeze the layer
+        """
+        for block in self.block_recurrent.list_all_blocks():
+            block.freeze()
+        
+    def unfreeze(self):
+        """
+        Unfreeze the layer
+        """
+        for block in self.block_recurrent.list_all_blocks():
+            block.unfreeze()
+
     @property
-    def size(self) -> int:
+    def hidden_size(self) -> int:
         return sum(self.block_sizes())
 
     @property
     def n_blocks(self) -> int:
         return self.block_recurrent.n_blocks
+
+    def size(self) -> Tuple[int, int]:
+        hidden_size = self.hidden_size
+        return hidden_size, hidden_size
     
     def block_indices(self, block_idx: int) -> torch.Tensor:
         ranges = self.block_ranges[block_idx]
@@ -103,7 +145,7 @@ class BlockRecurrentLayer(torch.nn.Module):
         block_sizes = []
         for block_idx in range(self.n_blocks):
             diagonal_block = self.block_recurrent[block_idx, block_idx]
-            block_size = diagonal_block.size if diagonal_block is not None else 0
+            block_size = diagonal_block.hidden_size if diagonal_block is not None else 0
             block_sizes.append(block_size)
         return block_sizes
     
@@ -132,6 +174,13 @@ class BlockRecurrentLayer(torch.nn.Module):
         """
         self[idx, idx] = recurrent_layer
 
+    def add_recurrent(self, recurrent_layer):
+        """
+        Add a new recurrent block to the network
+        """
+        self.add_block(1)
+        self[self.n_blocks - 1, self.n_blocks - 1] = recurrent_layer
+
     def __getitem__(self, idx: tuple):
         return self.block_recurrent[idx]
     
@@ -140,6 +189,49 @@ class BlockRecurrentLayer(torch.nn.Module):
         self.block_recurrent[idx] = value
         self.initialized = all(isinstance(self.block_recurrent[i, i], RecurrentLayer) for i in range(self.n_blocks))
         self.block_ranges = self._compute_block_ranges()
+
+    def get_recurrent(self, idx: int):
+        """
+        Get the recurrent block at index idx
+
+        **Parameters**:
+            idx: index of the block
+
+        **Returns**:
+            block: the recurrent block at index idx
+        """
+        return self.block_recurrent[idx, idx]
+
+    def get_projection(self, from_idx: int, to_idx: int):
+        """
+        Get the projection block between from_idx and to_idx
+
+        **Parameters**:
+            from_idx: index of the from block
+            to_idx: index of the to block
+
+        **Returns**:
+            projection: the projection block between from_idx and to_idx
+        """
+        return self.block_recurrent[to_idx, from_idx]
+
+    def add_block(self, n_blocks: int):
+        """
+        Add a new block to the network
+        """
+        self.block_recurrent.add_block(n_blocks)
+
+    def get_block(self, idx: Tuple[int, int]):
+        """
+        Get the recurrent block at index idx
+
+        **Parameters**:
+            idx: index of the block
+
+        **Returns**:
+            block: the recurrent block at index idx
+        """
+        return self.block_recurrent[idx]
 
     # FORWARD
     # =================================================================================
