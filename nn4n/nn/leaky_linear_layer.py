@@ -55,6 +55,13 @@ class LeakyLinearLayer(torch.nn.Module):
     @staticmethod
     def _generate_noise(shape: torch.Size, noise: float, device: torch.device) -> torch.Tensor:
         return torch.randn(shape, device=device) * noise
+    
+    def clear_parameters(self):
+        """
+        Clear the parameters of the layer
+        """
+        self.linear_layer.clear_parameters()
+        del self.alpha, self.learn_alpha, self.preact_noise, self.postact_noise
 
     def freeze(self):
         """

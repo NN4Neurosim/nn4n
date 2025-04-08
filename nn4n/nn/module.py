@@ -99,7 +99,7 @@ class Module(torch.nn.Module):
         if self.sparsity_mask is None:
             return
         w = self.weight.detach().clone()
-        w = w * (self.sparsity_mask.T > 0).float()  # Ensure binary masking
+        w = w * (self.sparsity_mask > 0).float()  # Ensure binary masking
         self.weight.data.copy_(w)
 
     def _enforce_positivity(self):
@@ -122,7 +122,7 @@ class Module(torch.nn.Module):
         if self.sparsity_mask is not None:
             def hook_fn(grad):
                 # If a weight is masked out, its gradient is zeroed.
-                return grad * (self.sparsity_mask.T > 0).float()
+                return grad * (self.sparsity_mask > 0).float()
             self.weight.register_hook(hook_fn)
 
     # UTILITIES

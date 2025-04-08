@@ -64,6 +64,14 @@ class RecurrentLayer(torch.nn.Module):
         self.leaky_layer.unfreeze()
         if self.projection_layer is not None:
             self.projection_layer.unfreeze()
+
+    def clear_parameters(self):
+        """
+        Clear the parameters of the layer
+        """
+        self.leaky_layer.clear_parameters()
+        if self.projection_layer is not None:
+            self.projection_layer.clear_parameters()
     
     def set_noise(self, postact_noise: float = None, preact_noise: float = None):
         self.leaky_layer.set_noise(postact_noise, preact_noise)

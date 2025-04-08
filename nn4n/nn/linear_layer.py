@@ -3,29 +3,22 @@ import torch
 import numpy as np
 import nn4n.utils as utils
 from .module import Module
+from typing import Optional
 
 
 class LinearLayer(Module):
     """
     Linear Layer with optional sparsity, excitatory/inhibitory, and plasticity constraints.
     The layer is initialized by passing specs in layer_struct.
-
-    Required keywords in layer_struct:
-        - input_dim: dimension of input
-        - output_dim: dimension of output
-        - weight: weight matrix init method/init weight matrix, default: 'uniform'
-        - bias: bias vector init method/init bias vector, default: 'uniform'
-        - sparsity_mask: mask for sparse connectivity
-        - ei_mask: mask for Dale's law
-        - plasticity_mask: mask for plasticity
     """
-
     def __init__(
         self,
         input_dim: int,
         output_dim: int,
         weight: str = "uniform",
         bias: str = "uniform",
+        sparsity_mask: Optional[torch.Tensor] = None,
+        positivity_mask: Optional[torch.Tensor] = None,
         **kwargs
     ):
         self.input_dim = input_dim
@@ -35,23 +28,26 @@ class LinearLayer(Module):
         self.weight = self._generate_weight(self.weight_dist)
         self.bias = self._generate_bias(self.bias_dist)
 
-        # Call super init after initializing weight and bias
-        super().__init__(**kwargs)
+        # Call super init after initializing weight and bias to register forward pre-hook
+        super().__init__(
+            sparsity_mask=sparsity_mask, 
+            positivity_mask=positivity_mask, 
+            **kwargs
+        )
 
     # INITIALIZATION
     # ======================================================================================
     def _generate_bias(self, bias_init):
         """Generate random bias"""
         if bias_init == "uniform":
-            # If uniform, let b be uniform in [-sqrt(k), sqrt(k)]
             sqrt_k = torch.sqrt(torch.tensor(1 / self.input_dim))
             b = torch.rand(self.output_dim) * sqrt_k
             b = b * 2 - sqrt_k
         elif bias_init == "normal":
             b = torch.randn(self.output_dim) / torch.sqrt(torch.tensor(self.input_dim))
-        elif bias_init == "zero" or bias_init == None:
+        elif bias_init == "zero" or bias_init is None:
             b = torch.zeros(self.output_dim)
-        elif type(bias_init) == np.ndarray:
+        elif isinstance(bias_init, np.ndarray):
             b = torch.from_numpy(bias_init)
         else:
             raise NotImplementedError
@@ -60,17 +56,14 @@ class LinearLayer(Module):
     def _generate_weight(self, weight_init):
         """Generate random weight"""
         if weight_init == "uniform":
-            # If uniform, let w be uniform in [-sqrt(k), sqrt(k)]
             sqrt_k = torch.sqrt(torch.tensor(1 / self.input_dim))
             w = torch.rand(self.output_dim, self.input_dim) * sqrt_k
             w = w * 2 - sqrt_k
         elif weight_init == "normal":
-            w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(
-                torch.tensor(self.input_dim)
-            )
+            w = torch.randn(self.output_dim, self.input_dim) / torch.sqrt(torch.tensor(self.input_dim))
         elif weight_init == "zero":
             w = torch.zeros((self.output_dim, self.input_dim))
-        elif type(weight_init) == np.ndarray:
+        elif isinstance(weight_init, np.ndarray):
             w = torch.from_numpy(weight_init)
         else:
             raise NotImplementedError
@@ -78,17 +71,15 @@ class LinearLayer(Module):
 
     def auto_rescale(self, param_type):
         """
-        Rescale weight or bias. This is useful when the layer is sparse
-        and insufficent/over-sufficient in driving the next layer dynamics
+        Rescale weight or bias. This is useful when the layer is sparse and the
+        connectivity is insufficient or oversufficient for driving the next layer dynamics.
         """
         if param_type == "weight":
             mat = self.weight.detach().clone()
         elif param_type == "bias":
             mat = self.bias.detach().clone()
         else:
-            raise NotImplementedError(
-                f"Parameter type '{param_type}' is not implemented"
-            )
+            raise NotImplementedError(f"Parameter type '{param_type}' is not implemented")
 
         if self.sparsity_mask is not None:
             scale = self.sparsity_mask.sum(axis=1).max() / self.input_dim
@@ -101,17 +92,26 @@ class LinearLayer(Module):
         elif param_type == "bias":
             self.bias.data.copy_(mat)
 
+    def clear_parameters(self):
+        """
+        Clear the parameters of the layer
+        """
+        del self.weight, self.bias, self.weight_dist, self.bias_dist
+        if hasattr(self, "sparsity_mask"):
+            del self.sparsity_mask
+        if hasattr(self, "positivity_mask"):
+            del self.positivity_mask
+
     # TRAINING
     # ======================================================================================
     def forward(self, x):
         """
-        Forwardly update network
+        Forward update.
 
         Inputs:
             - x: input, shape: (batch_size, input_dim)
-
         Returns:
-            - state: shape: (batch_size, hidden_size)
+            - state: shape: (batch_size, output_dim)
         """
         return x.float() @ self.weight.T + self.bias
 
@@ -128,7 +128,7 @@ class LinearLayer(Module):
     # HELPER FUNCTIONS
     # ======================================================================================
     def get_specs(self):
-        """Print the specs of each layer"""
+        """Return the specs of the layer"""
         return {
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
@@ -146,7 +146,5 @@ class LinearLayer(Module):
         }
 
     def print_layer(self):
-        """
-        Print the specs of the layer
-        """
+        """Print layer specs"""
         utils.print_dict(f"{self.__class__.__name__} layer", self.get_specs())

@@ -165,6 +165,16 @@ class TensorPack:
     def __str__(self):
         return self.__repr__()
 
+    def to_list(self, keep_none=False):
+        """
+        Convert the TensorPack to a list of tensors.
+        """
+        if keep_none:
+            return self.tensors
+        else:
+            t_list = [t for t in self.tensors if t is not None]
+            return None if len(t_list) == 0 else t_list
+
     @property
     def shape(self):
         """
