@@ -48,6 +48,10 @@ class LeakyLinearLayer(torch.nn.Module):
     def size(self) -> int:
         return self.linear_layer.input_dim
 
+    @property
+    def hidden_size(self) -> int:
+        return self.linear_layer.input_dim
+
     @staticmethod
     def _generate_noise(shape: torch.Size, noise: float, device: torch.device) -> torch.Tensor:
         return torch.randn(shape, device=device) * noise

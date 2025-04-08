@@ -132,10 +132,10 @@ class TensorPack:
                 return "None"
             elif isinstance(tensor, torch.Tensor):
                 shape_str = str(list(tensor.shape))
-                if len(shape_str) > 8:
-                    return f"({shape_str[:8]}...)"
+                if len(shape_str) > 20:
+                    return f"{shape_str[:20]}..."
                 else:
-                    print_str = f"({shape_str})"
+                    print_str = f"{shape_str}"
                     return print_str # + " " * (8 - len(print_str))
             else:
                 raise ValueError("Unexpected type in TensorPack")
@@ -160,7 +160,7 @@ class TensorPack:
             else:
                 return format_tensor(tensors)
 
-        return f"TensorPack({recursive_format(self.tensors)})"
+        return f"TP({recursive_format(self.tensors)})"
 
     def __str__(self):
         return self.__repr__()

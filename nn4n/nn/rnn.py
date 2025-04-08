@@ -191,7 +191,7 @@ class BlockRNN(RNN):
         for i in range(len(x)):
             if x[i] is not None:
                 return x[i].shape
-        raise ValueError("No non-None input found.")
+        raise ValueError("At least one input must not be None.")
 
     def _get_input(self, x: TensorPack, t: int) -> TensorPack:
         """Get the input at time t"""
