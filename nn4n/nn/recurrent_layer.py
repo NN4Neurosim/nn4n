@@ -48,7 +48,7 @@ class RecurrentLayer(torch.nn.Module):
     @property
     def preact_noise(self) -> float:
         return self.leaky_layer.preact_noise
-    
+
     def freeze(self):
         """
         Freeze the layer

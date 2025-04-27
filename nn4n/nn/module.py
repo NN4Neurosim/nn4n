@@ -1,5 +1,7 @@
 import nn4n
 import torch
+from typing import Optional
+
 
 class Module(torch.nn.Module):
     """
@@ -11,6 +13,7 @@ class Module(torch.nn.Module):
         sparsity_mask: torch.Tensor = None,
         positivity_mask: torch.Tensor = None,
         # plasticity_mask: torch.Tensor = None,
+        register_params: bool = True,
         **kwargs
     ):
         """
@@ -23,9 +26,9 @@ class Module(torch.nn.Module):
         super().__init__()
 
         # Initialize masks
-        self.sparsity_mask = self._set_mask(sparsity_mask, "sparsity")
-        self.positivity_mask = self._set_mask(positivity_mask, "positivity")
-        # self.plasticity_mask = self._set_mask(plasticity_mask, "plasticity")
+        self._register_mask(sparsity_mask, "sparsity")
+        self._register_mask(positivity_mask, "positivity")
+        # self._register_mask(plasticity_mask, "plasticity")
 
         # Initialize trainable parameters and enforce constraints
         self._init_trainable()
@@ -39,31 +42,31 @@ class Module(torch.nn.Module):
 
     # INIT MASKS
     # ======================================================================================
-    def _set_mask(self, mask: torch.Tensor, mask_type: str):
+    def _register_mask(self, mask: Optional[torch.Tensor], mask_type: str):
         """
         Set the mask
         """
-        mask = mask.T if mask is not None else None
         if mask is not None:
             self._check_mask(mask, mask_type)
             self.register_buffer(f"{mask_type}_mask", mask)
-            return mask
-        return None
+        else:
+            self.register_buffer(f"{mask_type}_mask", None)
+        return mask
 
     def _check_mask(self, mask: torch.Tensor, mask_type: str):
         """
         Check if the mask dimensions are valid
         """
         assert (
-            mask.shape == self.weight.shape
-        ), f"{mask_type} mask shape mismatch, expected {self.weight.shape}, got {mask.shape}"
+            mask.shape == self.pre_weight.shape
+        ), f"{mask_type} mask shape mismatch, expected {self.pre_weight.shape}, got {mask.shape}"
 
     # INIT TRAINABLE
     # ======================================================================================
     def _init_trainable(self):
         # Convert weight and bias to learnable parameters
-        self.weight = torch.nn.Parameter(self.weight)  # Not sure if not learnable would make sense, skip for now
-        self.bias = torch.nn.Parameter(self.bias, requires_grad=self.bias_dist is not None)
+        self.weight = torch.nn.Parameter(self.pre_weight)
+        self.bias = torch.nn.Parameter(self.pre_bias)
 
     def _balance_excitatory_inhibitory(self):
         """Balance excitatory and inhibitory weights"""
@@ -99,7 +102,7 @@ class Module(torch.nn.Module):
         if self.sparsity_mask is None:
             return
         w = self.weight.detach().clone()
-        w = w * (self.sparsity_mask > 0).float()  # Ensure binary masking
+        w = w * self.sparsity_mask  # Ensure binary masking
         self.weight.data.copy_(w)
 
     def _enforce_positivity(self):

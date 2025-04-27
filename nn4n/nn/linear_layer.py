@@ -21,12 +21,23 @@ class LinearLayer(Module):
         positivity_mask: Optional[torch.Tensor] = None,
         **kwargs
     ):
+        """
+        Initialize the linear layer
+
+        **Parameters**:
+            - input_dim: input dimension
+            - output_dim: output dimension
+            - weight: weight initialization
+            - bias: bias initialization
+            - sparsity_mask: sparsity mask (shape: (output_dim, input_dim))
+            - positivity_mask: positivity mask (shape: (output_dim, input_dim))
+        """
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.weight_dist = weight
         self.bias_dist = bias
-        self.weight = self._generate_weight(self.weight_dist)
-        self.bias = self._generate_bias(self.bias_dist)
+        self.pre_weight = self._generate_weight(self.weight_dist)
+        self.pre_bias = self._generate_bias(self.bias_dist)
 
         # Call super init after initializing weight and bias to register forward pre-hook
         super().__init__(
@@ -88,9 +99,9 @@ class LinearLayer(Module):
         mat /= scale
 
         if param_type == "weight":
-            self.weight.data.copy_(mat)
+            self.pre_weight.data.copy_(mat)
         elif param_type == "bias":
-            self.bias.data.copy_(mat)
+            self.pre_bias.data.copy_(mat)
 
     def clear_parameters(self):
         """

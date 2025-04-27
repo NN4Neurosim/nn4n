@@ -17,6 +17,16 @@ def check_initialized(func):
     return wrapper
 
 
+def not_assembled(func):
+    """
+    Decorator to assert that the network is not assembled
+    """
+    def wrapper(self, *args, **kwargs):
+        assert not self.network_assembled, "The network is assembled. Cannot call this function."
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class BlockRecurrentLayer(torch.nn.Module):
     """
     A block recurrent layer of size n_blocks x n_blocks.
@@ -98,8 +108,8 @@ class BlockRecurrentLayer(torch.nn.Module):
         """
         Freeze the layer
         """
-        if not self.network_assembled:
-            self.assembled_network.freeze()
+        if self.network_assembled:
+            self.assembled_recurrent_layer.freeze()
         else:
             for block in self.list_all_blocks():
                 if block is not None:
@@ -109,8 +119,8 @@ class BlockRecurrentLayer(torch.nn.Module):
         """
         Unfreeze the layer
         """
-        if not self.network_assembled:
-            self.assembled_network.unfreeze()
+        if self.network_assembled:
+            self.assembled_recurrent_layer.unfreeze()
         else:
             for block in self.list_all_blocks():
                 if block is not None:
@@ -191,6 +201,7 @@ class BlockRecurrentLayer(torch.nn.Module):
         self[self.n_blocks - 1, self.n_blocks - 1] = recurrent_layer
 
     @check_initialized
+    @not_assembled
     def assemble(self):
         """
         Initialize the full network
@@ -263,17 +274,17 @@ class BlockRecurrentLayer(torch.nn.Module):
         rec_lin = LinearLayer(
             input_dim=total_hidden_dim,
             output_dim=total_hidden_dim,
-            sparsity_mask=hidden_sparsity_mask.T,
+            # sparsity_mask=hidden_sparsity_mask.T,
         )
         rec_lin.weight.data = hidden_mat
         ref_layer = self.block_matrix[0][0].leaky_layer
         proj_lin = LinearLayer(
             input_dim=total_input_dim,
             output_dim=total_hidden_dim,
-            sparsity_mask=input_sparsity_mask.T,
+            # sparsity_mask=input_sparsity_mask.T,
         )
         proj_lin.weight.data = input_mat
-        self.assembled_network = RecurrentLayer(
+        self.assembled_recurrent_layer = RecurrentLayer(
             leaky_layer=LeakyLinearLayer(
                 linear_layer=rec_lin,
                 activation=ref_layer.activation,
@@ -284,11 +295,13 @@ class BlockRecurrentLayer(torch.nn.Module):
             ),
             projection_layer=proj_lin,
         )
+        self.assembled_recurrent_layer.to(self.block_matrix[0][0].leaky_layer.linear_layer.weight.device)
+
         self._clear_block_matrix()
         self.network_assembled = True
 
         return self
-    
+
     def _clear_block_matrix(self):
         """
         Since that we are now using the assembled network, we will remove all
@@ -322,9 +335,11 @@ class BlockRecurrentLayer(torch.nn.Module):
             block = self.block_matrix[i][i]
             if block is not None and block.projection_layer is not None:    
                 if input_slices[i] is not None:
-                    input_mat[b_slice, input_slices[i]] = block.projection_layer.weight.clone()
+                    input_mat[b_slice, input_slices[i]] = block.projection_layer.weight
+                    if block.projection_layer.sparsity_mask is not None:
+                        input_sparsity_mask[b_slice, input_slices[i]] = block.projection_layer.sparsity_mask
                 else:
-                    input_sparsity_mask[b_slice, input_slices[i]] = 0
+                    input_sparsity_mask[b_slice, :] = 0
 
     def _initialize_hidden_mat(
             self, hidden_mat: torch.Tensor, hidden_sparsity_mask: torch.Tensor
@@ -338,10 +353,16 @@ class BlockRecurrentLayer(torch.nn.Module):
                 j_slice = self.block_slices(j)
                 block = self.block_matrix[i][j]
                 if i == j:
-                    hidden_mat[i_slice, j_slice] = block.leaky_layer.linear_layer.weight.clone()
+                    _layer = block.leaky_layer.linear_layer
+                    weight = _layer.weight
+                    hidden_mat[i_slice, j_slice] = weight
+                    if _layer.sparsity_mask is not None:
+                        hidden_sparsity_mask[i_slice, j_slice] = _layer.sparsity_mask
                 else:
                     if block is not None:
-                        hidden_mat[i_slice, j_slice] = block.weight.clone()
+                        hidden_mat[i_slice, j_slice] = block.weight
+                        if block.sparsity_mask is not None:
+                            hidden_sparsity_mask[i_slice, j_slice] = block.sparsity_mask
                     else:
                         hidden_sparsity_mask[i_slice, j_slice] = 0
 
@@ -439,7 +460,7 @@ class BlockRecurrentLayer(torch.nn.Module):
         u: Union[TensorPack, torch.Tensor],
         **kwargs
     ) -> torch.Tensor:
-        return self.assembled_network(fr, v, u, **kwargs)
+        return self.assembled_recurrent_layer(fr, v, u, **kwargs)
 
     def _block_forward(
         self, 
