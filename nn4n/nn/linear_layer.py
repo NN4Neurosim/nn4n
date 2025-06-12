@@ -115,6 +115,9 @@ class LinearLayer(Module):
 
     # TRAINING
     # ======================================================================================
+    def eval(self):
+        pass
+
     def forward(self, x):
         """
         Forward update.
@@ -124,6 +127,7 @@ class LinearLayer(Module):
         Returns:
             - state: shape: (batch_size, output_dim)
         """
+        # print(f"Non-zero ratio in weight: {(self.weight.abs() > 1e-6).sum() / self.weight.numel():.3f}")
         return x.float() @ self.weight.T + self.bias
 
     def freeze(self):

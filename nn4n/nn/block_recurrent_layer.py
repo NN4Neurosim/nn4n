@@ -75,7 +75,7 @@ class BlockRecurrentLayer(torch.nn.Module):
         if i == j:
             assert isinstance(value, (RecurrentLayer, BlockRecurrentLayer)), "Diagonal blocks must be an instance of nn4n.nn.RecurrentLayer or nn4n.nn.BlockRecurrentLayer"
         else:
-            assert isinstance(value, torch.nn.Module), "Off-diagonal blocks must be an instance of torch.nn.Module"
+            assert isinstance(value, (torch.nn.Module, type(None))), "Off-diagonal blocks must be an instance of torch.nn.Module or None"
             assert not isinstance(value, RecurrentLayer), "Off-diagonal blocks cannot be an instance of nn4n.nn.RecurrentLayer"
         self.block_matrix[i][j] = value
         
@@ -125,6 +125,17 @@ class BlockRecurrentLayer(torch.nn.Module):
             for block in self.list_all_blocks():
                 if block is not None:
                     block.unfreeze()
+
+    def eval(self):
+        """
+        Set the layer to evaluation mode
+        """
+        if self.network_assembled:
+            self.assembled_recurrent_layer.eval()
+        else:
+            for block in self.list_all_blocks():
+                if block is not None:
+                    block.eval()
 
     @property
     def hidden_size(self) -> int:
@@ -202,7 +213,7 @@ class BlockRecurrentLayer(torch.nn.Module):
 
     @check_initialized
     @not_assembled
-    def assemble(self):
+    def assemble(self, spectral_norm: bool = False, self_connection: bool = False, postact_noise: float = 0.0, preact_noise: float = 0.0):
         """
         Initialize the full network
         """
@@ -263,26 +274,30 @@ class BlockRecurrentLayer(torch.nn.Module):
         # Initialize matrices
         input_mat = torch.zeros(total_hidden_dim, total_input_dim)
         hidden_mat = torch.zeros(total_hidden_dim, total_hidden_dim)
-        input_sparsity_mask = torch.ones(total_hidden_dim, total_input_dim)
-        hidden_sparsity_mask = torch.ones(total_hidden_dim, total_hidden_dim)
+        input_sparsity_mask = torch.zeros(total_hidden_dim, total_input_dim)
+        hidden_sparsity_mask = torch.zeros(total_hidden_dim, total_hidden_dim)
         
         # Initialize matrices with block values
         self._initialize_hidden_mat(hidden_mat, hidden_sparsity_mask)
         self._initialize_input_mat(input_mat, input_sparsity_mask, input_slices)
 
         # Generate the assembled network
+        if not self_connection:
+            # set the diagonal in sparsity mask to 0
+            hidden_sparsity_mask.diagonal().zero_()
         rec_lin = LinearLayer(
             input_dim=total_hidden_dim,
             output_dim=total_hidden_dim,
-            # sparsity_mask=hidden_sparsity_mask.T,
+            sparsity_mask=hidden_sparsity_mask,
         )
         rec_lin.weight.data = hidden_mat
         ref_layer = self.block_matrix[0][0].leaky_layer
         proj_lin = LinearLayer(
             input_dim=total_input_dim,
             output_dim=total_hidden_dim,
-            # sparsity_mask=input_sparsity_mask.T,
+            sparsity_mask=input_sparsity_mask,
         )
+        rec_lin = torch.nn.utils.spectral_norm(rec_lin) if spectral_norm else rec_lin
         proj_lin.weight.data = input_mat
         self.assembled_recurrent_layer = RecurrentLayer(
             leaky_layer=LeakyLinearLayer(
@@ -290,8 +305,8 @@ class BlockRecurrentLayer(torch.nn.Module):
                 activation=ref_layer.activation,
                 alpha=ref_layer.alpha[0].item(),
                 learn_alpha=ref_layer.learn_alpha,
-                preact_noise=ref_layer.preact_noise,
-                postact_noise=ref_layer.postact_noise,
+                preact_noise=preact_noise,
+                postact_noise=postact_noise
             ),
             projection_layer=proj_lin,
         )
@@ -338,8 +353,8 @@ class BlockRecurrentLayer(torch.nn.Module):
                     input_mat[b_slice, input_slices[i]] = block.projection_layer.weight
                     if block.projection_layer.sparsity_mask is not None:
                         input_sparsity_mask[b_slice, input_slices[i]] = block.projection_layer.sparsity_mask
-                else:
-                    input_sparsity_mask[b_slice, :] = 0
+                    else:
+                        input_sparsity_mask[b_slice, input_slices[i]] = 1
 
     def _initialize_hidden_mat(
             self, hidden_mat: torch.Tensor, hidden_sparsity_mask: torch.Tensor
@@ -358,13 +373,15 @@ class BlockRecurrentLayer(torch.nn.Module):
                     hidden_mat[i_slice, j_slice] = weight
                     if _layer.sparsity_mask is not None:
                         hidden_sparsity_mask[i_slice, j_slice] = _layer.sparsity_mask
+                    else:
+                        hidden_sparsity_mask[i_slice, j_slice] = 1
                 else:
                     if block is not None:
                         hidden_mat[i_slice, j_slice] = block.weight
                         if block.sparsity_mask is not None:
                             hidden_sparsity_mask[i_slice, j_slice] = block.sparsity_mask
-                    else:
-                        hidden_sparsity_mask[i_slice, j_slice] = 0
+                        else:
+                            hidden_sparsity_mask[i_slice, j_slice] = 1
 
     def get_recurrent(self, idx: int):
         """

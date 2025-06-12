@@ -48,6 +48,14 @@ class RecurrentLayer(torch.nn.Module):
     @property
     def preact_noise(self) -> float:
         return self.leaky_layer.preact_noise
+    
+    def eval(self):
+        """
+        Set the layer to evaluation mode
+        """
+        self.leaky_layer.eval()
+        if self.projection_layer is not None:
+            self.projection_layer.eval()
 
     def freeze(self):
         """
